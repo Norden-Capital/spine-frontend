@@ -1,67 +1,62 @@
 "use client";
 
 import { useState } from "react";
-import { api, ApiError, errorMessage } from "@/lib/api";
-import type { AdminUser, Role, UserStatus } from "@/lib/auth-types";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Search, UserPlus } from "lucide-react";
+import { api, errorMessage } from "@/lib/api";
+import { displayName, invitableRoles, ROLE_LABEL, type AdminUser, type Role } from "@/lib/auth-types";
+import { useDates } from "@/components/prefs/prefs-provider";
+import { UserActions, type Notice } from "@/components/admin/user-actions";
+import { RoleBadge, StatusBadge } from "@/components/admin/user-badges";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
-import { NotAllowed } from "@/components/auth/not-allowed";
+import { cn } from "@/lib/utils";
 
-type Notice = { kind: "ok" | "error"; text: string } | null;
+/**
+ * Users list for owners and admins. The backend already filters who I can
+ * see, and says per user if I may act on them (canManage). The list comes
+ * from the server; after a change, router.refresh() loads it again.
+ */
+export function UsersAdmin({ users, myRole }: { users: AdminUser[] | null; myRole: Role }) {
+  const [query, setQuery] = useState("");
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
-export function UsersAdmin({
-  currentUserId,
-  initialUsers,
-}: {
-  currentUserId: string;
-  /** Loaded on the server; null if that load failed. */
-  initialUsers: AdminUser[] | null;
-}) {
-  const [users, setUsers] = useState<AdminUser[] | null>(initialUsers);
-  const [loadError, setLoadError] = useState(initialUsers === null);
-  const [forbidden, setForbidden] = useState(false);
-  const [notice, setNotice] = useState<Notice>(null);
-
-  // Reload after a change. 401: api() already sends the user to /login.
-  async function load() {
-    try {
-      setUsers(await api<AdminUser[]>("/admin/users"));
-      setLoadError(false);
-    } catch (err) {
-      if (err instanceof ApiError && err.code === "unauthorized") return;
-      if (err instanceof ApiError && err.status === 403) {
-        setForbidden(true);
-        return;
-      }
-      setLoadError(true);
-    }
-  }
-
-  async function run(action: () => Promise<unknown>, okText: string) {
-    setNotice(null);
-    try {
-      await action();
-      setNotice({ kind: "ok", text: okText });
-      await load();
-    } catch (err) {
-      setNotice({ kind: "error", text: errorMessage(err) });
-      // The list is out of date (user removed, role changed elsewhere...).
-      if (err instanceof ApiError && (err.code === "user_not_found" || err.status === 409)) {
-        await load();
-      }
-    }
-  }
-
-  if (forbidden) return <NotAllowed />;
+  const q = query.trim().toLowerCase();
+  const shown = (users ?? []).filter(
+    (u) => !q || u.email.toLowerCase().includes(q) || displayName(u).toLowerCase().includes(q)
+  );
+  const roles = invitableRoles(myRole);
 
   return (
-    <div className="flex flex-col gap-6">
-      <InviteForm onInvited={(email) => run(async () => undefined, `Invite sent to ${email}.`)} />
+    <div className="flex flex-col gap-4">
+      <div className="flex gap-2">
+        <div className="relative min-w-0 flex-1">
+          <Search
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <Input
+            type="search"
+            aria-label="Search users"
+            placeholder="Search name or email"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-11 pl-9"
+          />
+        </div>
+        {roles.length > 0 && (
+          <Button size="lg" className="h-11 shrink-0" onClick={() => setInviteOpen(true)}>
+            <UserPlus aria-hidden />
+            Invite
+          </Button>
+        )}
+      </div>
 
       {notice && (
         <Alert variant={notice.kind === "error" ? "destructive" : "default"}>
@@ -69,61 +64,89 @@ export function UsersAdmin({
         </Alert>
       )}
 
-      {loadError && (
-        <Alert variant="destructive">
-          <AlertDescription>
-            Could not load users.{" "}
-            <button className="underline" onClick={() => void load()}>
-              Try again
-            </button>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {users && (
+      {users === null ? (
+        <p className="rounded-lg border border-dashed bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
+          Users could not be loaded. Please try again later.
+        </p>
+      ) : (
         <ul className="flex flex-col gap-3">
-          {users.map((user) => (
-            <UserRow
-              key={user.id}
-              user={user}
-              isMe={String(user.id) === currentUserId}
-              onRole={(role) =>
-                run(() => api(`/admin/users/${user.id}`, { method: "PATCH", body: { role } }), `Role changed for ${user.email}.`)
-              }
-              onStatus={(status) =>
-                run(
-                  () => api(`/admin/users/${user.id}`, { method: "PATCH", body: { status } }),
-                  status === "DISABLED" ? `${user.email} is disabled.` : `${user.email} is enabled.`
-                )
-              }
-              onResend={() =>
-                run(() => api(`/admin/users/${user.id}/resend-invite`, { method: "POST" }), `Invite sent again to ${user.email}.`)
-              }
-            />
+          {shown.map((user) => (
+            <UserCard key={user.id} user={user} onNotice={setNotice} />
           ))}
-          {users.length === 0 && <p className="text-sm text-muted-foreground">No users yet.</p>}
+          {shown.length === 0 && (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              {q ? "No user matches your search." : "No users yet."}
+            </p>
+          )}
         </ul>
       )}
+
+      <InviteDialog
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        roles={roles}
+        onInvited={(email) => setNotice({ kind: "ok", text: `Invite sent to ${email}.` })}
+      />
     </div>
   );
 }
 
-function InviteForm({ onInvited }: { onInvited: (email: string) => void }) {
+function UserCard({ user, onNotice }: { user: AdminUser; onNotice: (n: Notice) => void }) {
+  const dates = useDates();
+  const name = displayName(user);
+  return (
+    <li>
+      <Card size="sm">
+        <CardContent className="flex items-start gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <Link
+              href={`/admin/users/${encodeURIComponent(user.id)}`}
+              className="flex min-h-11 flex-col justify-center rounded-md outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              <span className="truncate font-medium">{name}</span>
+              {name !== user.email && <span className="truncate text-sm text-muted-foreground">{user.email}</span>}
+            </Link>
+            <div className="flex flex-wrap gap-1.5">
+              <RoleBadge role={user.role} />
+              <StatusBadge status={user.status} />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Last login {user.lastLoginAt ? dates.dateTime(user.lastLoginAt) : "never"}
+            </p>
+          </div>
+          {user.canManage && <UserActions user={user} onNotice={onNotice} />}
+        </CardContent>
+      </Card>
+    </li>
+  );
+}
+
+function InviteDialog({
+  open,
+  onOpenChange,
+  roles,
+  onInvited,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  roles: Role[];
+  onInvited: (email: string) => void;
+}) {
+  const router = useRouter();
+  const [role, setRole] = useState<Role>(roles.at(-1) ?? "EMPLOYEE");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const formEl = event.currentTarget;
-    const form = new FormData(formEl);
-    const email = String(form.get("email")).trim();
-    const role = String(form.get("role")) as Role;
+    const email = String(new FormData(event.currentTarget).get("email")).trim();
     setPending(true);
     setError(null);
     try {
       await api("/admin/users", { method: "POST", body: { email, role } });
-      formEl.reset();
+      onOpenChange(false);
       onInvited(email);
+      router.refresh();
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -132,11 +155,19 @@ function InviteForm({ onInvited }: { onInvited: (email: string) => void }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Invite a user</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (pending) return;
+        onOpenChange(next);
+        if (!next) setError(null);
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Invite a user</DialogTitle>
+          <DialogDescription>We&apos;ll email them a link to set their password.</DialogDescription>
+        </DialogHeader>
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           {error && (
             <Alert variant="destructive">
@@ -154,114 +185,44 @@ function InviteForm({ onInvited }: { onInvited: (email: string) => void }) {
                 autoComplete="off"
                 placeholder="name@nordencapital.ca"
                 required
-                className="h-11 text-base"
+                className="h-11"
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="invite-role">Role</FieldLabel>
-              <NativeSelect id="invite-role" name="role" defaultValue="EMPLOYEE" className="w-full">
-                <NativeSelectOption value="EMPLOYEE">Employee</NativeSelectOption>
-                <NativeSelectOption value="ADMIN">Admin</NativeSelectOption>
-              </NativeSelect>
+              <FieldLabel id="invite-role-label">Role</FieldLabel>
+              {roles.length > 1 ? (
+                <div
+                  role="radiogroup"
+                  aria-labelledby="invite-role-label"
+                  className="grid gap-1 rounded-xl bg-muted p-1"
+                  style={{ gridTemplateColumns: `repeat(${roles.length}, minmax(0, 1fr))` }}
+                >
+                  {roles.map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      role="radio"
+                      aria-checked={role === r}
+                      onClick={() => setRole(r)}
+                      className={cn(
+                        "flex h-11 items-center justify-center rounded-lg text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                        role === r ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
+                      )}
+                    >
+                      {ROLE_LABEL[r]}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">{ROLE_LABEL[roles[0] ?? "EMPLOYEE"]}</p>
+              )}
             </Field>
           </FieldGroup>
           <Button type="submit" size="lg" className="h-11 w-full" disabled={pending}>
             {pending ? "Sending…" : "Send invite"}
           </Button>
         </form>
-      </CardContent>
-    </Card>
-  );
-}
-
-const STATUS_VARIANT: Record<UserStatus, "default" | "secondary" | "destructive" | "outline"> = {
-  ACTIVE: "secondary",
-  INVITED: "outline",
-  DISABLED: "destructive",
-};
-
-function formatDate(value: string | null): string {
-  if (!value) return "never";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
-}
-
-function UserRow({
-  user,
-  isMe,
-  onRole,
-  onStatus,
-  onResend,
-}: {
-  user: AdminUser;
-  isMe: boolean;
-  onRole: (role: Role) => Promise<void>;
-  onStatus: (status: UserStatus) => Promise<void>;
-  onResend: () => Promise<void>;
-}) {
-  const [busy, setBusy] = useState(false);
-
-  async function act(fn: () => Promise<void>) {
-    setBusy(true);
-    try {
-      await fn();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const disabled = user.status === "DISABLED";
-
-  return (
-    <li>
-      <Card size="sm">
-        <CardContent className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1.5">
-            <p className="font-medium break-all">
-              {user.email}
-              {isMe && <span className="ml-1 text-muted-foreground">(you)</span>}
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              <Badge variant={user.role === "ADMIN" ? "default" : "secondary"}>{user.role}</Badge>
-              <Badge variant={STATUS_VARIANT[user.status]}>{user.status}</Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">Last login: {formatDate(user.lastLoginAt)}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <NativeSelect
-              aria-label={`Role for ${user.email}`}
-              value={user.role}
-              disabled={busy}
-              onChange={(e) => act(() => onRole(e.target.value as Role))}
-            >
-              <NativeSelectOption value="EMPLOYEE">Employee</NativeSelectOption>
-              <NativeSelectOption value="ADMIN">Admin</NativeSelectOption>
-            </NativeSelect>
-            {user.status === "INVITED" && (
-              <Button variant="outline" disabled={busy} onClick={() => act(onResend)}>
-                Resend invite
-              </Button>
-            )}
-            {disabled ? (
-              <Button variant="outline" disabled={busy} onClick={() => act(() => onStatus("ACTIVE"))}>
-                Enable
-              </Button>
-            ) : (
-              <Button
-                variant="destructive"
-                disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Disable ${user.email}? They will not be able to log in.`)) {
-                    void act(() => onStatus("DISABLED"));
-                  }
-                }}
-              >
-                Disable
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </li>
+      </DialogContent>
+    </Dialog>
   );
 }

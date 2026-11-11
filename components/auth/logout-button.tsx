@@ -10,12 +10,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { api } from "@/lib/api";
+import { clearPrefsCookie } from "@/lib/prefs";
 
-// Logout asks first: a tap by mistake must not end the session.
-export function LogoutButton(props: Pick<React.ComponentProps<typeof Button>, "variant" | "size">) {
+/** "Log out?" confirm. Logout asks first: a tap by mistake must not end the session. */
+export function LogoutDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [pending, setPending] = useState(false);
 
   async function logout() {
@@ -25,6 +25,7 @@ export function LogoutButton(props: Pick<React.ComponentProps<typeof Button>, "v
     } catch {
       // Even if the call fails, leave the app; the server guard re-checks.
     }
+    clearPrefsCookie();
     // Full page load on purpose: it drops every cached page of the old
     // session. The dialog stays open ("Logging out…") until /login shows.
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
@@ -32,8 +33,7 @@ export function LogoutButton(props: Pick<React.ComponentProps<typeof Button>, "v
   }
 
   return (
-    <AlertDialog>
-      <AlertDialogTrigger render={<Button variant="ghost" {...props} />}>Log out</AlertDialogTrigger>
+    <AlertDialog open={open} onOpenChange={(next) => !pending && onOpenChange(next)}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Log out?</AlertDialogTitle>
@@ -49,5 +49,17 @@ export function LogoutButton(props: Pick<React.ComponentProps<typeof Button>, "v
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+export function LogoutButton(props: Pick<React.ComponentProps<typeof Button>, "variant" | "size">) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="ghost" {...props} onClick={() => setOpen(true)}>
+        Log out
+      </Button>
+      <LogoutDialog open={open} onOpenChange={setOpen} />
+    </>
   );
 }

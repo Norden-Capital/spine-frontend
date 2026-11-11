@@ -31,6 +31,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   validation_error: "Some information is not valid. Please check and try again.",
   bad_request: "Some information is not valid. Please check and try again.",
   weak_password: "This password is too weak. Use a longer password.",
+  invalid_current_password: "Your current password is wrong.",
   // Links
   token_invalid: "This link has expired or was already used.",
   // Admin: users
@@ -39,6 +40,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   not_invited: "This user already set a password. No invite needed.",
   last_admin: "You can't do this: there must always be at least one active admin.",
   email_taken: "This email already has an account.",
+  not_active: "This user is not active, so no reset email can be sent.",
   // Client side
   network_error: "Can't reach the server. Check your connection.",
 };
@@ -59,7 +61,9 @@ export function errorMessage(err: unknown): string {
 
 function friendlyMessage(status: number, code: string, field?: string): string {
   if (code === "validation_error" && field) {
-    return `Please check the ${field} field.`;
+    // "firstName" -> "first name"
+    const name = field.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
+    return `Please check the ${name} field.`;
   }
   return ERROR_MESSAGES[code] ?? STATUS_MESSAGES[status] ?? FALLBACK_MESSAGE;
 }

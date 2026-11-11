@@ -7,7 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--app-font);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -128,3 +128,36 @@
     @apply font-sans;
   }
 }
+
+/* ---- User preferences (set on <html> by the inline script in app/layout.tsx) ---- */
+
+/* Font: data-font="geist" | "inter" | "manrope" | "system". */
+:root {
+  --app-font: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+:root[data-font="inter"] {
+  --app-font: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+:root[data-font="manrope"] {
+  --app-font: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+}
+:root[data-font="system"] {
+  --app-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Text size: the root font size, so every rem in the app scales. */
+:root[data-text-size="small"] {
+  font-size: 14px;
+}
+:root[data-text-size="large"] {
+  font-size: 18px;
+}
+
+/* Phones zoom in on inputs under 16px: keep form fields at 16px or more,
+   whatever the text size. Not in a layer, so it wins over utility classes. */
+input,
+select,
+textarea {
+  font-size: max(16px, 1rem);
+}
+

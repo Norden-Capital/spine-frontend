@@ -1,13 +1,14 @@
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { NotAllowed } from "@/components/auth/not-allowed";
+import { canSeeUsers } from "@/lib/auth-types";
 
-// Admin pages: the user must be logged in AND have role ADMIN. Blocks on
-// the server like the (app) layout, so nothing flashes before the check.
-// The backend also refuses /api/admin/* for non-admins.
+// Admin pages: only owners and admins. Employees never see them: they are
+// sent home before anything renders (this layout blocks on the server).
+// The backend also refuses /api/admin/* for them.
 export const instant = false;
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const user = await requireUser("/admin/users");
-  if (user.role !== "ADMIN") return <NotAllowed />;
+  if (!canSeeUsers(user.role)) redirect("/");
   return children;
 }

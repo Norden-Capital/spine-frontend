@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { LogoutButton } from "@/components/auth/logout-button";
+import { displayName } from "@/lib/auth-types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // Blocks on the server on purpose (session/URL data), so nothing flashes.
@@ -14,13 +14,10 @@ export default async function HomePage() {
       <CardHeader>
         <CardTitle>Welcome to Spine</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+      <CardContent>
         <p>
-          Logged in as <span className="font-medium">{user.email}</span> ({user.role})
+          Logged in as <span className="font-medium break-all">{displayName(user)}</span> ({user.role})
         </p>
-        <div>
-          <LogoutButton variant="outline" size="lg" />
-        </div>
       </CardContent>
     </Card>
   );

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { api, errorMessage } from "@/lib/api";
+import { DEFAULT_PREFERENCES, rememberPrefs, type Preferences } from "@/lib/prefs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +25,11 @@ export function LoginForm({ next, passwordSet }: { next: string; passwordSet: bo
         method: "POST",
         body: { email: String(form.get("email")).trim(), password: String(form.get("password")) },
       });
+      // Save the user's look (theme, font, size) for the next page, so it
+      // paints right the first time. Not needed to log in: ignore errors.
+      try {
+        rememberPrefs({ ...DEFAULT_PREFERENCES, ...(await api<Partial<Preferences>>("/me/preferences")) });
+      } catch {}
       // Full page load so the server guards see the new session cookie.
       window.location.assign(next);
     } catch (err) {

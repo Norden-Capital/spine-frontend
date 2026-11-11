@@ -30,7 +30,13 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     throw new Error(`Session check failed (${res.status})`);
   }
   const user = (await res.json()) as CurrentUser;
-  return { id: String(user.id), email: user.email, role: user.role };
+  return {
+    id: String(user.id),
+    email: user.email,
+    role: user.role,
+    firstName: user.firstName ?? null,
+    lastName: user.lastName ?? null,
+  };
 });
 
 export async function requireUser(nextPath = "/"): Promise<CurrentUser> {
