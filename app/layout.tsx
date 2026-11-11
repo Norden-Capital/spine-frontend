@@ -23,10 +23,27 @@ export const metadata: Metadata = {
   description: "Spine expense tracker",
   // Name under the icon when added to the iPhone home screen. Not a PWA:
   // no "capable"/standalone mode, no manifest, no service worker.
-  appleWebApp: { title: "Spine", capable: false },
+  // Opened from the iPhone home screen icon: full screen, no Safari bars.
+  // Not a PWA: no service worker, no offline (see app/manifest.ts).
+  appleWebApp: { title: "Spine", capable: true, statusBarStyle: "default" },
+  // Next writes only the newer "mobile-web-app-capable"; older iOS reads this one.
+  other: { "apple-mobile-web-app-capable": "yes" },
+  // Static files in public/ (opaque, no transparency). iOS ignores a
+  // generated icon URL without a file extension, so these are plain .png
+  // files. iOS also checks /apple-touch-icon(-precomposed).png on its own.
+  icons: {
+    icon: [
+      { url: "/icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export const viewport: Viewport = {
+  // Draw under the notch / home bar; globals.css pads with the safe areas.
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },

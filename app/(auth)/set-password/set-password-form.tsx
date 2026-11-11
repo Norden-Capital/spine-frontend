@@ -122,6 +122,12 @@ function PasswordForm({
           <Button type="submit" size="lg" className="h-11 w-full" disabled={pending}>
             {pending ? "Saving…" : "Save password"}
           </Button>
+          <Link
+            href="/login"
+            className="text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
+          >
+            Back to log in
+          </Link>
         </form>
       </CardContent>
     </Card>

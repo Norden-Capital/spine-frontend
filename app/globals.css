@@ -153,6 +153,18 @@
   font-size: 18px;
 }
 
+/* iPhone notch and home bar (viewport-fit=cover): keep content inside the
+   safe area. The body background still fills the whole screen. */
+body {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+/* Full-height pages (min-h-svh) fit inside that padding, so a short page
+   does not scroll just because of the notch / home bar. */
+.min-h-svh {
+  min-height: calc(100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+
 /* Phones zoom in on inputs under 16px: keep form fields at 16px or more,
    whatever the text size. Not in a layer, so it wins over utility classes. */
 input,

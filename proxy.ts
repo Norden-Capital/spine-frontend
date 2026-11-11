@@ -74,8 +74,8 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Skip the backend proxy, Next internals, the app icons (/icon/…,
-  // /apple-icon: iOS fetches them without a session) and files with an
-  // extension (so /email/spine-logo.png and other static files stay public).
-  matcher: ["/((?!api/|_next/|icon/|apple-icon|favicon.ico|.*\\..*).*)"],
+  // Skip the backend proxy, Next internals and files with an extension, so
+  // static files stay public without a login (/email/spine-logo.png, the app
+  // icons like /apple-touch-icon.png that iOS fetches with no session).
+  matcher: ["/((?!api/|_next/|favicon.ico|.*\\..*).*)"],
 };
