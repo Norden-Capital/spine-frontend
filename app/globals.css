@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+/* Spine UI kit (Design): --sp-* tokens, light/dark via the .dark class on <html>. */
+@import "../components/spine-ui/tokens.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -131,9 +133,11 @@
 
 /* ---- User preferences (set on <html> by the inline script in app/layout.tsx) ---- */
 
-/* Font: data-font="geist" | "inter" | "manrope" | "system". */
+/* Font: data-font="geist" | "inter" | "manrope" | "system".
+   The default choice ("geist" in the saved prefs) shows Poppins, the font of
+   the Spine UI kit; the kit components inherit this font. */
 :root {
-  --app-font: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --app-font: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
 }
 :root[data-font="inter"] {
   --app-font: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
@@ -165,6 +169,12 @@ body {
   min-height: calc(100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
 }
 
+/* Page background of the Spine UI kit (light #EEEEEE, dark black), also
+   under the safe areas. Not in a layer, so it wins over bg-background. */
+body {
+  background-color: var(--sp-bg);
+}
+
 /* Phones zoom in on inputs under 16px: keep form fields at 16px or more,
    whatever the text size. Not in a layer, so it wins over utility classes. */
 input,
@@ -172,4 +182,3 @@ select,
 textarea {
   font-size: max(16px, 1rem);
 }
-

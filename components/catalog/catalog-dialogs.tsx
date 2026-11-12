@@ -9,15 +9,31 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { cn } from "@/lib/utils";
 
 const MAX_NAME = 60;
+
+/** Where a catalog lives: the company (managers) or my private wallet. */
+export type CatalogPaths = {
+  /** e.g. "/admin/categories" or "/wallet/categories" (POST, PATCH {id}, {id}/archive). */
+  categories: string;
+  /** e.g. "/admin/tags" or "/wallet/tags" (PATCH {id}, {id}/archive). */
+  tags: string;
+  /** e.g. "/tags" or "/wallet/tags" (POST: 201 new, 200 existing). */
+  createTag: string;
+};
+
+export const COMPANY_CATALOG: CatalogPaths = { categories: "/admin/categories", tags: "/admin/tags", createTag: "/tags" };
+export const WALLET_CATALOG: CatalogPaths = { categories: "/wallet/categories", tags: "/wallet/tags", createTag: "/wallet/tags" };
 
 /** Add (category = null) or edit a category: name + icon grid. */
 export function CategoryDialog({
   open,
   category,
   icons,
+  all,
+  paths,
   onOpenChange,
   onSaved,
 }: {
@@ -25,6 +41,9 @@ export function CategoryDialog({
   category: Category | null;
   /** Allowed icon names from the backend; falls back to the frontend list. */
   icons: string[];
+  /** Every category (to choose a main category for a subcategory). */
+  all: Category[];
+  paths: CatalogPaths;
   onOpenChange: (open: boolean) => void;
   onSaved: (text: string) => void;
 }) {
@@ -40,6 +59,8 @@ export function CategoryDialog({
             key={category?.id ?? "new"}
             category={category}
             icons={icons.length > 0 ? icons : Object.keys(CATEGORY_ICONS)}
+            all={all}
+            path={paths.categories}
             onDone={(text) => {
               onOpenChange(false);
               onSaved(text);
@@ -54,13 +75,22 @@ export function CategoryDialog({
 function CategoryForm({
   category,
   icons,
+  all,
+  path,
   onDone,
 }: {
   category: Category | null;
   icons: string[];
+  all: Category[];
+  path: string;
   onDone: (text: string) => void;
 }) {
   const [name, setName] = useState(category?.name ?? "");
+  const [parentId, setParentId] = useState<string>(category?.parentId ?? "");
+  // One level only: a category with subcategories can't go under another,
+  // and only top-level, active categories (not itself) can be a parent.
+  const hasChildren = Boolean(category && all.some((c) => c.parentId === category.id));
+  const parents = all.filter((c) => !c.parentId && !c.archived && c.id !== category?.id);
   const [icon, setIcon] = useState<string | null>(category?.icon ?? null);
   const [touched, setTouched] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
@@ -80,10 +110,14 @@ function CategoryForm({
     setPending(true);
     try {
       if (category) {
-        await api(`/admin/categories/${category.id}`, { method: "PATCH", body: { name: trimmed, icon } });
+        // parentId: null = top level, "<id>" = under it.
+        await api(`${path}/${category.id}`, {
+          method: "PATCH",
+          body: { name: trimmed, icon, ...(hasChildren ? {} : { parentId: parentId || null }) },
+        });
         onDone(`"${trimmed}" is saved.`);
       } else {
-        await api("/admin/categories", { method: "POST", body: { name: trimmed, icon } });
+        await api(path, { method: "POST", body: { name: trimmed, icon, parentId: parentId || null } });
         onDone(`"${trimmed}" is added.`);
       }
     } catch (err) {
@@ -117,6 +151,26 @@ function CategoryForm({
             <FieldError>{nameError}</FieldError>
           ) : (
             touched && missingName && <FieldError>Enter a name.</FieldError>
+          )}
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="category-parent">Main category</FieldLabel>
+          <NativeSelect
+            id="category-parent"
+            value={parentId}
+            onChange={(e) => setParentId(e.target.value)}
+            disabled={hasChildren}
+            className="h-11 w-full"
+          >
+            <NativeSelectOption value="">None (this is a main category)</NativeSelectOption>
+            {parents.map((c) => (
+              <NativeSelectOption key={c.id} value={c.id}>
+                {c.name}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+          {hasChildren && (
+            <p className="text-xs text-muted-foreground">It has subcategories, so it stays a main category.</p>
           )}
         </Field>
         <Field data-invalid={touched && missingIcon} className="min-h-0">
@@ -161,11 +215,13 @@ function CategoryForm({
 export function TagDialog({
   open,
   tag,
+  paths,
   onOpenChange,
   onSaved,
 }: {
   open: boolean;
   tag: Tag | null;
+  paths: CatalogPaths;
   onOpenChange: (open: boolean) => void;
   onSaved: (text: string) => void;
 }) {
@@ -179,6 +235,7 @@ export function TagDialog({
           <TagForm
             key={tag?.id ?? "new"}
             tag={tag}
+            paths={paths}
             onDone={(text) => {
               onOpenChange(false);
               onSaved(text);
@@ -190,7 +247,7 @@ export function TagDialog({
   );
 }
 
-function TagForm({ tag, onDone }: { tag: Tag | null; onDone: (text: string) => void }) {
+function TagForm({ tag, paths, onDone }: { tag: Tag | null; paths: CatalogPaths; onDone: (text: string) => void }) {
   const [name, setName] = useState(tag?.name ?? "");
   const [touched, setTouched] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
@@ -207,11 +264,11 @@ function TagForm({ tag, onDone }: { tag: Tag | null; onDone: (text: string) => v
     setPending(true);
     try {
       if (tag) {
-        await api(`/admin/tags/${tag.id}`, { method: "PATCH", body: { name: trimmed } });
+        await api(`${paths.tags}/${tag.id}`, { method: "PATCH", body: { name: trimmed } });
         onDone(`Tag renamed to "${trimmed}".`);
       } else {
         // 200 = a tag with this name already exists (nothing new made).
-        const { status, data } = await apiWithStatus<Tag>("/tags", { method: "POST", body: { name: trimmed } });
+        const { status, data } = await apiWithStatus<Tag>(paths.createTag, { method: "POST", body: { name: trimmed } });
         onDone(status === 201 ? `Tag "${data.name}" is added.` : `Tag "${data.name}" already exists.`);
       }
     } catch (err) {

@@ -22,12 +22,18 @@ export function TagPicker({
   onChange,
   name,
   id,
+  basePath = "/tags",
+  allowCreate = true,
 }: {
   value: Tag[];
   onChange: (tags: Tag[]) => void;
   name?: string;
   /** id for the search input (so a <label htmlFor> can point to it). */
   id?: string;
+  /** "/tags" (company) or "/wallet/tags" (private wallet). */
+  basePath?: string;
+  /** false in filters: only pick existing tags. */
+  allowCreate?: boolean;
 }) {
   const autoId = useId();
   const inputId = id ?? `tags-${autoId}`;
@@ -53,7 +59,7 @@ export function TagPicker({
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const found = await api<Tag[]>(`/tags?q=${encodeURIComponent(q)}`);
+        const found = await api<Tag[]>(`${basePath}?q=${encodeURIComponent(q)}`);
         if (!stale) {
           setResults(found);
           setResultsFor(q);
@@ -68,7 +74,7 @@ export function TagPicker({
       stale = true;
       clearTimeout(timer);
     };
-  }, [q, open]);
+  }, [q, open, basePath]);
 
   const chosen = new Set(value.map((t) => t.id));
   const options = results.filter((t) => !chosen.has(t.id) && !t.archived);
@@ -76,7 +82,7 @@ export function TagPicker({
   // Offer "Create" only once the results match what is typed.
   const searching = loading || resultsFor !== q;
   const isArchived = archivedNames.includes(q.toLowerCase());
-  const canCreate = q.length > 0 && q.length <= MAX_NAME && !exact && !searching && !isArchived;
+  const canCreate = allowCreate && q.length > 0 && q.length <= MAX_NAME && !exact && !searching && !isArchived;
 
   function add(tag: Tag) {
     if (!chosen.has(tag.id)) onChange([...value, tag]);
@@ -94,7 +100,7 @@ export function TagPicker({
     setCreating(true);
     setMessage(null);
     try {
-      const { data } = await apiWithStatus<Tag>("/tags", { method: "POST", body: { name: q } });
+      const { data } = await apiWithStatus<Tag>(basePath, { method: "POST", body: { name: q } });
       add(data);
     } catch (err) {
       if (err instanceof ApiError && err.code === "tag_archived") {

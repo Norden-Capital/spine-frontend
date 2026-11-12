@@ -1,6 +1,6 @@
 "use client";
 
-import type { Category } from "@/lib/catalog-types";
+import { groupByParent, type Category } from "@/lib/catalog-types";
 import { cn } from "@/lib/utils";
 import { CategoryIcon } from "./category-icon";
 
@@ -53,8 +53,11 @@ export function CategoryPicker({
         aria-invalid={invalid || undefined}
         className={cn("grid grid-cols-2 gap-2", invalid && "rounded-xl ring-2 ring-destructive/40 ring-offset-2 ring-offset-background")}
       >
-        {active.map((c) => {
+        {/* Backend order (most used first); a parent with subcategories takes a
+            full row and its subcategories follow it. A parent can be picked too. */}
+        {groupByParent(active).map(({ item: c, child }) => {
           const on = c.id === value;
+          const hasChildren = !child && active.some((k) => k.parentId === c.id);
           return (
             <button
               key={c.id}
@@ -64,6 +67,8 @@ export function CategoryPicker({
               onClick={() => onChange(c.id)}
               className={cn(
                 "flex min-h-12 min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                hasChildren && "col-span-2",
+                child && "border-dashed",
                 on ? "border-foreground bg-foreground text-background" : "hover:bg-muted"
               )}
             >

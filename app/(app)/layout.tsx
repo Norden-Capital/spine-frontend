@@ -1,11 +1,12 @@
-import Link from "next/link";
 import { headers } from "next/headers";
 import { requireUser } from "@/lib/auth";
 import { canSeeUsers, safeNextPath } from "@/lib/auth-types";
 import { appLayoutPrefsScript } from "@/lib/prefs";
 import { deviceZone, getPreferences } from "@/lib/prefs-server";
-import { UserMenu } from "@/components/auth/user-menu";
-import { BottomTabs } from "@/components/nav/bottom-tabs";
+import { AppDock } from "@/components/nav/app-dock";
+import { AppTopBar } from "@/components/nav/app-top-bar";
+import { DOCK_SPACE_CLASS } from "@/components/spine-ui";
+import { getUnreadAlerts } from "@/lib/alerts-server";
 import { PrefsProvider } from "@/components/prefs/prefs-provider";
 import { InlineScript } from "@/components/prefs/inline-script";
 
@@ -20,7 +21,7 @@ export const instant = false;
 // who the user is. Also loads the user's preferences.
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const wanted = safeNextPath((await headers()).get("x-spine-path"));
-  const [user, prefs] = await Promise.all([requireUser(wanted), getPreferences()]);
+  const [user, prefs, unread] = await Promise.all([requireUser(wanted), getPreferences(), getUnreadAlerts()]);
   const device = await deviceZone();
 
   return (
@@ -29,20 +30,11 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           differ from the cookie the <head> script used, e.g. changed on
           another phone) and refreshes that cookie. */}
       <InlineScript html={appLayoutPrefsScript(prefs)} />
-      <div className="flex min-h-svh flex-col">
-        <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
-          <div className="mx-auto flex h-14 w-full max-w-2xl items-center gap-3 px-4">
-            <Link href="/" className="flex h-11 items-center font-semibold">
-              Spine
-            </Link>
-            <div className="ml-auto min-w-0">
-              <UserMenu user={user} />
-            </div>
-          </div>
-        </header>
-        {/* pb-24: room for the bottom tab bar (and the + button above it). */}
-        <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-6 pb-24">{children}</main>
-        <BottomTabs isManager={canSeeUsers(user.role)} />
+      {/* Spine UI kit layout: 18px sides, top bar, page, floating dock. */}
+      <div className="mx-auto flex min-h-svh w-full max-w-2xl flex-col px-(--sp-gutter) pt-3">
+        <AppTopBar user={user} unread={unread} />
+        <main className={`flex-1 pt-[17.5px] ${DOCK_SPACE_CLASS}`}>{children}</main>
+        <AppDock isManager={canSeeUsers(user.role)} />
       </div>
     </PrefsProvider>
   );

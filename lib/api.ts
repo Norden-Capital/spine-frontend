@@ -12,7 +12,9 @@ export class ApiError extends Error {
     public code: string,
     message: string,
     /** For validation_error: the field the backend complained about. */
-    public field?: string
+    public field?: string,
+    /** The whole error body, for errors that carry data (e.g. possible_duplicate matches). */
+    public data?: Record<string, unknown>
   ) {
     super(message);
   }
@@ -53,6 +55,16 @@ const ERROR_MESSAGES: Record<string, string> = {
   future_date: "The date can't be in the future.",
   transaction_not_found: "This transaction no longer exists.",
   file_not_found: "This file no longer exists.",
+  possible_duplicate: "This looks like a transaction that is already saved.",
+  comment_not_found: "This comment no longer exists.",
+  ai_disabled: "Suggestions are not available.",
+  ai_unavailable: "No suggestion right now. Please try again later.",
+  pin_exists: "You already have a PIN.",
+  no_pin: "Create your PIN first.",
+  invalid_pin: "Wrong PIN. Try again.",
+  invalid_password: "Your password is wrong.",
+  wallet_locked: "Your wallet is locked. Enter your PIN.",
+  budget_exists: "There is already a budget for this currency and category.",
   // Client side
   network_error: "Can't reach the server. Check your connection.",
 };
@@ -129,12 +141,13 @@ function goToLogin() {
 function errorFrom(status: number, body: string): ApiError {
   let code = "unknown_error";
   let field: string | undefined;
+  let data: Record<string, unknown> | undefined;
   try {
-    const data = JSON.parse(body);
-    if (typeof data?.error === "string") code = data.error;
+    data = JSON.parse(body);
+    if (typeof data?.error === "string") code = data.error as string;
     // validation_error messages look like "email: must be a well-formed email address".
     if (code === "validation_error" && typeof data?.message === "string") {
-      const match = /^([A-Za-z][\w.]*):/.exec(data.message);
+      const match = /^([A-Za-z][\w.]*):/.exec(data.message as string);
       if (match) field = match[1];
     }
   } catch {
@@ -143,7 +156,11 @@ function errorFrom(status: number, body: string): ApiError {
   // Too big / wrong type can also come from a proxy, without our JSON.
   if (code === "unknown_error" && status === 413) code = "file_too_large";
   if (code === "unknown_error" && status === 415) code = "file_type_not_allowed";
-  return new ApiError(status, code, friendlyMessage(status, code, field), field);
+  // A locked wallet: the wallet screens show the PIN pad again.
+  if (code === "wallet_locked" && typeof window !== "undefined") {
+    window.dispatchEvent(new Event("spine:wallet-locked"));
+  }
+  return new ApiError(status, code, friendlyMessage(status, code, field), field, data);
 }
 
 async function readError(res: Response): Promise<ApiError> {

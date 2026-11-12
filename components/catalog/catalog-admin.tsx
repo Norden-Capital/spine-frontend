@@ -24,13 +24,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { CategoryDialog, TagDialog } from "./catalog-dialogs";
+import { COMPANY_CATALOG, CategoryDialog, TagDialog, type CatalogPaths } from "./catalog-dialogs";
+import { groupByParent } from "@/lib/catalog-types";
 
 type TabKey = "categories" | "tags";
 type Notice = { kind: "ok" | "error"; text: string };
 
 /** Something shown as a row: a category or a tag. */
-type Item = { id: string; name: string; archived: boolean; icon?: string };
+type Item = { id: string; name: string; archived: boolean; icon?: string; parentId?: string | null };
 
 /** Confirm before archiving / bringing back. */
 type Pending = { title: string; text: string; confirm: string; destructive?: boolean; path: string; done: string };
@@ -47,11 +48,14 @@ export function CatalogAdmin({
   categories,
   tags,
   icons,
+  paths = COMPANY_CATALOG,
 }: {
   initialTab: TabKey;
   categories: Category[] | null;
   tags: Tag[] | null;
   icons: string[];
+  /** Company (default) or the private wallet. */
+  paths?: CatalogPaths;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<TabKey>(initialTab);
@@ -76,7 +80,7 @@ export function CatalogAdmin({
   }
 
   function askArchive(kind: "category" | "tag", item: Item) {
-    const base = kind === "category" ? `/admin/categories/${item.id}` : `/admin/tags/${item.id}`;
+    const base = kind === "category" ? `${paths.categories}/${item.id}` : `${paths.tags}/${item.id}`;
     setConfirm(
       item.archived
         ? {
@@ -176,12 +180,15 @@ export function CatalogAdmin({
         open={categoryEdit !== null}
         category={categoryEdit?.item ?? null}
         icons={icons}
+        all={categories ?? []}
+        paths={paths}
         onOpenChange={(open) => !open && setCategoryEdit(null)}
         onSaved={saved}
       />
       <TagDialog
         open={tagEdit !== null}
         tag={tagEdit?.item ?? null}
+        paths={paths}
         onOpenChange={(open) => !open && setTagEdit(null)}
         onSaved={saved}
       />
@@ -247,8 +254,9 @@ function ItemList({
         <p className="py-6 text-center text-sm text-muted-foreground">{empty}</p>
       ) : (
         <ul className="flex flex-col divide-y overflow-hidden rounded-xl border bg-card">
-          {active.map((item) => (
-            <Row key={item.id} item={item} icon={renderIcon(item)} onEdit={onEdit} onArchive={onArchive} />
+          {/* Subcategories right under their main category (one level). */}
+          {groupByParent(active).map(({ item, child }) => (
+            <Row key={item.id} item={item} child={child} icon={renderIcon(item)} onEdit={onEdit} onArchive={onArchive} />
           ))}
         </ul>
       )}
@@ -280,16 +288,18 @@ function ItemList({
 function Row({
   item,
   icon,
+  child = false,
   onEdit,
   onArchive,
 }: {
   item: Item;
   icon: React.ReactNode;
+  child?: boolean;
   onEdit: (item: Item) => void;
   onArchive: (item: Item) => void;
 }) {
   return (
-    <li className={cn("flex min-h-14 items-center gap-3 pr-1 pl-4", item.archived && "text-muted-foreground")}>
+    <li className={cn("flex min-h-14 items-center gap-3 pr-1 pl-4", child && "pl-10", item.archived && "text-muted-foreground")}>
       {icon}
       <span className="min-w-0 flex-1 truncate">{item.name}</span>
       <DropdownMenu>

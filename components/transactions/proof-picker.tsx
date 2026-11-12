@@ -72,10 +72,13 @@ export function ProofPicker({
   items,
   onChange,
   invalid,
+  optional = false,
 }: {
   items: ProofItem[];
   onChange: (update: (items: ProofItem[]) => ProofItem[]) => void;
   invalid?: boolean;
+  /** Wallet: a proof is not required. */
+  optional?: boolean;
 }) {
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -278,7 +281,9 @@ export function ProofPicker({
         </ul>
       ) : (
         <p className={cn("text-sm", invalid ? "text-destructive" : "text-muted-foreground")}>
-          Add at least one proof: a photo of the receipt or a PDF. Up to {MAX_FILES}, 10 MB each.
+          {optional
+            ? `You can add a photo of the receipt or a PDF. Up to ${MAX_FILES}, 10 MB each.`
+            : `Add at least one proof: a photo of the receipt or a PDF. Up to ${MAX_FILES}, 10 MB each.`}
         </p>
       )}
     </div>

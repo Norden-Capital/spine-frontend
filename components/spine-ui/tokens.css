@@ -1,0 +1,193 @@
+/*
+ * Spine UI design tokens — measured from design/references/ui-reference-1.jpg
+ * (scale: 240 px in the photo = 375 pt; all sizes below are CSS px = pt).
+ * Full table of measures: design/BRIEF.md, section "Measured sizes".
+ *
+ * Plain CSS variables, prefixed --sp-. The spine-ui components read only
+ * these (no `dark:` variants), so a `.light` or `.dark` wrapper anywhere
+ * switches every component inside it.
+ *
+ * To use in the app: add `@import "../components/spine-ui/tokens.css";`
+ * to app/globals.css (after the tailwind imports), and put
+ * `${spineFont.variable} sp` (components/spine-ui/font.ts) on <body>.
+ *
+ * Accent (the two cards): default = the reference (violet + sun).
+ * Optional: data-sp-accent="navy" | "forest" on any wrapper.
+ */
+
+:root,
+.light {
+  /* Surfaces */
+  --sp-bg: #eeeeee;            /* page background */
+  --sp-panel: #ffffff;         /* quick actions panel, section card */
+  --sp-soft: #f0f0f0;          /* round icons inside panels */
+  --sp-soft-hover: #e6e6e6;
+  --sp-icon-btn: #ffffff;      /* top bar round buttons */
+  --sp-icon-btn-text: #000000;
+
+  /* Text */
+  --sp-text: #000000;          /* titles, amounts */
+  --sp-text-2: #3a3a3a;        /* quick action labels */
+  --sp-text-muted: #6b6b6b;    /* greeting subtitle */
+  --sp-text-faint: #8f8f8f;    /* list date line */
+  --sp-text-link: #a6a6a6;     /* "View all" */
+
+  /* Dock + pills */
+  --sp-dock: #000000;
+  --sp-dock-item: #343434;
+  --sp-dock-item-text: #ffffff;
+  --sp-dock-active: #ffffff;
+  --sp-dock-active-text: #000000;
+  --sp-pill: #000000;          /* "+ Expense" pill on the card */
+  --sp-pill-text: #ffffff;
+  --sp-pill-dot: #ffffff;      /* round "+" in the pill */
+  --sp-pill-dot-text: #000000;
+  --sp-avatar: #000000;
+  --sp-avatar-text: #ffffff;
+
+  /* Money */
+  --sp-income: #15803d;
+
+  /* Status (alerts, budgets). Not in the reference: calm, same weight as the rest. */
+  --sp-success: #15803d;
+  --sp-warning: #d97706;
+  --sp-danger: #dc2626;
+  --sp-info: var(--sp-card-front);
+
+  /* Filter chips: active = like the dock (black), idle = like the panels. */
+  --sp-chip: #ffffff;
+  --sp-chip-text: #000000;
+  --sp-chip-active: #000000;
+  --sp-chip-active-text: #ffffff;
+
+  /* PIN keypad keys: like the top bar buttons. */
+  --sp-key: #ffffff;
+  --sp-key-text: #000000;
+
+  /* Bottom sheet */
+  --sp-sheet: #ffffff;
+  --sp-sheet-handle: #d4d4d4;
+  --sp-backdrop: rgb(0 0 0 / 0.35);
+
+  --sp-ring: color-mix(in oklab, var(--sp-card-front) 55%, transparent);
+  --sp-dock-shadow: 0 8px 24px -10px rgb(0 0 0 / 0.45);
+}
+
+.dark {
+  --sp-bg: #000000;
+  --sp-panel: #171717;
+  --sp-soft: #000000;
+  --sp-soft-hover: #0b0b0b;
+  --sp-icon-btn: #292929;
+  --sp-icon-btn-text: #ffffff;
+
+  --sp-text: #ffffff;
+  --sp-text-2: #d0d0d0;
+  --sp-text-muted: #8a8a8a;
+  --sp-text-faint: #6e6e6e;
+  --sp-text-link: #5c5c5c;
+
+  --sp-dock: #000000;
+  --sp-dock-item: #161616;
+  --sp-dock-item-text: #ffffff;
+  --sp-dock-active: #ffffff;
+  --sp-dock-active-text: #000000;
+  --sp-pill: #1b1b1b;
+  --sp-pill-text: #ffffff;
+  --sp-pill-dot: #2a2a2a;
+  --sp-pill-dot-text: #ffffff;
+  --sp-avatar: #292929;
+  --sp-avatar-text: #ffffff;
+
+  --sp-income: #4ade80;
+
+  --sp-success: #4ade80;
+  --sp-warning: #fbbf24;
+  --sp-danger: #f87171;
+
+  --sp-chip: #171717;
+  --sp-chip-text: #ffffff;
+  --sp-chip-active: #ffffff;
+  --sp-chip-active-text: #000000;
+
+  --sp-key: #1f1f1f;
+  --sp-key-text: #ffffff;
+
+  --sp-sheet: #171717;
+  --sp-sheet-handle: #3a3a3a;
+  --sp-backdrop: rgb(0 0 0 / 0.7);
+
+  --sp-dock-shadow: 0 0 0 1px rgb(255 255 255 / 0.07), 0 8px 24px -10px rgb(0 0 0 / 0.9);
+}
+
+/* ---- Accent: the two cards. Same in light and dark. ---- */
+
+:root,
+[data-sp-accent="violet"] {
+  --sp-card-front: #9b40da;              /* measured #9d40d9 */
+  --sp-card-front-text: #ffffff;
+  --sp-card-front-muted: rgb(255 255 255 / 0.75);
+  --sp-card-back: #ffd463;               /* measured #ffd463 */
+  --sp-card-back-text: #000000;
+}
+
+/* 3rd card in a stack (e.g. a 3rd currency): like the dock. */
+:root,
+.light {
+  --sp-card-ink: #000000;
+  --sp-card-ink-text: #ffffff;
+}
+.dark {
+  --sp-card-ink: #292929;
+  --sp-card-ink-text: #ffffff;
+}
+
+/* Optional alternatives (not the reference). */
+[data-sp-accent="navy"] {
+  --sp-card-front: #1e3a8a;
+  --sp-card-front-text: #ffffff;
+  --sp-card-front-muted: rgb(255 255 255 / 0.72);
+  --sp-card-back: #e7c46a;
+  --sp-card-back-text: #000000;
+}
+
+[data-sp-accent="forest"] {
+  --sp-card-front: #14532d;
+  --sp-card-front-text: #ffffff;
+  --sp-card-front-muted: rgb(255 255 255 / 0.72);
+  --sp-card-back: #c6f36b;
+  --sp-card-back-text: #000000;
+}
+
+/* ---- Sizes (pt = CSS px), measured ---- */
+:root {
+  --sp-gutter: 18px;           /* page side padding (card = 339 at 375) */
+  --sp-radius: 22px;           /* cards and panels */
+  --sp-dock-h: 54px;
+  --sp-dock-gap: 9px;          /* dock bottom above the safe area */
+}
+
+/* Wrong PIN: short side shake (PinDots error). */
+@keyframes sp-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+.sp-shake {
+  animation: sp-shake 0.4s ease-in-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sp-shake { animation: none; }
+}
+
+/* Kit wrapper. The kit INHERITS the app font (Poppins is the app default,
+   set by Frontend via the user font preference), so a user who picks Inter
+   gets Inter here too. `.sp` only sets smoothing. To force Poppins in a
+   standalone page, add `.sp-poppins` + spineFont.variable on the wrapper. */
+.sp-poppins {
+  font-family: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+}
+.sp {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

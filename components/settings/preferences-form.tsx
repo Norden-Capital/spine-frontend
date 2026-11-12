@@ -32,7 +32,7 @@ const SIZES: { value: TextSize; label: string; sample: string }[] = [
 ];
 
 const FONTS: { value: Font; label: string; family: string }[] = [
-  { value: "GEIST", label: "Geist", family: "var(--font-geist-sans)" },
+  { value: "GEIST", label: "Poppins (default)", family: "var(--font-poppins)" },
   { value: "INTER", label: "Inter", family: "var(--font-inter)" },
   { value: "MANROPE", label: "Manrope", family: "var(--font-manrope)" },
   { value: "SYSTEM", label: "System", family: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' },

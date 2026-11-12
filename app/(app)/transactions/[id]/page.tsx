@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { ChevronLeft, Pencil } from "lucide-react";
+import { notFound, redirect, unstable_rethrow } from "next/navigation";
+import { ChevronLeft, CopyPlus, Pencil } from "lucide-react";
+import { getFeatures } from "@/lib/features-server";
+import { backendGet } from "@/lib/auth";
+import { Comments, type Comment } from "@/components/transactions/comments";
 import { formatDateTime, formatDay, type DateSettings } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
 import { getHistory, getTransaction } from "@/lib/transactions-server";
@@ -20,7 +23,13 @@ export const instant = false;
 
 export default async function TransactionPage({ params }: PageProps<"/transactions/[id]">) {
   const { id } = await params;
-  const [res, history, dates] = await Promise.all([getTransaction(id), getHistory(id), getDateSettings()]);
+  const [res, history, dates, features, comments] = await Promise.all([
+    getTransaction(id),
+    getHistory(id),
+    getDateSettings(),
+    getFeatures(),
+    getComments(id),
+  ]);
   if (!res.ok && res.status === 401) redirect(`/login?next=${encodeURIComponent(`/transactions/${id}`)}`);
   if (!res.ok && (res.status === 404 || res.status === 400 || res.status === 403)) notFound();
   if (!res.ok) throw new Error(`Loading transaction failed (${res.status})`);
@@ -30,7 +39,7 @@ export default async function TransactionPage({ params }: PageProps<"/transactio
   return (
     <div className="flex flex-col gap-4">
       <Link
-        href={`/?month=${month}`}
+        href={`/transactions?month=${month}`}
         className="-ml-2 flex h-11 w-fit items-center gap-1 rounded-md px-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ChevronLeft className="size-4" aria-hidden />
@@ -84,8 +93,24 @@ export default async function TransactionPage({ params }: PageProps<"/transactio
           <Pencil aria-hidden />
           Edit
         </Link>
+        <Link
+          href={`/transactions/new?copy=${encodeURIComponent(tx.id)}`}
+          className={buttonVariants({ variant: "outline", size: "lg", className: "h-11" })}
+        >
+          <CopyPlus aria-hidden />
+          Copy
+        </Link>
         {tx.canDelete && <DeleteTransaction id={tx.id} month={month} />}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Comments</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Comments txId={tx.id} initial={comments} ai={features.ai} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -180,4 +205,15 @@ function History({ entries, dates }: { entries: HistoryEntry[]; tx: Transaction;
       })}
     </ol>
   );
+}
+
+/** GET comments (oldest first); null if they could not be loaded. */
+async function getComments(id: string): Promise<Comment[] | null> {
+  try {
+    const res = await backendGet(`/transactions/${encodeURIComponent(id)}/comments`);
+    return res.ok ? ((await res.json()) as Comment[]) : null;
+  } catch (err) {
+    unstable_rethrow(err);
+    return null;
+  }
 }

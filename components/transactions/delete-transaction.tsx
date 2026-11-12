@@ -28,7 +28,7 @@ export function DeleteTransaction({ id, month }: { id: string; month: string }) 
     setError(null);
     try {
       await api(`/transactions/${encodeURIComponent(id)}`, { method: "DELETE" });
-      router.replace(`/?month=${month}`);
+      router.replace(`/transactions?month=${month}`);
       router.refresh();
     } catch (err) {
       setPending(false);
