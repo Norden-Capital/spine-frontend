@@ -57,11 +57,9 @@ export default async function HomePage() {
       />
 
       <SwapStack
-        glass
         labels={["Company", "Personal wallet"]}
         cards={[
           <BalanceCard
-            glass
             key="company"
             tag="Company"
             amountLabel="Out this month"
@@ -73,7 +71,6 @@ export default async function HomePage() {
           // Always locked here: no wallet data is loaded on the company home.
           <div key="wallet" className="sp-card-sun" data-testid="home-wallet-card">
             <BalanceCard
-              glass
               tag={
                 <span className="flex items-center gap-[5px]">
                   Personal wallet <IconLock className="size-[14px]" aria-hidden />

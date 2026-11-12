@@ -61,12 +61,10 @@ export default async function WalletPage() {
         <PageHeader title="Wallet" subtitle="Personal · only you" action={<LockWalletIconButton />} />
 
         <SwapStack
-        glass
           labels={["Personal wallet", "Savings"]}
           cards={[
             <div key="wallet" className="sp-card-sun">
               <BalanceCard
-                glass
                 tag="Personal wallet"
                 amountLabel="Balance"
                 // The balance is a state, not a movement: no "+" (a "−" stays when below 0).
@@ -83,7 +81,6 @@ export default async function WalletPage() {
             <div key="savings" className="sp-card-ink" data-testid="wallet-savings-card">
               {savings.count === 0 ? (
                 <BalanceCard
-                  glass
                   tag="Savings"
                   amountLabel="Saved in goals"
                   amount={formatMoney(0)}
@@ -92,7 +89,6 @@ export default async function WalletPage() {
                 />
               ) : (
                 <BalanceCard
-                  glass
                   tag={`Savings · ${savings.count} ${savings.count === 1 ? "goal" : "goals"}`}
                   amountLabel="Saved in goals"
                   amount={formatMoney(savedInGoals)}
