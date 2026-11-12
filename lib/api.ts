@@ -47,6 +47,12 @@ const ERROR_MESSAGES: Record<string, string> = {
   tag_not_found: "This tag no longer exists.",
   passkey_invalid: "This Face ID / fingerprint is not known here. Log in with your password.",
   passkey_not_found: "This passkey no longer exists.",
+  file_too_large: "This file is too big. The limit is 10 MB.",
+  file_type_not_allowed: "This file type is not allowed. Use a photo or a PDF.",
+  proof_required: "Add at least one proof (photo or PDF).",
+  future_date: "The date can't be in the future.",
+  transaction_not_found: "This transaction no longer exists.",
+  file_not_found: "This file no longer exists.",
   // Client side
   network_error: "Can't reach the server. Check your connection.",
 };
@@ -119,11 +125,12 @@ function goToLogin() {
   window.location.assign(`/login${next}`);
 }
 
-async function readError(res: Response): Promise<ApiError> {
+/** Build the ApiError for a failed response (status + raw body text). */
+function errorFrom(status: number, body: string): ApiError {
   let code = "unknown_error";
   let field: string | undefined;
   try {
-    const data = await res.json();
+    const data = JSON.parse(body);
     if (typeof data?.error === "string") code = data.error;
     // validation_error messages look like "email: must be a well-formed email address".
     if (code === "validation_error" && typeof data?.message === "string") {
@@ -133,7 +140,49 @@ async function readError(res: Response): Promise<ApiError> {
   } catch {
     // Not JSON: keep the generic message.
   }
-  return new ApiError(res.status, code, friendlyMessage(res.status, code, field), field);
+  // Too big / wrong type can also come from a proxy, without our JSON.
+  if (code === "unknown_error" && status === 413) code = "file_too_large";
+  if (code === "unknown_error" && status === 415) code = "file_type_not_allowed";
+  return new ApiError(status, code, friendlyMessage(status, code, field), field);
+}
+
+async function readError(res: Response): Promise<ApiError> {
+  return errorFrom(res.status, await res.text().catch(() => ""));
+}
+
+/**
+ * Upload one file (POST /api/files, multipart "file"). XHR, not fetch, so we
+ * can show progress (0..1). Abort with the signal. Throws ApiError.
+ */
+export async function uploadFile<T = unknown>(
+  file: File,
+  { onProgress, signal }: { onProgress?: (part: number) => void; signal?: AbortSignal } = {}
+): Promise<T> {
+  const send = async (freshCsrf: boolean) => {
+    const token = await csrfToken(freshCsrf);
+    return new Promise<{ status: number; body: string }>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/files");
+      xhr.setRequestHeader(CSRF_HEADER, token);
+      xhr.setRequestHeader("Accept", "application/json");
+      xhr.upload.onprogress = (e) => e.lengthComputable && onProgress?.(e.loaded / e.total);
+      xhr.onload = () => resolve({ status: xhr.status, body: xhr.responseText });
+      xhr.onerror = () => reject(new ApiError(0, "network_error", ERROR_MESSAGES.network_error));
+      xhr.onabort = () => reject(new DOMException("Upload stopped", "AbortError"));
+      signal?.addEventListener("abort", () => xhr.abort(), { once: true });
+      const form = new FormData();
+      form.append("file", file, file.name);
+      xhr.send(form);
+    });
+  };
+  let res = await send(false);
+  if (res.status === 403 && res.body.includes("csrf_invalid")) res = await send(true);
+  if (res.status < 200 || res.status >= 300) {
+    const error = errorFrom(res.status, res.body);
+    if (error.code === "unauthorized") goToLogin();
+    throw error;
+  }
+  return JSON.parse(res.body) as T;
 }
 
 type ApiOptions = { method?: string; body?: unknown };

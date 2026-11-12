@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { requireUser } from "@/lib/auth";
-import { safeNextPath } from "@/lib/auth-types";
+import { canSeeUsers, safeNextPath } from "@/lib/auth-types";
 import { appLayoutPrefsScript } from "@/lib/prefs";
 import { deviceZone, getPreferences } from "@/lib/prefs-server";
 import { UserMenu } from "@/components/auth/user-menu";
+import { BottomTabs } from "@/components/nav/bottom-tabs";
 import { PrefsProvider } from "@/components/prefs/prefs-provider";
 import { InlineScript } from "@/components/prefs/inline-script";
 
@@ -39,7 +40,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             </div>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">{children}</main>
+        {/* pb-24: room for the bottom tab bar (and the + button above it). */}
+        <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-6 pb-24">{children}</main>
+        <BottomTabs isManager={canSeeUsers(user.role)} />
       </div>
     </PrefsProvider>
   );

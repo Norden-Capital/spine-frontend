@@ -32,7 +32,9 @@ export function CategoryPicker({
   /** id of the label element that names this group. */
   labelledBy?: string;
 }) {
-  const active = categories.filter((c) => !c.archived);
+  // Archived categories are hidden, except the one already chosen (editing
+  // an old transaction keeps its category).
+  const active = categories.filter((c) => !c.archived || c.id === value);
 
   if (active.length === 0) {
     return (

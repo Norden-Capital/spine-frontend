@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, LogOut, Settings, Shapes, Users } from "lucide-react";
+import { ChevronDown, LogOut, Settings, Shapes, Trash2, Users } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,6 +64,10 @@ export function UserMenu({ user }: { user: CurrentUser }) {
               <DropdownMenuItem className={ITEM} render={<Link href="/admin/categories" />}>
                 <Shapes aria-hidden />
                 Categories &amp; tags
+              </DropdownMenuItem>
+              <DropdownMenuItem className={ITEM} render={<Link href="/admin/trash" />}>
+                <Trash2 aria-hidden />
+                Trash
               </DropdownMenuItem>
               <DropdownMenuSeparator />
             </>
