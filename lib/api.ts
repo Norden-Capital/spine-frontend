@@ -45,6 +45,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   tag_archived: "This tag exists but is archived. A manager can bring it back.",
   category_not_found: "This category no longer exists.",
   tag_not_found: "This tag no longer exists.",
+  passkey_invalid: "This Face ID / fingerprint is not known here. Log in with your password.",
+  passkey_not_found: "This passkey no longer exists.",
   // Client side
   network_error: "Can't reach the server. Check your connection.",
 };
