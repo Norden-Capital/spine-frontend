@@ -76,7 +76,7 @@ export default async function DueReminderPage({ params }: { params: Promise<{ id
 
       <section className="flex flex-col items-center gap-[10px] rounded-(--sp-radius) bg-(--sp-panel) px-[16px] py-[22px] text-center">
         <span className="flex size-[48px] items-center justify-center rounded-full bg-(--sp-soft) text-(--sp-text) [&_svg]:size-[20px] [&_svg]:stroke-[1.6]">
-          <TxLogo logoUrl={o.logoUrl} icon={o.category.icon} />
+          <TxLogo logoUrls={o.logoUrls} icon={o.category.icon} />
         </span>
         <p className="max-w-full truncate text-[0.875rem] leading-normal font-medium text-(--sp-text)">
           {o.description || o.category.name}

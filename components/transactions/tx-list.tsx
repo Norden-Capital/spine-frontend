@@ -8,7 +8,7 @@ import { TxLogo } from "@/components/expenses/tx-logo";
 import { useDates } from "@/components/prefs/prefs-provider";
 import { ListItem, SpButton } from "@/components/spine-ui";
 
-type Row = Pick<Transaction | WalletTx, "id" | "type" | "amount" | "date" | "description" | "logoUrl" | "category" | "createdAt">;
+type Row = Pick<Transaction | WalletTx, "id" | "type" | "amount" | "date" | "description" | "logoUrls" | "category" | "createdAt">;
 
 export type ListPage<T extends Row = Row> = {
   items: T[];
@@ -89,7 +89,7 @@ export function TxList({
                   <ListItem
                     key={tx.id}
                     href={`${hrefBase}/${encodeURIComponent(tx.id)}`}
-                    icon={<TxLogo logoUrl={tx.logoUrl} icon={tx.category.icon} />}
+                    icon={<TxLogo logoUrls={tx.logoUrls} icon={tx.category.icon} />}
                     title={tx.description || tx.category.name}
                     meta={tx.category.name}
                     amount={signedMoney(tx.amount, income ? "in" : "out")}

@@ -73,7 +73,7 @@ export function TrashList({ items, dates }: { items: Transaction[] | null; dates
                     <SpRow
                       leading={
                         <RowIcon>
-                          <TxLogo logoUrl={tx.logoUrl} icon={tx.category.icon} />
+                          <TxLogo logoUrls={tx.logoUrls} icon={tx.category.icon} />
                         </RowIcon>
                       }
                       title={name}

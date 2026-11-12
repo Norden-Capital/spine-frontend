@@ -22,7 +22,7 @@ type Item = {
   archived: boolean;
   icon?: string;
   parentId?: string | null;
-  logoUrl?: string | null;
+  logoUrls?: string[] | null;
 };
 
 // CategoryKind and kindFromParam live in lib/catalog-types.ts (the server pages need them).
@@ -177,7 +177,7 @@ export function CatalogAdmin({
         one="category"
         many="categories"
         empty={kind === "INCOME" ? "No income categories yet. Add the first one." : "No expense categories yet. Add the first one."}
-        renderIcon={(item) => <TxLogo logoUrl={item.logoUrl} icon={item.icon ?? "tag"} />}
+        renderIcon={(item) => <TxLogo logoUrls={item.logoUrls} icon={item.icon ?? "tag"} />}
         onEdit={(item) => setCategoryEdit({ item: list?.find((c) => c.id === item.id) ?? null })}
         onArchive={askArchive}
         moving={moving}

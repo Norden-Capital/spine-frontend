@@ -126,7 +126,7 @@ function RecentRow({ tx, day }: { tx: Transaction; day: string }) {
   return (
     <ListItem
       href={`/transactions/${encodeURIComponent(tx.id)}`}
-      icon={<TxLogo logoUrl={tx.logoUrl} icon={tx.category.icon} />}
+      icon={<TxLogo logoUrls={tx.logoUrls} icon={tx.category.icon} />}
       title={tx.description || tx.category.name}
       meta={`${tx.category.name} • ${day}`}
       amount={signedMoney(tx.amount, dir)}

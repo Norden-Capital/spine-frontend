@@ -38,7 +38,7 @@ export default async function WalletTxPage({ params }: PageProps<"/wallet/transa
 
       <TxHero
         tone="wallet"
-        icon={<TxLogo logoUrl={tx.logoUrl} icon={tx.category.icon} />}
+        icon={<TxLogo logoUrls={tx.logoUrls} icon={tx.category.icon} />}
         tag="Personal wallet"
         title={tx.description || tx.category.name}
         meta={`${tx.category.name} · ${formatDay(tx.date, dates)}`}

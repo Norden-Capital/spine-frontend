@@ -31,7 +31,7 @@ export function DueSoonCard({
               href={duePath(o.id)}
               leading={
                 <RowIcon>
-                  <TxLogo logoUrl={o.logoUrl} icon={o.category.icon} />
+                  <TxLogo logoUrls={o.logoUrls} icon={o.category.icon} />
                 </RowIcon>
               }
               title={o.description || o.category.name}

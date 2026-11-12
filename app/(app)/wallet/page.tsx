@@ -72,7 +72,7 @@ export default async function WalletPage() {
                 detail={month ? { label: "In", value: signedMoney(month.in, "in") } : undefined}
                 footer={
                   month
-                    ? { label: "Out this month", value: signedMoney(month.out, "out"), direction: Number(month.out) ? "out" : undefined }
+                    ? { label: "Out this month", value: signedMoney(month.out, "out") }
                     : undefined
                 }
                 action={<LinkAddPill glass href="/wallet/transactions/new" label="Expense" testId="wallet-add-expense" />}
@@ -138,7 +138,7 @@ export default async function WalletPage() {
                 <ListItem
                   key={tx.id}
                   href={`/wallet/transactions/${encodeURIComponent(tx.id)}`}
-                  icon={<TxLogo logoUrl={tx.logoUrl} icon={tx.category.icon} />}
+                  icon={<TxLogo logoUrls={tx.logoUrls} icon={tx.category.icon} />}
                   title={tx.description || tx.category.name}
                   meta={`${tx.category.name} • ${formatDay(tx.date, dates)}`}
                   amount={signedMoney(tx.amount, dir)}

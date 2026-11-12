@@ -18,8 +18,8 @@ export type Category = {
   position?: number;
   /** Its website as a bare domain ("claude.ai"), or null. */
   website?: string | null;
-  /** Its logo: "/api/logos/…", or null = show the icon. */
-  logoUrl?: string | null;
+  /** Its logo URLs, best first (absolute http/https). Empty = show the icon. */
+  logoUrls?: string[] | null;
   /** How often it was used in the last 90 days (picker order). */
   usageCount?: number;
 };

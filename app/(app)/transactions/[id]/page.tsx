@@ -59,7 +59,7 @@ export default async function TransactionPage({ params }: PageProps<"/transactio
       <PageHeader back={{ href: back, label: "Back to transactions" }} title={kind} subtitle="Company" />
 
       <TxHero
-        icon={<TxLogo logoUrl={tx.logoUrl} icon={tx.category.icon} />}
+        icon={<TxLogo logoUrls={tx.logoUrls} icon={tx.category.icon} />}
         tag="Company"
         title={tx.description || tx.category.name}
         meta={`${tx.category.name} · ${formatDay(tx.date, dates)}`}

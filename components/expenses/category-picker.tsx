@@ -58,7 +58,7 @@ export function CategoryPicker({
     // A bit smaller than the 48 circle, so the "chosen" color still shows around a logo.
     icon: (
       <span className="flex size-[38px] items-center justify-center">
-        <TxLogo logoUrl={c.logoUrl} icon={c.icon} />
+        <TxLogo logoUrls={c.logoUrls} icon={c.icon} />
       </span>
     ),
     children: active.filter((k) => k.parentId === c.id).map((k) => ({ id: k.id, name: k.name })),

@@ -242,7 +242,7 @@ function companyView(r: CompanyRecurring, waitingDueDate?: string): RepeatView {
     paused: r.paused,
     pausedUntil: r.pausedUntil ?? null,
     upcoming: r.upcoming ?? [],
-    logo: <TxLogo logoUrl={r.logoUrl} icon={r.category.icon} />,
+    logo: <TxLogo logoUrls={r.logoUrls} icon={r.category.icon} />,
   };
 }
 

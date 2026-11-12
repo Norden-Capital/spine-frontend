@@ -17,8 +17,8 @@ export type Transaction = {
   description: string;
   /** The transaction's own website as a bare domain ("claude.ai"), or null. */
   website?: string | null;
-  /** The picture to show (own site, else category, else parent category): "/api/logos/…", or null = category icon. */
-  logoUrl?: string | null;
+  /** Logo URLs to try in order (own site, else category, else parent category), absolute http/https. Empty = category icon. */
+  logoUrls?: string[] | null;
   category: { id: string; name: string; icon: string; archived: boolean; kind?: TxType };
   files: FileRef[];
   createdBy: PersonRef;

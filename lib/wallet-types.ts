@@ -15,8 +15,8 @@ export type WalletTx = {
   description: string;
   /** The transaction's own website as a bare domain ("claude.ai"), or null. */
   website?: string | null;
-  /** The picture to show (own site, else category, else parent category), or null = category icon. */
-  logoUrl?: string | null;
+  /** Logo URLs to try in order (own site, else category, else parent category), absolute http/https. Empty = category icon. */
+  logoUrls?: string[] | null;
   category: CategoryRef;
   files: FileRef[];
   recurringId: string | null;

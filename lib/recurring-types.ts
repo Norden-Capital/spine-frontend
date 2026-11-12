@@ -23,7 +23,7 @@ export type CompanyRecurring = {
   description: string;
   category: RecurringCategory;
   website: string | null;
-  logoUrl: string | null;
+  logoUrls: string[];
   /** How often: every `every` `unit`s (e.g. MONTH / 3). */
   unit: RepeatUnit;
   every: number;
@@ -56,7 +56,7 @@ export type Occurrence = {
   description: string;
   category: RecurringCategory;
   website: string | null;
-  logoUrl: string | null;
+  logoUrls: string[];
 };
 
 /** The page that opens one reminder (also the alert link). */
