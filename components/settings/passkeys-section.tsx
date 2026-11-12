@@ -23,12 +23,7 @@ import {
   SpInput,
   type IconTileTone,
 } from "@/components/spine-ui";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ActionMenu, ActionMenuItem } from "@/components/nav/action-menu";
 import { SettingsNotice } from "./settings-notice";
 
 export type Passkey = {
@@ -42,7 +37,6 @@ export type Passkey = {
 type Notice = { kind: "ok" | "error"; text: string };
 
 const MAX_NAME = 60;
-const ITEM = "min-h-11 gap-3 px-3 text-base";
 
 /** Card colors, in turn (look only). */
 const TONES: IconTileTone[] = ["violet", "sun", "ink"];
@@ -107,7 +101,7 @@ export function PasskeysSection({ passkeys }: { passkeys: Passkey[] | null }) {
           <IconTile tone="ink" size={52}>
             <IconFaceId />
           </IconTile>
-          <div className="min-w-0 flex-1 pt-[4px] leading-tight">
+          <div className="min-w-0 flex-1 pt-[4px] leading-snug">
             <h2 className="text-[0.9375rem] font-medium text-(--sp-text)">Face ID &amp; fingerprint</h2>
             <p className="mt-[5px] text-[0.6875rem] leading-snug text-(--sp-text-muted)">
               Log in without your password on these devices.
@@ -136,28 +130,23 @@ export function PasskeysSection({ passkeys }: { passkeys: Passkey[] | null }) {
                   lastUsed={p.lastUsedAt ? dates.dateTime(p.lastUsedAt) : "Never"}
                   current={p.current === true}
                   action={
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={<IconButton label={`Actions for ${p.name}`} icon={<IconMore />} variant="ghost" />}
-                      />
-                      <DropdownMenuContent align="end" className="w-52 max-w-[calc(100vw-2rem)]">
-                        <DropdownMenuItem className={ITEM} onClick={() => setRename(p)}>
-                          <IconEdit aria-hidden />
-                          Rename
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className={ITEM}
-                          variant="destructive"
-                          onClick={() => {
-                            setRemove(p);
-                            setRemoveOpen(true);
-                          }}
-                        >
-                          <IconDelete aria-hidden />
-                          Remove
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <ActionMenu
+                      trigger={<IconButton label={`Actions for ${p.name}`} icon={<IconMore />} variant="ghost" />}
+                    >
+                      <ActionMenuItem icon={<IconEdit aria-hidden />} onClick={() => setRename(p)}>
+                        Rename
+                      </ActionMenuItem>
+                      <ActionMenuItem
+                        danger
+                        icon={<IconDelete aria-hidden />}
+                        onClick={() => {
+                          setRemove(p);
+                          setRemoveOpen(true);
+                        }}
+                      >
+                        Remove
+                      </ActionMenuItem>
+                    </ActionMenu>
                   }
                 />
               </li>

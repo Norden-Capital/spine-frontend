@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { IconAdd } from "@/components/spine-ui";
-import { SpineLogo } from "@/components/spine-ui";
+import { GlassRims, SpineLogo } from "@/components/spine-ui";
 import { cn } from "@/lib/utils";
 
 // Link versions of the kit's AddPill / QuickAction / IconButton (the kit
@@ -9,16 +9,36 @@ import { cn } from "@/lib/utils";
 // The class strings are shared with the button versions in ./space-actions.tsx.
 
 export const ADD_PILL_CLASS =
-  "inline-flex h-[48px] shrink-0 items-center gap-[7px] rounded-full bg-(--sp-pill) pr-[16px] pl-[8.5px] text-[13px] leading-none font-medium text-(--sp-pill-text) transition outline-none select-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97] motion-reduce:transition-none";
+  "inline-flex h-[48px] shrink-0 items-center gap-[7px] rounded-full bg-(--sp-pill) pr-[16px] pl-[8.5px] text-[13px] leading-snug font-medium text-(--sp-pill-text) transition outline-none select-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97] motion-reduce:transition-none";
 export const ADD_PILL_DOT_CLASS =
   "flex size-[31px] items-center justify-center rounded-full bg-(--sp-pill-dot) text-(--sp-pill-dot-text) [&_svg]:size-[16px]";
 
+/** Glass version (on glass cards), same as the kit's `AddPill glass`. */
+export const GLASS_PILL_CLASS =
+  "relative inline-flex h-[48px] shrink-0 items-center gap-[7px] rounded-full sp-glass-pill pr-[16px] pl-[8.5px] text-[13px] leading-[1.5] font-medium text-(--sp-glass-pill-text) transition outline-none select-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100";
+export const GLASS_PILL_DOT_CLASS =
+  "relative flex size-[31px] items-center justify-center rounded-full bg-(--sp-glass-pill-dot) text-(--sp-glass-pill-dot-text) [&_svg]:size-[16px]";
+
 /** Black "+ label" pill (116 × 48), for BalanceCard's cut-out corner. `icon` replaces the "+". */
-export function LinkAddPill({ href, label, icon, testId }: { href: string; label: string; icon?: ReactNode; testId?: string }) {
+export function LinkAddPill({
+  href,
+  label,
+  icon,
+  testId,
+  glass,
+}: {
+  href: string;
+  label: string;
+  icon?: ReactNode;
+  testId?: string;
+  /** Glass button for glass cards (the kit's AddPill glass, as a link). */
+  glass?: boolean;
+}) {
   return (
-    <Link href={href} className={ADD_PILL_CLASS} data-testid={testId}>
-      <span className={ADD_PILL_DOT_CLASS}>{icon ?? <IconAdd aria-hidden />}</span>
-      {label}
+    <Link href={href} className={glass ? GLASS_PILL_CLASS : ADD_PILL_CLASS} data-testid={testId}>
+      {glass ? <GlassRims radius="9999px" /> : null}
+      <span className={glass ? GLASS_PILL_DOT_CLASS : ADD_PILL_DOT_CLASS}>{icon ?? <IconAdd aria-hidden />}</span>
+      <span className="relative">{label}</span>
     </Link>
   );
 }
@@ -49,7 +69,7 @@ export function LinkPeekCard({
     <Link
       href={href}
       className={cn(
-        "relative block h-[80px] w-full rounded-(--sp-radius) leading-none outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)",
+        "relative block h-[80px] w-full rounded-(--sp-radius) leading-snug outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)",
         PEEK_TONE[tone]
       )}
     >
@@ -63,13 +83,13 @@ export function LinkPeekCard({
 }
 
 export const QUICK_ACTION_CLASS =
-  "group flex min-w-0 flex-col items-center rounded-2xl pt-[17.7px] pb-[18.2px] leading-none outline-none select-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) focus-visible:ring-inset";
+  "group flex min-w-0 flex-col items-center rounded-2xl pt-[17.7px] pb-[18.2px] leading-snug outline-none select-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) focus-visible:ring-inset";
 export const QUICK_ACTION_ICON_CLASS =
   "flex size-[48px] items-center justify-center rounded-full bg-(--sp-soft) text-(--sp-text) transition group-hover:bg-(--sp-soft-hover) group-active:scale-95 motion-reduce:transition-none [&_svg]:size-[18px] [&_svg]:stroke-[1.9]";
 // rem: follows the text-size setting. Line height 1.3 + no fixed panel height,
 // so letters like g, y, p are never cut off (any font, any size).
 export const QUICK_ACTION_LABEL_CLASS =
-  "mt-[11.2px] w-full truncate px-[2px] text-center text-[0.75rem] leading-[1.3] text-(--sp-text-2)";
+  "mt-[11.2px] w-full truncate px-[2px] text-center text-[0.75rem] leading-[1.5] text-(--sp-text-2)";
 
 /** Round soft icon (48) + label (12) 11 under it; the whole column is the tap area. */
 export function LinkQuickAction({ href, label, icon }: { href: string; label: string; icon: ReactNode }) {

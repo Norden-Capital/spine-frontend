@@ -1,10 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { DueBadge, IconButton, IconMore, SpBadge } from "@/components/spine-ui";
+import { DueBadge, IconButton, IconMore, SpBadge, SpMoney } from "@/components/spine-ui";
 import { useDates } from "@/components/prefs/prefs-provider";
 import { dueState, repeatLabel, shortDay } from "@/lib/repeat-schedule";
-import { formatMoney } from "@/lib/transactions-types";
+import { signedMoney, txDirection } from "@/lib/transactions-types";
 import { cn } from "@/lib/utils";
 import type { RepeatView } from "./repeat-sheet";
 
@@ -30,7 +30,7 @@ export function RepeatRow({
   const finished = v.nextDate === null;
   const due = dueState(v.nextDate, today, { paused: v.paused, pausedUntil: v.pausedUntil, dateFormat: fmt.dateFormat });
   const pausedNow = due?.state === "paused";
-  const income = v.type === "INCOME";
+  const dir = txDirection(v.type);
 
   return (
     <li
@@ -47,18 +47,13 @@ export function RepeatRow({
         </span>
         <div className="min-w-0 flex-1 pt-[2px]">
           <div className="flex items-baseline gap-[8px]">
-            <p className="min-w-0 flex-1 truncate text-[0.875rem] leading-tight font-medium text-(--sp-text)">{v.name}</p>
-            <span
-              className={cn(
-                "shrink-0 text-[0.875rem] leading-tight font-semibold whitespace-nowrap tabular-nums",
-                income ? "text-(--sp-income)" : "text-(--sp-text)"
-              )}
-            >
-              {formatMoney(v.amount, income ? "+" : v.minusForExpense ? "-" : undefined)}
-            </span>
+            <p className="min-w-0 flex-1 truncate text-[0.875rem] leading-normal font-medium text-(--sp-text)">{v.name}</p>
+            <SpMoney direction={dir} className="shrink-0 text-[0.875rem] leading-snug font-semibold whitespace-nowrap">
+              {signedMoney(v.amount, dir)}
+            </SpMoney>
           </div>
           <div className="mt-[6px] flex flex-wrap items-center gap-x-[8px] gap-y-[4px]">
-            <span className="min-w-0 truncate text-[0.6875rem] leading-tight text-(--sp-text-muted)" data-testid="repeat-row-when">
+            <span className="min-w-0 truncate text-[0.6875rem] leading-normal text-(--sp-text-muted)" data-testid="repeat-row-when">
               {repeatLabel(v.unit, v.every)}
               {finished ? " · finished" : pausedNow ? "" : ` · next ${shortDay(v.nextDate!, fmt)}`}
             </span>

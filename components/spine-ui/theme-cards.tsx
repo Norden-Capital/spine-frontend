@@ -89,7 +89,7 @@ export function ThemeCards({ value, onValueChange, className }: ThemeCardsProps)
                 </span>
               ) : null}
             </span>
-            <span className={cn("text-[0.75rem] leading-none", active ? "font-medium text-(--sp-text)" : "text-(--sp-text-muted)")}>
+            <span className={cn("-my-[0.25em] text-[0.75rem] leading-[1.5]", active ? "font-medium text-(--sp-text)" : "text-(--sp-text-muted)")}>
               {it.label}
             </span>
           </button>

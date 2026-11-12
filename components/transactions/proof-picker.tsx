@@ -189,7 +189,7 @@ export function ProofPicker({
           <span className={optionIcon}>
             <IconCamera />
           </span>
-          <span className="min-w-0 text-[0.8125rem] leading-tight font-medium break-words">Take a photo</span>
+          <span className="min-w-0 text-[0.8125rem] leading-snug font-medium break-words">Take a photo</span>
         </button>
         <button
           type="button"
@@ -201,7 +201,7 @@ export function ProofPicker({
           <span className={optionIcon}>
             <IconAttach />
           </span>
-          <span className="min-w-0 text-[0.8125rem] leading-tight font-medium break-words">Upload a file</span>
+          <span className="min-w-0 text-[0.8125rem] leading-snug font-medium break-words">Upload a file</span>
         </button>
       </div>
 
@@ -238,7 +238,7 @@ export function ProofPicker({
                   )}
                 </span>
                 <span className="min-w-0 flex-1 leading-snug">
-                  <span className="block truncate text-[0.8125rem] font-medium text-(--sp-text)">{it.name}</span>
+                  <span className="block truncate text-[0.8125rem] leading-normal font-medium text-(--sp-text)">{it.name}</span>
                   {it.status === "uploading" ? (
                     <>
                       <span className="block text-[0.6875rem] text-(--sp-text-muted)">Uploading… {percent}%</span>

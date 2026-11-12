@@ -63,6 +63,10 @@ const ERROR_MESSAGES: Record<string, string> = {
   budget_exists: "You already have a budget for this category.",
   recurring_not_found: "This repeat expense no longer exists.",
   occurrence_not_found: "This reminder no longer exists.",
+  // Wallet goals
+  goal_not_found: "This goal no longer exists.",
+  contribution_not_found: "This money move no longer exists.",
+  not_enough_saved: "This goal doesn't hold that much money.",
   occurrence_not_due: "This reminder is already done or skipped.",
   // Repeat payments: skip dates
   too_late: "Too late to undo: this date has already come.",

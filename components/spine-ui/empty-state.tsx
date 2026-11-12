@@ -30,7 +30,7 @@ export function EmptyState({ icon, code, title, text, action, tone = "neutral", 
       )}
     >
       {code ? (
-        <p className="text-[4.5rem] leading-none font-medium tracking-tight text-(--sp-card-front)">{code}</p>
+        <p className="-my-[0.25em] text-[4.5rem] leading-[1.5] font-medium tracking-tight text-(--sp-card-front)">{code}</p>
       ) : null}
       {icon ? (
         <span

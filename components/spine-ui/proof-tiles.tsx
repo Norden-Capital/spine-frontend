@@ -55,12 +55,12 @@ export function ProofTiles({
             <span className="flex size-[40px] items-center justify-center rounded-full bg-(--sp-chip-active) text-(--sp-chip-active-text) [&_svg]:size-[18px] [&_svg]:stroke-[1.8]">
               <IconCamera />
             </span>
-            <span className="text-[0.6875rem] leading-none font-medium">{addLabel}</span>
+            <span className="-my-[0.25em] text-[0.6875rem] leading-[1.5] font-medium">{addLabel}</span>
           </button>
         </li>
       ) : null}
       {files.map((f) => (
-        <li key={f.id} className="relative min-w-0">
+        <li key={f.id} className="relative flex min-w-0 flex-col">
           <button
             type="button"
             onClick={() => onOpen?.(f.id)}
@@ -76,7 +76,7 @@ export function ProofTiles({
             ) : (
               <span className="flex size-full flex-col items-center justify-center gap-[6px] text-(--sp-text-muted) [&_svg]:size-[26px] [&_svg]:stroke-[1.5]">
                 <IconFile />
-                <span className="text-[0.625rem] leading-none font-semibold tracking-wide">PDF</span>
+                <span className="-my-[0.25em] text-[0.625rem] leading-[1.5] font-semibold tracking-wide">PDF</span>
               </span>
             )}
           </button>
@@ -90,8 +90,8 @@ export function ProofTiles({
               <IconCloseGlyph />
             </button>
           ) : null}
-          <p className="mt-[6px] truncate px-[2px] text-[0.6875rem] leading-tight text-(--sp-text)">{f.name}</p>
-          {f.size ? <p className="px-[2px] text-[0.625rem] leading-tight text-(--sp-text-faint)">{f.size}</p> : null}
+          <p className="mt-[calc(6px-0.125em)] -mb-[0.125em] truncate px-[2px] text-[0.6875rem] leading-[1.5] text-(--sp-text)">{f.name}</p>
+          {f.size ? <p className="-my-[0.125em] px-[2px] text-[0.625rem] leading-[1.5] text-(--sp-text-faint)">{f.size}</p> : null}
         </li>
       ))}
     </ul>

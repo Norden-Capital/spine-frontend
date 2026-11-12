@@ -13,6 +13,9 @@ export type SwapStackProps = {
   onFrontChange?: (front: 0 | 1) => void;
   /** Uncontrolled: which card starts in front (default 0). */
   defaultFront?: 0 | 1;
+  /** Glass cards (BalanceCard glass): a soft colour blob behind, and no dimming
+   *  filter on the back card (a filter would stop the glass seeing through). */
+  glass?: boolean;
   className?: string;
 };
 
@@ -27,7 +30,7 @@ const DUR = 420; // ms
  * it (same width, like the reference). 420ms, the kit ease; instant with reduced motion.
  * Keyboard: the strip is a button ("Show … in front").
  */
-export function SwapStack({ cards, labels, front: frontProp, onFrontChange, defaultFront = 0, className }: SwapStackProps) {
+export function SwapStack({ cards, labels, front: frontProp, onFrontChange, defaultFront = 0, glass, className }: SwapStackProps) {
   const [own, setOwn] = useState<0 | 1>(defaultFront);
   const front = frontProp ?? own;
   const back = (front === 0 ? 1 : 0) as 0 | 1;
@@ -48,7 +51,7 @@ export function SwapStack({ cards, labels, front: frontProp, onFrontChange, defa
       zIndex: isFront ? 2 : 1,
       transform: isFront ? `translateY(${PEEK}px)` : "translateY(0)",
       transformOrigin: "50% 0%",
-      filter: isFront ? "none" : "brightness(0.96)",
+      filter: isFront || glass ? "none" : "brightness(0.96)",
     } as const;
   };
 
@@ -69,6 +72,7 @@ export function SwapStack({ cards, labels, front: frontProp, onFrontChange, defa
         start.current = null;
       }}
     >
+      {glass ? <span aria-hidden className="sp-glass-blob pointer-events-none absolute inset-x-[8px] top-[8px] h-[150px]" /> : null}
       {([0, 1] as const).map((i) => (
         <div
           key={i}

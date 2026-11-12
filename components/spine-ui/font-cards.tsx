@@ -41,17 +41,17 @@ export function FontCards({ options, value, onValueChange, sample = "$3,922.40 Â
               active && "ring-[2.5px] ring-(--sp-text) ring-inset"
             )}
           >
-            <span className="text-[2rem] leading-none font-medium text-(--sp-text)" style={{ fontFamily: o.family }}>
+            <span className="-my-[0.25em] text-[2rem] leading-[1.5] font-medium text-(--sp-text)" style={{ fontFamily: o.family }}>
               Aa
             </span>
             <span
-              className="mt-[10px] w-full truncate text-[0.75rem] leading-tight text-(--sp-text-2)"
+              className="mt-[calc(10px-0.125em)] -mb-[0.125em] w-full truncate text-[0.75rem] leading-[1.5] text-(--sp-text-2)"
               style={{ fontFamily: o.family }}
             >
               {sample}
             </span>
-            <span className="mt-auto flex w-full items-center justify-between gap-2 pt-[10px] leading-none">
-              <span className="text-[0.6875rem] font-medium text-(--sp-text)">
+            <span className="mt-auto flex w-full items-center justify-between gap-2 pt-[10px] leading-[1.5]">
+              <span className="-my-[0.25em] text-[0.6875rem] font-medium text-(--sp-text)">
                 {o.label}
                 {o.hint ? <span className="font-normal text-(--sp-text-muted)"> Â· {o.hint}</span> : null}
               </span>

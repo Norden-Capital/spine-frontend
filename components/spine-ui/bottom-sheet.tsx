@@ -60,10 +60,10 @@ export function BottomSheet({
             )}
           >
             <div aria-hidden className="mx-auto mt-[8px] h-[5px] w-[36px] shrink-0 rounded-full bg-(--sp-sheet-handle)" />
-            <div className="shrink-0 px-(--sp-gutter) pt-[16px] pb-[12px] leading-none">
-              <Drawer.Title className="text-[16px] font-medium">{title}</Drawer.Title>
+            <div className="shrink-0 px-(--sp-gutter) pt-[16px] pb-[12px] leading-[1.5]">
+              <Drawer.Title className="-my-[0.25em] text-[16px] font-medium">{title}</Drawer.Title>
               {description ? (
-                <Drawer.Description className="mt-[8px] text-[11px] leading-[1.4] text-(--sp-text-muted)">
+                <Drawer.Description className="mt-[8px] text-[11px] leading-[1.5] text-(--sp-text-muted)">
                   {description}
                 </Drawer.Description>
               ) : null}

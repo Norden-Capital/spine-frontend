@@ -5,7 +5,7 @@ import { BottomSheet, SpButton } from "@/components/spine-ui";
 /**
  * "Are you sure?" bottom sheet: main button + Cancel. Destructive = red
  * text on a light red fill (never a full red button). While busy, it
- * can't be closed.
+ * can't be closed. An error (e.g. the server said no) shows inside the sheet.
  */
 export function ConfirmSheet({
   open,
@@ -16,6 +16,7 @@ export function ConfirmSheet({
   destructive,
   busy,
   busyLabel = "Please wait…",
+  error,
   onConfirm,
 }: {
   open: boolean;
@@ -26,6 +27,8 @@ export function ConfirmSheet({
   destructive?: boolean;
   busy: boolean;
   busyLabel?: string;
+  /** Shown in the sheet, above the buttons. */
+  error?: string | null;
   onConfirm: () => void;
 }) {
   return (
@@ -53,7 +56,13 @@ export function ConfirmSheet({
         </div>
       }
     >
-      <span />
+      {error ? (
+        <p role="alert" className="px-[4px] text-[0.8125rem] leading-snug text-(--sp-danger)">
+          {error}
+        </p>
+      ) : (
+        <span />
+      )}
     </BottomSheet>
   );
 }

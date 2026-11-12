@@ -6,14 +6,13 @@ import { useRouter } from "next/navigation";
 import { IconDelete, IconOffline, IconRestore } from "@/components/spine-ui";
 import { api, errorMessage } from "@/lib/api";
 import { formatDay, type DateSettings } from "@/lib/prefs";
-import { formatMoney, type Transaction } from "@/lib/transactions-types";
+import { signedMoney, type Transaction } from "@/lib/transactions-types";
 import { TxLogo } from "@/components/expenses/tx-logo";
 import { ConfirmSheet } from "@/components/admin/confirm-sheet";
 import { NoticeBox, type Notice } from "@/components/admin/notice";
-import { EmptyState, IconButton, RowGroup, RowIcon, SpRow } from "@/components/spine-ui";
+import { EmptyState, IconButton, RowGroup, RowIcon, SpMoney, SpRow } from "@/components/spine-ui";
 import { UserAvatar } from "@/components/nav/user-avatar";
 import { seedOf } from "@/lib/avatar";
-import { cn } from "@/lib/utils";
 
 /** Deleted transactions; the owner can restore them (asks first). */
 export function TrashList({ items, dates }: { items: Transaction[] | null; dates: DateSettings }) {
@@ -60,7 +59,7 @@ export function TrashList({ items, dates }: { items: Transaction[] | null; dates
           <RowGroup
             title="Trash"
             aside={
-              <span className="text-[0.625rem] leading-none text-(--sp-text-faint)">
+              <span className="text-[0.625rem] leading-snug text-(--sp-text-faint)">
                 {items.length} {items.length === 1 ? "transaction" : "transactions"}
               </span>
             }
@@ -87,14 +86,9 @@ export function TrashList({ items, dates }: { items: Transaction[] | null; dates
                       }
                       trailing={
                         <span className="flex shrink-0 items-center gap-[2px]">
-                          <span
-                            className={cn(
-                              "text-[0.8125rem] font-semibold whitespace-nowrap tabular-nums",
-                              income ? "text-(--sp-income)" : "text-(--sp-text)"
-                            )}
-                          >
-                            {formatMoney(tx.amount, income ? "+" : "-")}
-                          </span>
+                          <SpMoney direction={income ? "in" : "out"} className="text-[0.8125rem] font-semibold whitespace-nowrap">
+                            {signedMoney(tx.amount, income ? "in" : "out")}
+                          </SpMoney>
                           <IconButton
                             label={`Restore ${name}`}
                             icon={<IconRestore />}

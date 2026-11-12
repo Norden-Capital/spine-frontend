@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { IconChevronDown } from "@/components/spine-ui";
+
 import { api, ApiError, errorMessage } from "@/lib/api";
 import type { Category } from "@/lib/catalog-types";
 import { CATEGORY_ICONS, CategoryIcon } from "@/components/expenses/category-icon";
 import { NoticeBox } from "@/components/admin/notice";
-import { BottomSheet, Segmented, SpButton, SpField, SpInput } from "@/components/spine-ui";
+import { BottomSheet, Segmented, SpButton, SpField, SpInput, SpSelect } from "@/components/spine-ui";
 import { cn } from "@/lib/utils";
 
 const MAX_NAME = 60;
@@ -212,26 +212,19 @@ function CategoryForm({
         optional
         hint={hasChildren ? "It has subcategories, so it stays a main category." : undefined}
       >
-        <div className="relative">
-          <select
-            id="category-parent"
-            value={parentId}
-            onChange={(e) => setParentId(e.target.value)}
-            disabled={hasChildren}
-            className="h-[52px] w-full appearance-none rounded-[16px] bg-(--sp-soft) pr-[44px] pl-[16px] text-(--sp-text) outline-none focus-visible:ring-2 focus-visible:ring-(--sp-card-front) disabled:text-(--sp-text-muted) disabled:opacity-70"
-          >
-            <option value="">None (this is a main category)</option>
-            {parents.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <IconChevronDown
-            aria-hidden
-            className="pointer-events-none absolute top-1/2 right-[16px] size-[18px] -translate-y-1/2 text-(--sp-text-faint)"
-          />
-        </div>
+        <SpSelect
+          id="category-parent"
+          value={parentId}
+          onChange={(e) => setParentId(e.target.value)}
+          disabled={hasChildren}
+        >
+          <option value="">None (this is a main category)</option>
+          {parents.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </SpSelect>
       </SpField>
       <SpField
         label="Website"

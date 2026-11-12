@@ -1,5 +1,6 @@
 import type { ComponentProps } from "react";
 import { IconSend } from "./icons";
+import { SP_INPUT_CLASS } from "./field";
 import { cn } from "@/lib/utils";
 
 export type CommentItem = {
@@ -40,12 +41,12 @@ export function CommentThread({ comments, onDelete, composer, emptyText = "No co
             <li key={c.id} className="flex gap-[10px]">
               <span
                 aria-hidden
-                className="flex size-[33px] shrink-0 items-center justify-center rounded-full bg-(--sp-avatar) text-[0.6875rem] leading-none font-medium text-(--sp-avatar-text)"
+                className="flex size-[33px] shrink-0 items-center justify-center rounded-full bg-(--sp-avatar) text-[0.6875rem] leading-[1.5] font-medium text-(--sp-avatar-text)"
               >
                 {initials(c.author)}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="flex items-baseline gap-[8px] leading-none">
+                <p className="flex items-baseline gap-[8px] leading-[1.5] [&>*]:-my-[0.25em]">
                   <span className="truncate text-[0.75rem] font-medium text-(--sp-text)">{c.author}</span>
                   <span className="shrink-0 text-[0.625rem] text-(--sp-text-faint)">{c.time}</span>
                   {c.mine && onDelete ? (
@@ -75,7 +76,8 @@ export function CommentThread({ comments, onDelete, composer, emptyText = "No co
             placeholder="Write a comment"
             aria-label="New comment"
             className={cn(
-              "h-[44px] min-w-0 flex-1 rounded-full bg-(--sp-soft) px-[16px] text-(--sp-text) outline-none placeholder:text-(--sp-text-faint) focus-visible:ring-2 focus-visible:ring-(--sp-card-front)",
+              SP_INPUT_CLASS,
+              "h-[44px] min-w-0 flex-1 px-[16px]",
               inputClass
             )}
             {...inputProps}

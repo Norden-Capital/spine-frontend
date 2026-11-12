@@ -23,10 +23,10 @@ export function StatTiles({ items, className }: { items: StatTile[]; className?:
           <IconTile tone={s.tone} size={33}>
             {s.icon}
           </IconTile>
-          <dd className="mt-[12px] truncate text-[0.9375rem] leading-none font-semibold text-(--sp-text) tabular-nums">
+          <dd className="mt-[calc(12px-0.25em)] -mb-[0.25em] truncate text-[0.9375rem] leading-[1.5] font-semibold text-(--sp-text) tabular-nums">
             {s.value}
           </dd>
-          <dt className="mt-[5px] text-[0.625rem] leading-tight text-(--sp-text-muted)">{s.label}</dt>
+          <dt className="mt-[calc(5px-0.125em)] -mb-[0.125em] text-[0.625rem] leading-[1.5] text-(--sp-text-muted)">{s.label}</dt>
         </div>
       ))}
     </dl>

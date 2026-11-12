@@ -3,7 +3,7 @@
 import { IconReceipt } from "@/components/spine-ui";
 import { useDates } from "@/components/prefs/prefs-provider";
 import { BottomSheet, ListItem, SpButton } from "@/components/spine-ui";
-import { formatMoney, type PersonRef, type TxType } from "@/lib/transactions-types";
+import { signedMoney, type PersonRef, type TxType } from "@/lib/transactions-types";
 import { UserAvatar } from "@/components/nav/user-avatar";
 import { seedOf } from "@/lib/avatar";
 
@@ -35,7 +35,7 @@ export function DuplicateSheet({
   const dates = useDates();
   const one = matches?.length === 1;
   const word = type === "INCOME" ? "income" : "expense";
-  const shown = amount ? formatMoney(amount, type === "INCOME" ? "+" : undefined) : "";
+  const shown = amount ? signedMoney(amount, type === "INCOME" ? "in" : "out") : "";
   return (
     <BottomSheet
       open={matches !== null}

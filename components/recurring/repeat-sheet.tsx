@@ -11,12 +11,13 @@ import {
   IconPlay,
   SpBadge,
   SpButton,
+  SpMoney,
 } from "@/components/spine-ui";
 import { NoticeBox, type Notice } from "@/components/admin/notice";
 import { useDates } from "@/components/prefs/prefs-provider";
 import { api, ApiError, errorMessage, fieldErrorText } from "@/lib/api";
 import { dueState, nextDay, repeatLabel, shortDay, type RepeatUnit, type UpcomingDate } from "@/lib/repeat-schedule";
-import { formatMoney, type TxType } from "@/lib/transactions-types";
+import { signedMoney, txDirection, type TxType } from "@/lib/transactions-types";
 import { cn } from "@/lib/utils";
 
 /** What the sheet shows, the same for wallet and company items. */
@@ -34,8 +35,6 @@ export type RepeatView = {
   upcoming: UpcomingDate[];
   /** Logo or category icon. */
   logo: ReactNode;
-  /** Wallet shows "-$12.00" for money out; company shows "$12.00". */
-  minusForExpense?: boolean;
 };
 
 /** Error text for the sheet: the backend's own words for a bad date, else the friendly text. */
@@ -175,7 +174,7 @@ export function RepeatSheet<T extends { id: string }>({
       pausedNow ? "Running again. Missed dates are not added." : "Paused. Nothing is added until you resume it."
     );
 
-  const income = v?.type === "INCOME";
+  const dir = txDirection(v?.type);
   const busy = pending !== null;
 
   return (
@@ -188,15 +187,10 @@ export function RepeatSheet<T extends { id: string }>({
               {v.logo}
             </span>
             <div className="min-w-0 flex-1">
-              <p
-                className={cn(
-                  "text-[1.25rem] leading-none font-semibold tabular-nums",
-                  income ? "text-(--sp-income)" : "text-(--sp-text)"
-                )}
-              >
-                {formatMoney(v.amount, income ? "+" : v.minusForExpense ? "-" : undefined)}
+              <p className="text-[1.25rem] leading-snug font-semibold">
+                <SpMoney direction={dir}>{signedMoney(v.amount, dir)}</SpMoney>
               </p>
-              <p className="mt-[6px] truncate text-[0.75rem] leading-tight text-(--sp-text-muted)">
+              <p className="mt-[6px] text-[0.75rem] leading-normal text-(--sp-text-muted)">
                 {repeatLabel(v.unit, v.every)}
                 {v.nextDate ? ` · next ${day(v.nextDate)}` : " · finished"}
               </p>
@@ -245,7 +239,7 @@ export function RepeatSheet<T extends { id: string }>({
                     >
                       <span
                         className={cn(
-                          "min-w-0 flex-1 truncate text-[0.8125rem] tabular-nums",
+                          "min-w-0 flex-1 truncate text-[0.8125rem] leading-normal tabular-nums",
                           u.status === "SKIPPED" ? "text-(--sp-text-muted) line-through" : "text-(--sp-text)"
                         )}
                       >

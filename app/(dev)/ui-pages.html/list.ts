@@ -4,6 +4,8 @@ export const MOCK_LIST: { name: string; title: string; kind: "app" | "auth" }[] 
   { name: "date-fields", title: "Date fields (all rules)", kind: "app" },
   { name: "date-sheet", title: "Date sheet (single date)", kind: "app" },
   { name: "due-badges", title: "Due badges (repeat payments)", kind: "app" },
+  { name: "money-tones", title: "Money tones (in / out)", kind: "app" },
+  { name: "glass-cards", title: "Glass cards (stack)", kind: "app" },
   { name: "space-dash-company", title: "Same structure · Dashboard · Company", kind: "app" },
   { name: "space-dash-wallet", title: "Same structure · Dashboard · Wallet", kind: "app" },
   { name: "space-dash-company-swapped", title: "Company home · wallet card in front", kind: "app" },

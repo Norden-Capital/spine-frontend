@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { IconError, IconNoResults, IconSuccess } from "@/components/spine-ui";
-import { DueBadge, EmptyState, InfoList, PageHeader, SpBadge } from "@/components/spine-ui";
+import { DueBadge, EmptyState, InfoList, PageHeader, SpBadge, SpMoney } from "@/components/spine-ui";
 import { requireUser } from "@/lib/auth";
 import { isOwner } from "@/lib/roles";
 import { formatDay, todayIn } from "@/lib/prefs";
@@ -8,7 +8,7 @@ import { dueState } from "@/lib/repeat-schedule";
 import { getDateSettings } from "@/lib/prefs-server";
 import { getOccurrence } from "@/lib/recurring-server";
 import { duePath } from "@/lib/recurring-types";
-import { formatMoney } from "@/lib/transactions-types";
+import { signedMoney } from "@/lib/transactions-types";
 import { TxLogo } from "@/components/expenses/tx-logo";
 import { SkipOccurrence } from "@/components/recurring/skip-occurrence";
 import { SpLinkButton } from "@/components/transactions/sp-link";
@@ -78,17 +78,11 @@ export default async function DueReminderPage({ params }: { params: Promise<{ id
         <span className="flex size-[48px] items-center justify-center rounded-full bg-(--sp-soft) text-(--sp-text) [&_svg]:size-[20px] [&_svg]:stroke-[1.6]">
           <TxLogo logoUrl={o.logoUrl} icon={o.category.icon} />
         </span>
-        <p className="max-w-full truncate text-[0.875rem] font-medium text-(--sp-text)">
+        <p className="max-w-full truncate text-[0.875rem] leading-normal font-medium text-(--sp-text)">
           {o.description || o.category.name}
         </p>
-        <p
-          className={
-            income
-              ? "text-[1.75rem] leading-none font-semibold tabular-nums text-(--sp-income)"
-              : "text-[1.75rem] leading-none font-semibold tabular-nums text-(--sp-text)"
-          }
-        >
-          {formatMoney(o.amount, income ? "+" : undefined)}
+        <p className="text-[1.75rem] leading-snug font-semibold">
+          <SpMoney direction={income ? "in" : "out"}>{signedMoney(o.amount, income ? "in" : "out")}</SpMoney>
         </p>
         {badge}
       </section>

@@ -36,7 +36,11 @@ export type Budget = {
   status: BudgetStatus;
 };
 
-export type Contribution = { id: string; amount: string; date: string; note: string | null };
+/** One money move of a goal: ADD = from the balance into the goal, TAKE_OUT = back to the balance. */
+export type MovementType = "ADD" | "TAKE_OUT";
+
+/** One movement (amount always positive, newest first). */
+export type Contribution = { id: string; type: MovementType; amount: string; date: string; note: string | null };
 
 export type Goal = {
   id: string;
@@ -70,8 +74,10 @@ export type Recurring = {
 };
 
 export type Dashboard = {
-  /** Wallet balance (USD), e.g. "2749.75". */
+  /** AVAILABLE balance (USD), e.g. "2749.75": income − expenses − money in goals. Can be below 0. */
   balance: string;
+  /** All money now in goals (sum of every goal's saved). */
+  savedInGoals?: string;
   thisMonth: Totals;
   budgets: Budget[];
   goals: Goal[];
@@ -89,6 +95,14 @@ export type Savings = {
   /** The goal to work on next: not reached yet, closest deadline first, else the first one. null = all reached. */
   next: Goal | null;
 };
+
+/** Money moved into goals in a month ("YYYY-MM"): ADD moves only (the Savings card's "In"). */
+export function movedIntoGoals(goals: Goal[], month: string): number {
+  return goals
+    .flatMap((g) => g.contributions ?? [])
+    .filter((c) => c.type !== "TAKE_OUT" && c.date.startsWith(month))
+    .reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+}
 
 /** Wallet "Savings" card: totals over all goals (USD). */
 export function savingsOf(goals: Goal[]): Savings {

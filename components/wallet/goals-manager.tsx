@@ -11,32 +11,45 @@ import {
   IconDelete,
   IconEdit,
   IconGoal,
+  IconButton,
+  IconMinus,
+  IconRestore,
+  IconWarning,
   SpButton,
   SpField,
   SpInput,
+  SpMoney,
 } from "@/components/spine-ui";
-import { api, errorMessage } from "@/lib/api";
+import { api, ApiError, errorMessage } from "@/lib/api";
 import { formatMoney, parseAmountInput } from "@/lib/transactions-types";
-import type { Goal } from "@/lib/wallet-types";
+import type { Contribution, Goal } from "@/lib/wallet-types";
+import { walletChanged } from "@/lib/wallet-actions";
 import { nextDay } from "@/lib/repeat-schedule";
 import { useDates } from "@/components/prefs/prefs-provider";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { ConfirmSheet } from "@/components/admin/confirm-sheet";
+import { NoticeBox } from "@/components/admin/notice";
 import { cn } from "@/lib/utils";
 import { ProgressBar } from "./progress";
 
-/** Savings goals: target, optional deadline, contributions (they don't change the balance). */
-export function GoalsManager({ goals, today }: { goals: Goal[]; today: string }) {
+/** "$1,234.00", or "−$20.00" below 0. */
+function plainMoney(amount: string | number): string {
+  return formatMoney(amount, Number(amount) < 0 ? "-" : undefined);
+}
+
+/**
+ * Savings goals: target, optional deadline, money moves. Money added to a goal
+ * leaves the wallet balance; taking it out (or removing a move) gives it back.
+ */
+export function GoalsManager({
+  goals,
+  today,
+  available,
+}: {
+  goals: Goal[];
+  today: string;
+  /** The wallet's AVAILABLE balance (dashboard `balance`); null = not known. */
+  available: string | null;
+}) {
   const router = useRouter();
   const dates = useDates();
   // The sheet keeps the last goal while it slides away (no title flash).
@@ -45,120 +58,220 @@ export function GoalsManager({ goals, today }: { goals: Goal[]; today: string })
   const [remove, setRemove] = useState<Goal | null>(null);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+  // Add money / take money out (kept while the sheet slides away).
+  const [move, setMove] = useState<{ goal: Goal | null; kind: MoveKind; open: boolean }>({
+    goal: null,
+    kind: "add",
+    open: false,
+  });
+  // A money move to undo (kept while the sheet slides away).
+  const [money, setMoney] = useState<{ goal: Goal; item: Contribution } | null>(null);
+  const [moneyOpen, setMoneyOpen] = useState(false);
+  const [moneyBusy, setMoneyBusy] = useState(false);
+  const [moneyError, setMoneyError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
-  async function confirmRemove() {
-    if (!remove) return;
-    setBusy(true);
+  /** Make the goals page, the wallet Balance card and the Savings card fresh. */
+  async function refreshWallet() {
     try {
-      await api(`/wallet/goals/${encodeURIComponent(remove.id)}`, { method: "DELETE" });
-      setNotice({ kind: "ok", text: `"${remove.name}" removed.` });
-    } catch (err) {
-      setNotice({ kind: "error", text: errorMessage(err) });
-    } finally {
-      setBusy(false);
-      setRemoveOpen(false);
+      await walletChanged("/wallet/goals");
+    } catch {
+      // The server step failed (network): still reload this page's data.
       router.refresh();
     }
   }
 
+  async function confirmRemove() {
+    if (!remove) return;
+    setBusy(true);
+    setRemoveError(null);
+    try {
+      await api(`/wallet/goals/${encodeURIComponent(remove.id)}`, { method: "DELETE" });
+    } catch (err) {
+      setBusy(false);
+      setRemoveError(errorMessage(err));
+      router.refresh();
+      return;
+    }
+    setBusy(false);
+    setRemoveOpen(false);
+    setNotice({ kind: "ok", text: `"${remove.name}" removed.` });
+    await refreshWallet();
+  }
+
+  async function confirmRemoveMoney() {
+    if (!money) return;
+    setMoneyBusy(true);
+    setMoneyError(null);
+    try {
+      await api(
+        `/wallet/goals/${encodeURIComponent(money.goal.id)}/contributions/${encodeURIComponent(money.item.id)}`,
+        { method: "DELETE" }
+      );
+    } catch (err) {
+      setMoneyBusy(false);
+      setMoneyError(
+        err instanceof ApiError && err.code === "not_enough_saved"
+          ? "Some of this money was already taken out. Undo that first."
+          : errorMessage(err)
+      );
+      return;
+    }
+    setMoneyBusy(false);
+    setMoneyOpen(false);
+    setNotice({
+      kind: "ok",
+      text:
+        money.item.type === "TAKE_OUT"
+          ? "Undone. The money is in the goal again."
+          : "Removed. The money is back in your balance.",
+    });
+    await refreshWallet();
+  }
+
+  const undoTakeOut = money?.item.type === "TAKE_OUT";
+
   return (
-    <div className="flex flex-col gap-4">
-      <Button size="lg" className="h-12 rounded-full" onClick={() => setEdit({ goal: null, open: true })} data-testid="goal-add">
-        <IconAdd aria-hidden />
+    <div className="flex flex-col gap-[12px]">
+      <SpButton
+        className="w-full"
+        icon={<IconAdd aria-hidden />}
+        onClick={() => setEdit({ goal: null, open: true })}
+        data-testid="goal-add"
+      >
         Add a goal
-      </Button>
-      {notice && (
-        <Alert variant={notice.kind === "error" ? "destructive" : "default"}>
-          <AlertDescription>{notice.text}</AlertDescription>
-        </Alert>
-      )}
+      </SpButton>
+      {notice && <NoticeBox notice={notice} />}
       {goals.length === 0 ? (
         <PageEmpty icon={<IconGoal />} title="No goals yet" text="Save for a trip, a phone, or a rainy day." />
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-[12px]">
           {goals.map((g) => {
             const open = openId === g.id;
             const left = Number(g.target) - Number(g.saved);
+            const hasMoney = Number(g.saved) > 0;
             return (
-              <li key={g.id} className="flex flex-col gap-3 rounded-(--sp-radius) bg-(--sp-panel) p-4">
+              <li
+                key={g.id}
+                data-testid="goal-item"
+                className="flex flex-col gap-[14px] rounded-(--sp-radius) bg-(--sp-panel) px-[14px] pt-[10px] pb-[16px]"
+              >
                 <button
                   type="button"
                   aria-expanded={open}
                   onClick={() => setOpenId(open ? null : g.id)}
-                  className="flex min-h-11 items-start gap-3 text-left outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
+                  className="-mx-[6px] flex min-h-[52px] items-center gap-[10.8px] rounded-2xl px-[6px] py-[4px] text-left transition outline-none hover:bg-(--sp-soft) focus-visible:ring-3 focus-visible:ring-(--sp-ring) motion-reduce:transition-none"
                 >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-(--sp-text)">{g.name}</p>
-                    <p className="text-xs text-(--sp-text-faint) tabular-nums">
+                  <span className="flex size-[33px] shrink-0 items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--sp-card-front)_14%,var(--sp-panel))] text-(--sp-card-front) [&_svg]:size-[15px]">
+                    <IconGoal aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[0.9375rem] leading-normal font-medium text-(--sp-text)">
+                      {g.name}
+                    </span>
+                    <span className="mt-[2px] block text-[0.6875rem] leading-snug text-(--sp-text-muted) tabular-nums">
                       {formatMoney(g.saved)} of {formatMoney(g.target)} · {g.percent}%
                       {g.deadline ? ` · by ${dates.day(g.deadline)}` : ""}
-                    </p>
-                  </div>
-                  <IconChevronDown className={cn("mt-1 size-4 shrink-0 transition-transform", open && "rotate-180")} aria-hidden />
+                    </span>
+                  </span>
+                  <IconChevronDown
+                    className={cn(
+                      "size-[18px] shrink-0 text-(--sp-text-faint) transition-transform motion-reduce:transition-none",
+                      open && "rotate-180"
+                    )}
+                    aria-hidden
+                  />
                 </button>
                 <ProgressBar percent={g.percent} label={`${g.name}: ${g.percent}% saved`} />
                 {open && (
-                  <div className="flex flex-col gap-3 border-t pt-3">
-                    <p className="text-sm text-(--sp-text-muted)">
+                  <div className="flex flex-col gap-[14px] border-t border-(--sp-soft) pt-[14px]">
+                    <p className="px-[4px] text-[0.8125rem] leading-snug text-(--sp-text-muted)">
                       {left > 0 ? `${formatMoney(left)} to go.` : "Goal reached!"}
                     </p>
-                    <ContributionForm
-                      goal={g}
-                      today={today}
-                      onDone={() => {
-                        setNotice({ kind: "ok", text: "Money added to the goal." });
-                        router.refresh();
-                      }}
-                    />
+                    <div className="flex flex-col gap-[8px]">
+                      <SpButton
+                        className="w-full"
+                        icon={<IconAdd aria-hidden />}
+                        onClick={() => setMove({ goal: g, kind: "add", open: true })}
+                        data-testid="goal-money-add"
+                      >
+                        Add money
+                      </SpButton>
+                      <SpButton
+                        className="w-full"
+                        variant="secondary"
+                        size="md"
+                        icon={<IconMinus aria-hidden />}
+                        disabled={!hasMoney}
+                        onClick={() => setMove({ goal: g, kind: "out", open: true })}
+                        data-testid="goal-money-out"
+                      >
+                        Take money out
+                      </SpButton>
+                    </div>
                     {g.contributions.length > 0 && (
-                      <ul className="flex flex-col divide-y rounded-xl border">
-                        {g.contributions.map((c) => (
-                          <li key={c.id} className="flex min-h-12 items-center gap-2 py-1 pr-1 pl-3 text-sm">
-                            <span className="min-w-0 flex-1">
-                              <span className="font-medium tabular-nums">{formatMoney(c.amount)}</span>
-                              <span className="text-muted-foreground"> · {dates.day(c.date)}</span>
-                              {c.note && <span className="block truncate text-xs text-muted-foreground">{c.note}</span>}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-11"
-                              aria-label="Remove this contribution"
-                              onClick={async () => {
-                                try {
-                                  await api(`/wallet/goals/${encodeURIComponent(g.id)}/contributions/${encodeURIComponent(c.id)}`, {
-                                    method: "DELETE",
-                                  });
-                                  router.refresh();
-                                } catch (err) {
-                                  setNotice({ kind: "error", text: errorMessage(err) });
-                                }
-                              }}
+                      <ul className="flex flex-col rounded-[16px] bg-(--sp-soft) p-[4px]" data-testid="goal-moves">
+                        {g.contributions.map((c) => {
+                          const out = c.type === "TAKE_OUT";
+                          return (
+                            <li
+                              key={c.id}
+                              data-testid="goal-move"
+                              data-kind={out ? "out" : "in"}
+                              className="flex min-h-[52px] items-center gap-[8px] py-[4px] pr-[4px] pl-[12px]"
                             >
-                              <IconDelete className="size-4" aria-hidden />
-                            </Button>
-                          </li>
-                        ))}
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-[0.8125rem] leading-normal">
+                                  <SpMoney direction={out ? "out" : "in"} className="font-medium">
+                                    {formatMoney(c.amount, out ? "-" : "+")}
+                                  </SpMoney>
+                                  <span className="text-(--sp-text)">{out ? " back to balance" : " to goal"}</span>
+                                  <span className="text-(--sp-text-muted)"> · {dates.day(c.date)}</span>
+                                </span>
+                                {c.note && (
+                                  <span className="block truncate text-[0.6875rem] leading-normal text-(--sp-text-muted)">
+                                    {c.note}
+                                  </span>
+                                )}
+                              </span>
+                              <IconButton
+                                variant="ghost"
+                                label={out ? "Undo this take out" : "Remove this money"}
+                                icon={out ? <IconRestore aria-hidden /> : <IconDelete aria-hidden />}
+                                data-testid="goal-move-undo"
+                                onClick={() => {
+                                  setMoney({ goal: g, item: c });
+                                  setMoneyError(null);
+                                  setMoneyOpen(true);
+                                }}
+                              />
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button variant="outline" size="lg" className="h-11" onClick={() => setEdit({ goal: g, open: true })}>
-                        <IconEdit aria-hidden />
+                    <div className="grid grid-cols-2 gap-[8px]">
+                      <SpButton
+                        variant="secondary"
+                        size="md"
+                        icon={<IconEdit aria-hidden />}
+                        onClick={() => setEdit({ goal: g, open: true })}
+                      >
                         Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        className="h-11 text-destructive"
+                      </SpButton>
+                      <SpButton
+                        variant="danger"
+                        size="md"
+                        icon={<IconDelete aria-hidden />}
                         onClick={() => {
                           setRemove(g);
+                          setRemoveError(null);
                           setRemoveOpen(true);
                         }}
                       >
-                        <IconDelete aria-hidden />
                         Remove
-                      </Button>
+                      </SpButton>
                     </div>
                   </div>
                 )}
@@ -178,22 +291,54 @@ export function GoalsManager({ goals, today }: { goals: Goal[]; today: string })
         }}
       />
 
-      <AlertDialog open={removeOpen} onOpenChange={(next) => !next && !busy && setRemoveOpen(false)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove &quot;{remove?.name}&quot;?</AlertDialogTitle>
-            <AlertDialogDescription>The goal and its contributions are deleted. Your wallet balance does not change.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel size="lg" className="h-11" disabled={busy}>
-              Cancel
-            </AlertDialogCancel>
-            <Button variant="destructive" size="lg" className="h-11" onClick={confirmRemove} disabled={busy}>
-              {busy ? "Removing…" : "Remove"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <MoveSheet
+        open={move.open}
+        onOpenChange={(open) => setMove((m) => ({ ...m, open }))}
+        goal={move.goal}
+        kind={move.kind}
+        today={today}
+        available={available}
+        onDone={async (text) => {
+          setNotice({ kind: "ok", text });
+          await refreshWallet();
+        }}
+      />
+
+      <ConfirmSheet
+        open={removeOpen}
+        onOpenChange={setRemoveOpen}
+        title={`Remove "${remove?.name ?? ""}"?`}
+        text={
+          remove && Number(remove.saved) > 0
+            ? `The goal and its money moves are deleted. Its ${formatMoney(remove.saved)} goes back to your balance.`
+            : "The goal is deleted."
+        }
+        confirm="Remove"
+        destructive
+        busy={busy}
+        busyLabel="Removing…"
+        error={removeError}
+        onConfirm={() => void confirmRemove()}
+      />
+
+      <ConfirmSheet
+        open={moneyOpen}
+        onOpenChange={setMoneyOpen}
+        title={undoTakeOut ? "Undo this?" : "Remove this money?"}
+        text={
+          money
+            ? undoTakeOut
+              ? `${formatMoney(money.item.amount)} from ${dates.day(money.item.date)} goes back into "${money.goal.name}" and leaves your balance.`
+              : `${formatMoney(money.item.amount)} from ${dates.day(money.item.date)} leaves "${money.goal.name}" and goes back to your balance.`
+            : ""
+        }
+        confirm={undoTakeOut ? "Undo" : "Remove"}
+        destructive
+        busy={moneyBusy}
+        busyLabel={undoTakeOut ? "Undoing…" : "Removing…"}
+        error={moneyError}
+        onConfirm={() => void confirmRemoveMoney()}
+      />
     </div>
   );
 }
@@ -342,70 +487,217 @@ function GoalForm({
   );
 }
 
-function ContributionForm({ goal, today, onDone }: { goal: Goal; today: string; onDone: () => void }) {
+type MoveKind = "add" | "out";
+
+/**
+ * Add money to a goal (it leaves the balance) or take money out (back to the
+ * balance), in a bottom sheet: amount, date (not in the future), note.
+ */
+function MoveSheet({
+  open,
+  onOpenChange,
+  goal,
+  kind,
+  today,
+  available,
+  onDone,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  goal: Goal | null;
+  kind: MoveKind;
+  today: string;
+  available: string | null;
+  onDone: (text: string) => Promise<void>;
+}) {
+  const formId = `goal-move-form-${goal?.id ?? "none"}`;
+  const [pending, setPending] = useState(false);
+  // Each opening starts a fresh form (new key); it stays mounted while the sheet slides away.
+  const [round, setRound] = useState(0);
+  const [wasOpen, setWasOpen] = useState(false);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setRound((r) => r + 1);
+  }
+  const out = kind === "out";
+  return (
+    <BottomSheet
+      open={open}
+      onOpenChange={(next) => {
+        if (!next && pending) return;
+        onOpenChange(next);
+      }}
+      className="sp-space-wallet"
+      title={out ? "Take money out" : "Add money"}
+      description={goal ? goal.name : undefined}
+      footer={
+        <SpButton
+          type="submit"
+          form={formId}
+          className="w-full"
+          disabled={pending}
+          icon={out ? <IconMinus aria-hidden /> : <IconAdd aria-hidden />}
+          data-testid={out ? "goal-out-save" : "goal-add-money-save"}
+        >
+          {pending ? (out ? "Taking out…" : "Adding…") : out ? "Take money out" : "Add money"}
+        </SpButton>
+      }
+    >
+      {round > 0 && goal && (
+        <MoveForm
+          key={`${goal.id}-${kind}-${round}`}
+          id={formId}
+          goal={goal}
+          kind={kind}
+          today={today}
+          available={available}
+          onPending={setPending}
+          onDone={async (text) => {
+            onOpenChange(false);
+            await onDone(text);
+          }}
+        />
+      )}
+    </BottomSheet>
+  );
+}
+
+function MoveForm({
+  id,
+  goal,
+  kind,
+  today,
+  available,
+  onPending,
+  onDone,
+}: {
+  id: string;
+  goal: Goal;
+  kind: MoveKind;
+  today: string;
+  available: string | null;
+  onPending: (pending: boolean) => void;
+  onDone: (text: string) => Promise<void>;
+}) {
   const dates = useDates();
+  const out = kind === "out";
   const [amountText, setAmountText] = useState("");
   const [date, setDate] = useState(today);
   const [note, setNote] = useState("");
+  const [touched, setTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
   const amount = parseAmountInput(amountText);
+  const value = amount ? Number(amount) : 0;
+  const saved = Number(goal.saved) || 0;
+  const tooMuch = out && value > saved;
+  const overBalance = !out && available !== null && value > Number(available);
+  const amountError = !touched
+    ? undefined
+    : !amount
+      ? "Enter an amount, like 50."
+      : tooMuch
+        ? `This goal holds only ${formatMoney(saved)}.`
+        : undefined;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    setTouched(true);
     setError(null);
-    if (!amount) {
-      setError("Enter an amount.");
-      return;
-    }
-    setPending(true);
+    if (!amount || tooMuch) return;
+    onPending(true);
     try {
-      await api(`/wallet/goals/${encodeURIComponent(goal.id)}/contributions`, {
+      await api(`/wallet/goals/${encodeURIComponent(goal.id)}/${out ? "take-out" : "contributions"}`, {
         method: "POST",
         body: { amount, date, note: note.trim() || null },
       });
-      setAmountText("");
-      setNote("");
-      onDone();
     } catch (err) {
-      setError(errorMessage(err));
-    } finally {
-      setPending(false);
+      onPending(false);
+      if (err instanceof ApiError && err.code === "not_enough_saved") {
+        // The backend says how much is in the goal: "This goal holds only $200.00".
+        const said = typeof err.data?.message === "string" ? err.data.message.trim() : "";
+        setError(said ? (said.endsWith(".") ? said : `${said}.`) : err.message);
+      } else {
+        setError(errorMessage(err));
+      }
+      return;
     }
+    onPending(false);
+    await onDone(out ? "Money taken out. It is back in your balance." : "Money added to the goal.");
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-2" noValidate>
-      <div className="grid grid-cols-2 items-start gap-2">
-        <SpField label="Amount" htmlFor={`money-${goal.id}`}>
-          <SpInput
-            id={`money-${goal.id}`}
-            surface="panel"
-            inputMode="decimal"
-            placeholder="0.00"
-            value={amountText}
-            icon={<span className="text-[0.9375rem] font-medium">$</span>}
-            onChange={(e) => setAmountText(e.target.value)}
-          />
-        </SpField>
-        <div data-testid="goal-money-date">
-          <DateField
-            label="Date"
-            surface="panel"
-            value={date}
-            onChange={(day) => setDate(day ?? today)}
-            max={today}
-            today={today}
-            format={dates.day}
-          />
-        </div>
+    <form
+      id={id}
+      onSubmit={submit}
+      className="flex flex-col gap-[14px] pt-[4px]"
+      noValidate
+      data-testid={out ? "goal-out-form" : "goal-add-money-form"}
+    >
+      {error && (
+        <p role="alert" className="px-[4px] text-[0.8125rem] leading-snug text-(--sp-danger)">
+          {error}
+        </p>
+      )}
+      {(out || available !== null) && (
+        <p className="px-[4px] text-[0.8125rem] leading-snug text-(--sp-text-muted) tabular-nums" data-testid="goal-move-have">
+          {out ? "In this goal: " : "Available: "}
+          <span className="font-medium text-(--sp-text)">{out ? formatMoney(saved) : plainMoney(available ?? 0)}</span>
+        </p>
+      )}
+      <SpField label="Amount" htmlFor={`${id}-amount`} error={amountError}>
+        <SpInput
+          id={`${id}-amount`}
+          surface="panel"
+          inputMode="decimal"
+          placeholder="0.00"
+          autoComplete="off"
+          value={amountText}
+          aria-invalid={Boolean(amountError)}
+          icon={<span className="text-[0.9375rem] font-medium">$</span>}
+          onChange={(e) => setAmountText(e.target.value)}
+          data-testid="goal-move-amount"
+        />
+      </SpField>
+      <p
+        className="px-[4px] text-[0.8125rem] leading-snug text-(--sp-text) tabular-nums"
+        aria-live="polite"
+        data-testid="goal-move-text"
+      >
+        {out
+          ? `Moves ${formatMoney(value)} from this goal back to your balance.`
+          : `Moves ${formatMoney(value)} from your balance to this goal.`}
+      </p>
+      {overBalance && (
+        <p
+          className="flex items-start gap-[8px] px-[4px] text-[0.8125rem] leading-snug text-(--sp-text)"
+          data-testid="goal-move-over"
+        >
+          <IconWarning aria-hidden className="mt-[1px] size-[16px] shrink-0 text-(--sp-warning)" />
+          This is more than your balance.
+        </p>
+      )}
+      <div data-testid="goal-money-date">
+        <DateField
+          label="Date"
+          surface="panel"
+          value={date}
+          onChange={(day) => setDate(day ?? today)}
+          max={today}
+          today={today}
+          format={dates.day}
+        />
       </div>
-      <Input aria-label="Note (optional)" placeholder="Note (optional)" maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} className="h-11" />
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <Button type="submit" size="lg" className="h-11" disabled={pending}>
-        <IconAdd aria-hidden />
-        {pending ? "Adding…" : "Add money"}
-      </Button>
+      <SpField label="Note" optional htmlFor={`${id}-note`}>
+        <SpInput
+          id={`${id}-note`}
+          surface="panel"
+          placeholder={out ? "e.g. Paid for the trip" : "e.g. Part of my salary"}
+          maxLength={200}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          data-testid="goal-move-note"
+        />
+      </SpField>
     </form>
   );
 }

@@ -35,7 +35,7 @@ export function SpButton({
     <button
       type={type}
       className={cn(
-        "inline-flex items-center justify-center gap-[8px] rounded-full leading-none font-medium whitespace-nowrap transition outline-none select-none",
+        "inline-flex items-center justify-center gap-[8px] rounded-full leading-[1.5] font-medium whitespace-nowrap transition outline-none select-none",
         "focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:pointer-events-none disabled:opacity-40",
         "[&_svg]:size-[18px] [&_svg]:shrink-0 [&_svg]:stroke-[1.8]",
         size === "lg" ? "h-[52px] px-[24px] text-[14px]" : "h-[44px] px-[18px] text-[13px]",

@@ -12,7 +12,7 @@ export function QuickAction({ label, icon, className, type = "button", ...props 
     <button
       type={type}
       className={cn(
-        "group flex min-w-0 flex-col items-center rounded-2xl pt-[19.5px] pb-[20px] leading-none outline-none select-none",
+        "group flex min-w-0 flex-col items-center rounded-2xl pt-[19.5px] pb-[20px] leading-[1.5] outline-none select-none",
         "focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-(--sp-ring)",
         className
       )}
@@ -21,7 +21,7 @@ export function QuickAction({ label, icon, className, type = "button", ...props 
       <span className="flex size-[48px] items-center justify-center rounded-full bg-(--sp-soft) text-(--sp-text) transition group-hover:bg-(--sp-soft-hover) group-active:scale-95 motion-reduce:transition-none motion-reduce:group-active:scale-100 [&_svg]:size-[18px] [&_svg]:stroke-[1.9]">
         {icon}
       </span>
-      <span className="mt-[11.2px] w-full truncate text-center text-[12px] text-(--sp-text-2)">{label}</span>
+      <span className="mt-[calc(11.2px-0.25em)] -mb-[0.25em] w-full truncate text-center text-[12px] text-(--sp-text-2)">{label}</span>
     </button>
   );
 }

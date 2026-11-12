@@ -39,7 +39,7 @@ export function ActiveFilters({
       {items.map((f) => (
         <span
           key={f.key}
-          className="inline-flex h-[32px] shrink-0 items-center gap-[6px] rounded-full bg-(--sp-chip-active) pr-[4px] pl-[12px] text-[0.75rem] leading-none font-medium whitespace-nowrap text-(--sp-chip-active-text) [&_svg]:size-[14px]"
+          className="inline-flex h-[32px] shrink-0 items-center gap-[6px] rounded-full bg-(--sp-chip-active) pr-[4px] pl-[12px] text-[0.75rem] leading-[1.5] font-medium whitespace-nowrap text-(--sp-chip-active-text) [&_svg]:size-[14px]"
         >
           {f.icon}
           {f.label}
@@ -57,7 +57,7 @@ export function ActiveFilters({
         <button
           type="button"
           onClick={onClearAll}
-          className="relative h-[32px] shrink-0 px-[8px] text-[0.75rem] leading-none font-medium text-(--sp-card-front) outline-none after:absolute after:inset-x-0 after:-inset-y-[6px] after:content-[''] focus-visible:ring-2 focus-visible:ring-(--sp-ring)"
+          className="relative h-[32px] shrink-0 px-[8px] text-[0.75rem] leading-[1.5] font-medium text-(--sp-card-front) outline-none after:absolute after:inset-x-0 after:-inset-y-[6px] after:content-[''] focus-visible:ring-2 focus-visible:ring-(--sp-ring)"
         >
           Clear all
         </button>

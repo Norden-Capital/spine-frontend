@@ -3,7 +3,7 @@
 import { PageEmpty } from "@/components/nav/page-empty";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { DateField, IconAdd, IconCalendarRepeat, SpButton } from "@/components/spine-ui";
+import { BottomSheet, DateField, IconAdd, IconCalendarRepeat, SpButton, SpField, SpInput } from "@/components/spine-ui";
 import { useDates } from "@/components/prefs/prefs-provider";
 import { api, ApiError, errorMessage, fieldErrorText } from "@/lib/api";
 import type { Category } from "@/lib/catalog-types";
@@ -16,10 +16,6 @@ import { ConfirmSheet } from "@/components/admin/confirm-sheet";
 import { FrequencyPicker } from "@/components/recurring/frequency-picker";
 import { RepeatRow } from "@/components/recurring/repeat-row";
 import { RepeatSheet, type RepeatView } from "@/components/recurring/repeat-sheet";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { CategorySelect, Segmented } from "./form-bits";
 
 /** Repeating wallet items (rent, salary…): the server adds them on their next date. */
@@ -40,12 +36,17 @@ export function RecurringManager({
     setPrevItems(items);
     setList(items);
   }
-  const [edit, setEdit] = useState<{ item: Recurring | null } | null>(null);
+  // The sheet keeps the last item while it slides away (no title flash).
+  const [edit, setEdit] = useState<{ item: Recurring | null; open: boolean }>({ item: null, open: false });
+  const [editPending, setEditPending] = useState(false);
+  // Each opening starts a fresh form (new key).
+  const [editRound, setEditRound] = useState(0);
   const [remove, setRemove] = useState<Recurring | null>(null);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [sheetId, setSheetId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const sheetItem = list.find((r) => r.id === sheetId) ?? null;
 
@@ -65,21 +66,28 @@ export function RecurringManager({
   async function confirmRemove() {
     if (!remove) return;
     setBusy("remove");
+    setRemoveError(null);
     try {
       await api(`/wallet/recurring/${encodeURIComponent(remove.id)}`, { method: "DELETE" });
       setNotice({ kind: "ok", text: `"${remove.name}" removed. Transactions it made stay.` });
+      setRemoveOpen(false);
     } catch (err) {
-      setNotice({ kind: "error", text: errorMessage(err) });
+      setRemoveError(errorMessage(err));
     } finally {
       setBusy(null);
-      setRemoveOpen(false);
       router.refresh();
     }
   }
 
+  function openEdit(item: Recurring | null) {
+    setEditPending(false);
+    setEditRound((r) => r + 1);
+    setEdit({ item, open: true });
+  }
+
   return (
     <div className="flex flex-col gap-[16px]">
-      <SpButton icon={<IconAdd />} className="w-full" onClick={() => setEdit({ item: null })} data-testid="wallet-recurring-add">
+      <SpButton icon={<IconAdd />} className="w-full" onClick={() => openEdit(null)} data-testid="wallet-recurring-add">
         Add a recurring item
       </SpButton>
       {notice && <NoticeBox notice={notice} />}
@@ -117,35 +125,54 @@ export function RecurringManager({
         reload={reload}
         onEdit={() => {
           setSheetOpen(false);
-          setEdit({ item: sheetItem });
+          openEdit(sheetItem);
         }}
         onDelete={() => {
           setSheetOpen(false);
           setRemove(sheetItem);
+          setRemoveError(null);
           setRemoveOpen(true);
         }}
       />
 
-      <Dialog open={edit !== null} onOpenChange={(open) => !open && setEdit(null)}>
-        <DialogContent className="flex max-h-[90svh] flex-col">
-          <DialogHeader>
-            <DialogTitle>{edit?.item ? "Edit recurring item" : "Add a recurring item"}</DialogTitle>
-          </DialogHeader>
-          {edit && (
-            <RecurringForm
-              key={edit.item?.id ?? "new"}
-              item={edit.item}
-              categories={categories}
-              today={today}
-              onDone={(text) => {
-                setEdit(null);
-                setNotice({ kind: "ok", text });
-                router.refresh();
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      <BottomSheet
+        open={edit.open}
+        onOpenChange={(open) => {
+          if (!open && editPending) return;
+          setEdit((e) => ({ ...e, open }));
+        }}
+        className="sp-space-wallet"
+        title={edit.item ? "Edit recurring item" : "Add a recurring item"}
+        description="It is added to your wallet on each date."
+        footer={
+          <SpButton
+            type="submit"
+            form="wallet-recurring-form"
+            className="w-full"
+            disabled={editPending}
+            data-testid="wallet-recurring-save"
+          >
+            {editPending ? "Saving…" : edit.item ? "Save" : "Add"}
+          </SpButton>
+        }
+      >
+        {editRound > 0 && (
+          <RecurringForm
+            key={`${edit.item?.id ?? "new"}-${editRound}`}
+            id="wallet-recurring-form"
+            item={edit.item}
+            categories={categories}
+            today={today}
+            onPending={setEditPending}
+            onDone={(text) => {
+              setEditPending(false);
+              setEdit((e) => ({ ...e, open: false }));
+              setNotice({ kind: "ok", text });
+              router.refresh();
+            }}
+          />
+        )}
+      </BottomSheet>
 
       <ConfirmSheet
         open={removeOpen}
@@ -156,6 +183,7 @@ export function RecurringManager({
         destructive
         busy={busy === "remove"}
         busyLabel="Removing…"
+        error={removeError}
         onConfirm={() => void confirmRemove()}
       />
     </div>
@@ -176,19 +204,22 @@ function walletView(r: Recurring): RepeatView {
     pausedUntil: r.pausedUntil ?? null,
     upcoming: r.upcoming ?? [],
     logo: <CategoryIcon name={r.category.icon} />,
-    minusForExpense: true,
   };
 }
 
 function RecurringForm({
+  id,
   item,
   categories,
   today,
+  onPending,
   onDone,
 }: {
+  id: string;
   item: Recurring | null;
   categories: Category[];
   today: string;
+  onPending: (pending: boolean) => void;
   onDone: (text: string) => void;
 }) {
   const dates = useDates();
@@ -204,7 +235,6 @@ function RecurringForm({
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categoryError, setCategoryError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
   const amount = parseAmountInput(amountText);
   const okName = name.trim().length > 0;
   // Only categories of the chosen type (no kind = expense). The saved one stays while it is chosen.
@@ -229,7 +259,7 @@ function RecurringForm({
     setCategoryError(null);
     setFrequencyError(null);
     if (!okName || !amount || !categoryId || !okDescription || !startDate) return;
-    setPending(true);
+    onPending(true);
     const body = {
       name: name.trim(),
       type,
@@ -245,7 +275,7 @@ function RecurringForm({
       else await api("/wallet/recurring", { method: "POST", body });
       onDone(item ? "Saved." : startDate <= today ? "Added. Today's one is already in your wallet." : "Added.");
     } catch (err) {
-      setPending(false);
+      onPending(false);
       if (err instanceof ApiError && err.field === "categoryId") setCategoryError(fieldErrorText(err));
       else if (err instanceof ApiError && (err.field === "unit" || err.field === "every")) setFrequencyError(fieldErrorText(err));
       else setError(errorMessage(err));
@@ -253,13 +283,23 @@ function RecurringForm({
   }
 
   return (
-    <form onSubmit={submit} className="flex min-h-0 flex-col gap-4 overflow-y-auto" noValidate>
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <Field data-invalid={touched && !okName}>
-        <FieldLabel htmlFor="rec-name">Name</FieldLabel>
-        <Input id="rec-name" maxLength={60} placeholder="e.g. Rent" value={name} onChange={(e) => setName(e.target.value)} className="h-11" />
-        {touched && !okName && <FieldError>Enter a name.</FieldError>}
-      </Field>
+    <form id={id} onSubmit={submit} className="flex flex-col gap-[14px] pt-[4px]" noValidate data-testid="wallet-recurring-form">
+      {error && (
+        <p role="alert" className="px-[4px] text-[0.8125rem] leading-snug text-(--sp-danger)">
+          {error}
+        </p>
+      )}
+      <SpField label="Name" htmlFor="rec-name" error={touched && !okName ? "Enter a name." : undefined}>
+        <SpInput
+          id="rec-name"
+          surface="panel"
+          maxLength={60}
+          placeholder="e.g. Rent"
+          value={name}
+          aria-invalid={touched && !okName}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </SpField>
       <Segmented
         label="Type"
         value={type}
@@ -269,13 +309,24 @@ function RecurringForm({
           { value: "INCOME", label: "Income" },
         ]}
       />
-      <Field data-invalid={touched && !amount}>
-        <FieldLabel htmlFor="rec-amount">Amount ($)</FieldLabel>
-        <Input id="rec-amount" inputMode="decimal" placeholder="$0.00" value={amountText} onChange={(e) => setAmountText(e.target.value)} className="h-11" />
-        {touched && !amount && <FieldError>Enter an amount.</FieldError>}
-      </Field>
-      <Field data-invalid={(touched && !categoryId) || Boolean(categoryError)}>
-        <FieldLabel htmlFor="rec-category">Category</FieldLabel>
+      <SpField label="Amount" htmlFor="rec-amount" error={touched && !amount ? "Enter an amount." : undefined}>
+        <SpInput
+          id="rec-amount"
+          surface="panel"
+          inputMode="decimal"
+          placeholder="0.00"
+          value={amountText}
+          aria-invalid={touched && !amount}
+          icon={<span className="text-[0.9375rem] font-medium">$</span>}
+          onChange={(e) => setAmountText(e.target.value)}
+        />
+      </SpField>
+      {/* The select is white like the sheet: give it the soft fill used by the other inputs here. */}
+      <SpField
+        label="Category"
+        htmlFor="rec-category"
+        error={touched && !categoryId ? "Choose a category." : (categoryError ?? undefined)}
+      >
         <CategorySelect
           id="rec-category"
           categories={typeCategories}
@@ -285,17 +336,22 @@ function RecurringForm({
             setCategoryError(null);
           }}
         />
-        {touched && !categoryId ? (
-          <FieldError>Choose a category.</FieldError>
-        ) : (
-          categoryError && <FieldError>{categoryError}</FieldError>
-        )}
-      </Field>
-      <Field data-invalid={touched && !okDescription}>
-        <FieldLabel htmlFor="rec-description">Description</FieldLabel>
-        <Input id="rec-description" maxLength={200} placeholder="e.g. Apartment rent" value={description} onChange={(e) => setDescription(e.target.value)} className="h-11" />
-        {touched && !okDescription && <FieldError>Enter a description.</FieldError>}
-      </Field>
+      </SpField>
+      <SpField
+        label="Description"
+        htmlFor="rec-description"
+        error={touched && !okDescription ? "Enter a description." : undefined}
+      >
+        <SpInput
+          id="rec-description"
+          surface="panel"
+          maxLength={200}
+          placeholder="e.g. Apartment rent"
+          value={description}
+          aria-invalid={touched && !okDescription}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </SpField>
       <FrequencyPicker
         unit={unit}
         every={every}
@@ -317,9 +373,6 @@ function RecurringForm({
           hint="If it is today, the first one is added right away. On the 31st, short months use their last day."
         />
       </div>
-      <Button type="submit" size="lg" className="h-11 w-full shrink-0" disabled={pending}>
-        {pending ? "Saving…" : item ? "Save" : "Add"}
-      </Button>
     </form>
   );
 }

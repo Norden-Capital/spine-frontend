@@ -19,9 +19,9 @@ export function LockWalletButton() {
           .catch(() => {})
           .finally(() => router.refresh());
       }}
-      className="inline-flex h-11 items-center gap-2 rounded-full bg-(--sp-panel) px-4 text-[13px] text-(--sp-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) disabled:opacity-50"
+      className="inline-flex min-h-[44px] items-center py-[8px] gap-[8px] rounded-full bg-(--sp-panel) px-[18px] text-[0.8125rem] leading-snug font-medium text-(--sp-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97] disabled:opacity-50 [&_svg]:size-[18px]"
     >
-      <IconLock className="size-4" aria-hidden />
+      <IconLock aria-hidden />
       {pending ? "Locking…" : "Lock wallet"}
     </button>
   );

@@ -13,9 +13,9 @@ export type GreetingHeaderProps = {
 export function GreetingHeader({ title, subtitle, className }: GreetingHeaderProps) {
   return (
     <div className={className}>
-      <h1 className="text-[29px] leading-none font-medium text-(--sp-text)">{title}</h1>
+      <h1 className="-my-[0.25em] text-[29px] leading-[1.5] font-medium text-(--sp-text)">{title}</h1>
       {subtitle ? (
-        <p className={cn("mt-[9.6px] text-[10.5px] leading-none text-(--sp-text-muted)")}>{subtitle}</p>
+        <p className={cn("mt-[calc(9.6px-0.25em)] -mb-[0.25em] text-[10.5px] leading-[1.5] text-(--sp-text-muted)")}>{subtitle}</p>
       ) : null}
     </div>
   );

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { IconAdd, IconNoResults, IconReceipt, PageHeader } from "@/components/spine-ui";
+import { IconNoResults, IconReceipt, PageHeader } from "@/components/spine-ui";
 import { filtersToQuery, hasFilters, parseFilters } from "@/lib/filters";
 import { todayIn } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
@@ -10,6 +9,8 @@ import { getWalletCategories } from "@/lib/wallet-server";
 import { FilterBar } from "@/components/filters/filter-bar";
 import { TxList } from "@/components/transactions/tx-list";
 import { PageEmpty } from "@/components/nav/page-empty";
+import { HeaderAddLink } from "@/components/nav/header-add-link";
+import { WalletLoadError } from "@/components/wallet/wallet-page-head";
 
 export const metadata: Metadata = { title: "Wallet transactions" };
 
@@ -31,7 +32,12 @@ export default async function WalletTransactionsPage({ searchParams }: PageProps
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title="Wallet transactions" subtitle="Personal · only you" back={{ href: "/wallet", label: "Wallet" }} />
+      <PageHeader
+        title="Wallet transactions"
+        subtitle="Personal · only you"
+        back={{ href: "/wallet", label: "Wallet" }}
+        action={<HeaderAddLink href="/wallet/transactions/new" label="Add to wallet" />}
+      />
 
       <FilterBar
         filters={filters}
@@ -41,7 +47,7 @@ export default async function WalletTransactionsPage({ searchParams }: PageProps
         apiPath="/wallet/transactions"
         placeholder="Description, website"
         totalItems={list?.totalItems}
-        net={list?.totals?.net}
+        totals={list?.totals ?? undefined}
       />
 
       {list ? (
@@ -51,7 +57,6 @@ export default async function WalletTransactionsPage({ searchParams }: PageProps
           query={query}
           apiPath="/wallet/transactions"
           hrefBase="/wallet/transactions"
-          showTotals={false}
           empty={
             hasFilters(filters) ? (
               <PageEmpty icon={<IconNoResults />} title="Nothing matches these filters" />
@@ -61,18 +66,8 @@ export default async function WalletTransactionsPage({ searchParams }: PageProps
           }
         />
       ) : (
-        <p className="rounded-(--sp-radius) bg-(--sp-panel) px-4 py-8 text-center text-sm text-(--sp-text-muted)">
-          Your transactions could not be loaded. Please try again later.
-        </p>
+        <WalletLoadError what="Your transactions" />
       )}
-
-      <Link
-        href="/wallet/transactions/new"
-        aria-label="Add to wallet"
-        className="fixed right-[max(1rem,calc(env(safe-area-inset-right)+1rem))] bottom-[calc(var(--sp-dock-h)+var(--sp-dock-gap)+1rem+env(safe-area-inset-bottom))] z-20 flex size-14 items-center justify-center rounded-full bg-(--sp-pill) text-(--sp-pill-text) shadow-lg outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
-      >
-        <IconAdd className="size-7" aria-hidden />
-      </Link>
     </div>
   );
 }

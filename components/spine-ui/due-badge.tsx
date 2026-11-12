@@ -27,12 +27,12 @@ export type DueBadgeProps = {
  */
 export function DueBadge({ state, label, className }: DueBadgeProps) {
   if (state === "later") {
-    return <span className={cn("text-[0.6875rem] leading-none whitespace-nowrap text-(--sp-text-muted)", className)}>{label}</span>;
+    return <span className={cn("-my-[0.25em] text-[0.6875rem] leading-[1.5] whitespace-nowrap text-(--sp-text-muted)", className)}>{label}</span>;
   }
   return (
     <span
       className={cn(
-        "inline-flex h-[22px] shrink-0 items-center gap-[5px] rounded-full px-[9px] text-[0.625rem] leading-none font-medium whitespace-nowrap [&_svg]:size-[12px]",
+        "inline-flex h-[22px] shrink-0 items-center gap-[5px] rounded-full px-[9px] text-[0.625rem] leading-[1.5] font-medium whitespace-nowrap [&_svg]:size-[12px]",
         PILL[state],
         className
       )}

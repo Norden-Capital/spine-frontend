@@ -42,21 +42,21 @@ export function AlertRow({ icon, tone = "info", title, message, time, unread, hr
         {icon}
       </span>
       <span className="mt-[10.5px] ml-[10.8px] min-w-0 flex-1">
-        <span className="block truncate text-[12px] font-medium text-(--sp-text)">{title}</span>
+        <span className="-my-[0.25em] block truncate text-[12px] font-medium text-(--sp-text)">{title}</span>
         {message ? (
-          <span className="mt-[3.9px] line-clamp-2 text-[10px] leading-[1.35] text-(--sp-text-faint)">{message}</span>
+          <span className="mt-[calc(3.9px-0.075em)] line-clamp-2 text-[10px] leading-[1.5] text-(--sp-text-faint)">{message}</span>
         ) : null}
       </span>
       {time || unread ? (
         <span className="mt-[12px] ml-3 flex shrink-0 flex-col items-end gap-[6px]">
-          {time ? <span className="text-[10px] text-(--sp-text-faint)">{time}</span> : null}
+          {time ? <span className="-my-[0.25em] text-[10px] text-(--sp-text-faint)">{time}</span> : null}
           {unread ? <span aria-label="Unread" role="img" className="size-[7px] rounded-full bg-(--sp-card-front)" /> : null}
         </span>
       ) : null}
     </>
   );
 
-  const base = "flex min-h-[48px] items-start pr-[12px] pb-[7.5px] pl-[14px] leading-none";
+  const base = "flex min-h-[48px] items-start pr-[12px] pb-[7.5px] pl-[14px] leading-[1.5]";
 
   if (href) {
     return (

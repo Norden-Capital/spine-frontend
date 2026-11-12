@@ -33,9 +33,9 @@ export function ProgressBar({ value, tone = "accent", label, valueText, ariaLabe
   const pct = Math.max(0, Math.min(1, value)) * 100;
   const onCard = tone === "onCard";
   return (
-    <div className={cn("leading-none", className)}>
+    <div className={cn("leading-[1.5]", className)}>
       {label || valueText ? (
-        <div className="mb-[8px] flex items-baseline justify-between gap-3">
+        <div className="mb-[8px] flex items-baseline justify-between gap-3 [&>*]:-my-[0.25em]">
           {label ? (
             <span className={cn("truncate text-[12px] font-medium", onCard ? "" : "text-(--sp-text)")}>{label}</span>
           ) : (

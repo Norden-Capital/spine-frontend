@@ -53,7 +53,7 @@ export function CategoryMultiGrid({ options, value, onValueChange, className }: 
       role="checkbox"
       aria-checked={active}
       onClick={onClick}
-      className="group flex min-w-0 flex-col items-center gap-[8px] rounded-2xl py-[2px] leading-none outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
+      className="group flex min-w-0 flex-col items-center gap-[8px] rounded-2xl py-[2px] leading-[1.5] outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
     >
       <span
         className={cn(
@@ -68,7 +68,7 @@ export function CategoryMultiGrid({ options, value, onValueChange, className }: 
           </span>
         ) : null}
       </span>
-      <span className={cn("w-full truncate px-[2px] text-center text-[0.6875rem]", active ? "font-medium text-(--sp-text)" : "text-(--sp-text-2)")}>
+      <span className={cn("-my-[0.25em] line-clamp-2 w-full px-[2px] text-center text-[0.6875rem] [overflow-wrap:anywhere]", active ? "font-medium text-(--sp-text)" : "text-(--sp-text-2)")}>
         {label}
       </span>
     </button>
@@ -86,7 +86,7 @@ export function CategoryMultiGrid({ options, value, onValueChange, className }: 
         const chosenSubs = subsOf(o).filter((c) => set.has(c.id));
         return (
           <div key={o.id} className="mt-[16px] rounded-[16px] bg-(--sp-soft) px-[12px] pt-[10px] pb-[12px]">
-            <p className="text-[0.6875rem] leading-none text-(--sp-text-muted)">{o.name}: which ones?</p>
+            <p className="-my-[0.25em] text-[0.6875rem] leading-[1.5] text-(--sp-text-muted)">{o.name}: which ones?</p>
             <div role="group" aria-label={`${o.name} subcategories`} className="mt-[10px] flex flex-wrap gap-[8px]">
               <FilterChip label={`All ${o.name}`} active={chosenSubs.length === 0} onClick={() => pickSub(o)} />
               {subsOf(o).map((c) => (

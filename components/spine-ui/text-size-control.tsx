@@ -33,13 +33,13 @@ export function TextSizeControl({
   return (
     <div className={className}>
       <div className="rounded-[16px] bg-(--sp-soft) px-[14px] py-[14px]">
-        <p className="text-[0.625rem] leading-none text-(--sp-text-muted)">Preview</p>
+        <p className="-my-[0.25em] text-[0.625rem] leading-[1.5] text-(--sp-text-muted)">Preview</p>
         <p className="mt-[8px] leading-snug font-medium text-(--sp-text)" style={{ fontSize: `${step.px}px` }}>
           {preview}
         </p>
       </div>
       <div className="mt-[10px] flex items-center gap-[10px]">
-        <span aria-hidden className="w-[16px] text-center text-[13px] leading-none font-medium text-(--sp-text-muted)">
+        <span aria-hidden className="w-[16px] text-center text-[13px] leading-[1.5] font-medium text-(--sp-text-muted)">
           A
         </span>
         <div role="radiogroup" aria-label="Text size" className="relative flex h-[44px] flex-1 items-center">
@@ -77,11 +77,11 @@ export function TextSizeControl({
             })}
           </div>
         </div>
-        <span aria-hidden className="w-[16px] text-center text-[20px] leading-none font-medium text-(--sp-text-muted)">
+        <span aria-hidden className="w-[16px] text-center text-[20px] leading-[1.5] font-medium text-(--sp-text-muted)">
           A
         </span>
       </div>
-      <p className="mt-[2px] text-center text-[0.6875rem] leading-none font-medium text-(--sp-text)">{step.label}</p>
+      <p className="mt-[calc(2px-0.25em)] -mb-[0.25em] text-center text-[0.6875rem] leading-[1.5] font-medium text-(--sp-text)">{step.label}</p>
     </div>
   );
 }

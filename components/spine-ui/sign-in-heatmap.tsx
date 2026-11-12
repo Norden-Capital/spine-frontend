@@ -27,12 +27,12 @@ export function SignInHeatmap({ days, months, summary, className }: SignInHeatma
   const weeks = Math.ceil(days.length / 7);
   return (
     <section className={cn("rounded-(--sp-radius) bg-(--sp-panel) px-[14px] pt-[14px] pb-[14px]", className)}>
-      <div className="flex items-baseline justify-between gap-3 leading-none">
+      <div className="flex items-baseline justify-between gap-3 leading-[1.5] [&>*]:-my-[0.25em]">
         <h2 className="text-[0.8125rem] font-medium text-(--sp-text)">Sign-ins</h2>
         {summary ? <span className="text-[0.625rem] text-(--sp-text-muted)">{summary}</span> : null}
       </div>
       <div className="mt-[14px] flex gap-[6px]">
-        <div aria-hidden className="grid shrink-0 grid-rows-7 gap-[3px] text-[0.5625rem] leading-none text-(--sp-text-faint)">
+        <div aria-hidden className="grid shrink-0 grid-rows-7 gap-[3px] text-[0.5625rem] leading-[1.5] text-(--sp-text-faint) [&>*]:-my-[0.25em]">
           {["Mon", "", "Wed", "", "Fri", "", ""].map((d, i) => (
             <span key={i} className="flex items-center">
               {d}
@@ -52,7 +52,7 @@ export function SignInHeatmap({ days, months, summary, className }: SignInHeatma
           </div>
           <div
             aria-hidden
-            className="relative mt-[6px] h-[10px] text-[0.5625rem] leading-none text-(--sp-text-faint)"
+            className="relative mt-[6px] h-[10px] text-[0.5625rem] leading-[1.5] text-(--sp-text-faint) [&>*]:-my-[0.25em]"
           >
             {months.map((m) => (
               <span key={m.label} className="absolute top-0" style={{ left: `${(m.week / weeks) * 100}%` }}>
@@ -62,7 +62,7 @@ export function SignInHeatmap({ days, months, summary, className }: SignInHeatma
           </div>
         </div>
       </div>
-      <div className="mt-[12px] flex flex-wrap gap-x-[14px] gap-y-[6px] text-[0.625rem] leading-none text-(--sp-text-muted)">
+      <div className="mt-[12px] flex flex-wrap gap-x-[14px] gap-y-[6px] text-[0.625rem] leading-[1.5] text-(--sp-text-muted) [&>*]:-my-[0.25em]">
         {(
           [
             ["ok", "Signed in"],

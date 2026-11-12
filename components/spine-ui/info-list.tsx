@@ -18,7 +18,7 @@ export function InfoList({ rows, title, className }: InfoListProps) {
   return (
     <section className={cn("rounded-(--sp-radius) bg-(--sp-panel) px-[14px] py-[6px]", className)}>
       {title ? (
-        <h2 className="pt-[12px] pb-[4px] text-[0.8125rem] leading-none font-medium text-(--sp-text)">{title}</h2>
+        <h2 className="-my-[0.25em] pt-[12px] pb-[4px] text-[0.8125rem] leading-[1.5] font-medium text-(--sp-text)">{title}</h2>
       ) : null}
       <dl>
         {rows.map((r) => (

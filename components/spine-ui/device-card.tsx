@@ -30,15 +30,15 @@ export function DeviceCard({ icon, tone = "ink", name, added, lastUsed, current,
           {icon}
         </IconTile>
         <div className="min-w-0 flex-1 pt-[3px]">
-          <p className="flex items-center gap-[8px] leading-none">
-            <span className="truncate text-[0.875rem] font-medium text-(--sp-text)">{name}</span>
+          <p className="flex items-center gap-[8px] leading-[1.5]">
+            <span className="-my-[0.25em] truncate text-[0.875rem] font-medium text-(--sp-text)">{name}</span>
             {current ? (
               <span className="inline-flex h-[20px] shrink-0 items-center rounded-full bg-(--sp-card-front) px-[8px] text-[0.5625rem] font-medium text-(--sp-card-front-text)">
                 This device
               </span>
             ) : null}
           </p>
-          <p className="mt-[5px] text-[0.6875rem] leading-none text-(--sp-text-muted)">Face ID / fingerprint</p>
+          <p className="mt-[calc(5px-0.25em)] -mb-[0.25em] text-[0.6875rem] leading-[1.5] text-(--sp-text-muted)">Face ID / fingerprint</p>
         </div>
         {action ? <div className="-mt-[6px] -mr-[6px] shrink-0">{action}</div> : null}
       </div>
@@ -47,9 +47,9 @@ export function DeviceCard({ icon, tone = "ink", name, added, lastUsed, current,
           ["Added", added],
           ["Last used", lastUsed],
         ].map(([k, v]) => (
-          <div key={k} className="rounded-[12px] bg-(--sp-panel) px-[10px] py-[9px] leading-none">
-            <dt className="text-[0.5625rem] text-(--sp-text-faint)">{k}</dt>
-            <dd className="mt-[4px] truncate text-[0.75rem] font-medium text-(--sp-text)">{v}</dd>
+          <div key={k} className="rounded-[12px] bg-(--sp-panel) px-[10px] py-[9px] leading-[1.5]">
+            <dt className="-my-[0.25em] text-[0.5625rem] text-(--sp-text-faint)">{k}</dt>
+            <dd className="mt-[calc(4px-0.25em)] -mb-[0.25em] truncate text-[0.75rem] font-medium text-(--sp-text)">{v}</dd>
           </div>
         ))}
       </dl>

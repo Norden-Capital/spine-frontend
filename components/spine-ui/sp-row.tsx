@@ -45,14 +45,23 @@ export function SpRow({ leading, title, subtitle, trailing, href, onClick, inden
       <span className="min-w-0 flex-1">
         <span
           className={cn(
-            "block truncate text-[0.8125rem] leading-tight font-medium",
+            "-my-[0.125em] block truncate text-[0.8125rem] leading-[1.5] font-medium",
             muted ? "text-(--sp-text-muted)" : "text-(--sp-text)"
           )}
         >
           {title}
         </span>
         {subtitle ? (
-          <span className="mt-[3px] block truncate text-[0.6875rem] leading-tight text-(--sp-text-muted)">{subtitle}</span>
+          <span
+            className={cn(
+              "block truncate text-[0.6875rem] leading-[1.5] text-(--sp-text-muted)",
+              // Plain text: take back the extra line height so it sits where it did.
+              // A custom node (e.g. a badge row) keeps its own height.
+              typeof subtitle === "string" ? "mt-[calc(3px-0.125em)] -mb-[0.125em]" : "mt-[3px]"
+            )}
+          >
+            {subtitle}
+          </span>
         ) : null}
       </span>
       {trailing ??
@@ -99,7 +108,7 @@ export function RowGroup({
     <section className={cn("rounded-(--sp-radius) bg-(--sp-panel) p-[4px]", className)}>
       {title ? (
         <div className="flex min-h-[44px] items-end justify-between gap-3 px-[10px] pb-[6px]">
-          <h2 className="text-[0.8125rem] leading-none font-medium text-(--sp-text)">{title}</h2>
+          <h2 className="-my-[0.25em] text-[0.8125rem] leading-[1.5] font-medium text-(--sp-text)">{title}</h2>
           {aside}
         </div>
       ) : null}

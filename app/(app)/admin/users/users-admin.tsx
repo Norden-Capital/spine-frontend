@@ -96,7 +96,7 @@ function UserRow({ user }: { user: AdminUser }) {
       subtitle={name !== user.email ? user.email : undefined}
       muted={disabled}
       trailing={
-        <span className="flex shrink-0 flex-col items-end gap-[4px]">
+        <span className="flex max-w-[60%] flex-wrap items-center justify-end gap-[6px]">
           <RoleBadge role={user.role} />
           {user.status !== "ACTIVE" && <StatusBadge status={user.status} />}
         </span>

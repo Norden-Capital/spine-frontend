@@ -12,7 +12,7 @@ const AREA = {
 
 /** Same look as SpButton primary, for a <Link>. */
 const LINK_PRIMARY =
-  "inline-flex h-[52px] items-center justify-center rounded-full bg-(--sp-chip-active) px-[24px] text-[14px] leading-none font-medium whitespace-nowrap text-(--sp-chip-active-text) transition outline-none select-none hover:opacity-90 focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.98]";
+  "inline-flex h-[52px] items-center justify-center rounded-full bg-(--sp-chip-active) px-[24px] text-[14px] leading-snug font-medium whitespace-nowrap text-(--sp-chip-active-text) transition outline-none select-none hover:opacity-90 focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.98]";
 
 export default function WalletTxNotFound() {
   return (

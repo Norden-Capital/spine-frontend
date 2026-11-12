@@ -4,9 +4,9 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { Category } from "@/lib/catalog-types";
 import { DATE_PRESETS, filtersToQuery, hasFilters, matchPreset, rangeLabel, type Filters } from "@/lib/filters";
-import { addMonths, formatMoney, formatNet } from "@/lib/transactions-types";
+import { addMonths, formatMoney, signedMoney } from "@/lib/transactions-types";
 import { CategoryIcon } from "@/components/expenses/category-icon";
-import { ActiveFilters, PeriodBar, SearchBar, type ActiveFilter } from "@/components/spine-ui";
+import { ActiveFilters, PeriodBar, SearchBar, SpMoney, type ActiveFilter } from "@/components/spine-ui";
 import { FilterSheet, type PersonOption } from "./filter-sheet";
 import { longMonth } from "./period";
 
@@ -28,7 +28,7 @@ export function FilterBar({
   apiPath,
   placeholder,
   totalItems,
-  net,
+  totals,
   autoFocusSearch,
 }: {
   /** Current filters; `month` is filled in when there is no range. */
@@ -42,8 +42,8 @@ export function FilterBar({
   placeholder: string;
   /** How many rows match (from the list answer). */
   totalItems?: number;
-  /** Net total in USD (from the list answer). */
-  net?: string;
+  /** The period's In / Out (server totals for these filters). */
+  totals?: { in: string; out: string };
   autoFocusSearch?: boolean;
 }) {
   const router = useRouter();
@@ -132,23 +132,44 @@ export function FilterBar({
   const preset = range ? matchPreset(filters, today) : undefined;
   const presetLabel = preset ? DATE_PRESETS.find((p) => p.value === preset)?.label : undefined;
   const filtered = hasFilters({ ...filters, from: undefined, to: undefined });
-  const summary = [
-    presetLabel ? rangeLabel(filters.from, filters.to, false) : undefined,
+  const countText =
     totalItems === undefined
       ? undefined
       : filtered || range
         ? `${COUNT.format(totalItems)} result${totalItems === 1 ? "" : "s"}`
-        : `${COUNT.format(totalItems)} transaction${totalItems === 1 ? "" : "s"}`,
-    net !== undefined && totalItems ? formatNet(net) : undefined,
-  ]
+        : `${COUNT.format(totalItems)} transaction${totalItems === 1 ? "" : "s"}`;
+  const head = [presetLabel ? rangeLabel(filters.from, filters.to, false) : undefined, countText]
     .filter(Boolean)
     .join(" · ");
+  // One line (inline spans only, so the kit can cut it with "…"):
+  // "+$500.00 in · −$120.00 out · 2 transactions", soft green / red. Money
+  // first: on a narrow phone the kit cuts the line end with "…", so the
+  // count goes before the In / Out totals do.
+  // A zero side is left out (e.g. no "$0.00 in" when the filter is Expense).
+  const hasIn = Boolean(totals && Number(totals.in));
+  const hasOut = Boolean(totals && Number(totals.out));
+  const money =
+    totals && totalItems && (hasIn || hasOut) ? (
+      <>
+        {hasIn && <SpMoney direction="in">{signedMoney(totals.in, "in")} in</SpMoney>}
+        {hasIn && hasOut ? " · " : ""}
+        {hasOut && <SpMoney direction="out">{signedMoney(totals.out, "out")} out</SpMoney>}
+      </>
+    ) : null;
+  const summary =
+    head || money ? (
+      <>
+        {money}
+        {money && head ? " · " : ""}
+        {head}
+      </>
+    ) : undefined;
 
   return (
     <div className="flex flex-col gap-3">
       <PeriodBar
         label={range ? (presetLabel ?? rangeLabel(filters.from, filters.to)) : longMonth(month)}
-        summary={summary || undefined}
+        summary={summary}
         range={range}
         onClearRange={() => go({ ...filters, from: undefined, to: undefined, month: undefined })}
         onPrev={() => go({ ...filters, month: addMonths(month, -1) })}

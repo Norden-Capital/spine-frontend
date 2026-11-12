@@ -14,7 +14,7 @@ export { QuickAction, QuickActions, type QuickActionProps, type QuickActionsProp
 export { SectionCard, type SectionCardProps } from "./section-card";
 export { SpineLogo, type SpineLogoProps } from "./spine-logo";
 export { spineFont } from "./font";
-export { TopBar, type TopBarProps } from "./top-bar";
+export { TopBar, TopBarLogo, type TopBarProps } from "./top-bar";
 // Module 5 additions (same rules: px sizes, --sp-* tokens, 44 taps).
 export { AlertRow, type AlertRowProps, type AlertTone } from "./alert-row";
 export { BottomSheet, BottomSheetClose, type BottomSheetProps } from "./bottom-sheet";
@@ -26,12 +26,25 @@ export { ProgressRing, type ProgressRingProps } from "./progress-ring";
 export { SpButton, type SpButtonProps } from "./sp-button";
 // Page parts (module 6 redesign). Text in rem (text-size pref applies), taps ≥ 44 px.
 export { AmountField, type AmountFieldProps } from "./amount-field";
+export { GlassRims } from "./glass";
+export { SpMoney, type SpMoneyProps, type MoneyDirection } from "./sp-money";
 export { AuthHeader, OrDivider, type AuthHeaderProps } from "./auth-header";
 export { CategoryGrid, type CategoryGridProps, type CategoryOption } from "./category-grid";
 export { ChoiceList, type Choice, type ChoiceListProps } from "./choice-list";
 export { CommentThread, type CommentItem, type CommentThreadProps } from "./comment-thread";
 export { EmptyState, type EmptyStateProps } from "./empty-state";
-export { SpField, SpInput, SpTextarea, type SpFieldProps, type SpInputProps, type SpTextareaProps } from "./field";
+export {
+  SpField,
+  SpInput,
+  SpTextarea,
+  SpSelect,
+  SP_INPUT_CLASS,
+  type SpFieldProps,
+  type SpInputProps,
+  type SpTextareaProps,
+  type SpSelectProps,
+  type SpSelectOption,
+} from "./field";
 export { InfoList, type InfoListProps, type InfoRow } from "./info-list";
 export { PageHeader, type PageHeaderProps } from "./page-header";
 export { SpPasswordInput, type SpPasswordInputProps } from "./password-input";

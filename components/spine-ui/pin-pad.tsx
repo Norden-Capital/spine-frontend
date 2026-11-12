@@ -16,7 +16,7 @@ export type PinPadProps = {
 };
 
 const KEY =
-  "flex size-[72px] items-center justify-center rounded-full leading-none outline-none select-none transition " +
+  "flex size-[72px] items-center justify-center rounded-full leading-[1.5] outline-none select-none transition " +
   "focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-95 disabled:pointer-events-none disabled:opacity-40";
 
 /**

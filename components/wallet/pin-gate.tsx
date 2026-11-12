@@ -92,13 +92,14 @@ const WELCOME_HEIGHT =
 function WalletWelcome({ onStart }: { onStart: () => void }) {
   return (
     <div className="flex flex-col gap-4 [@media(max-height:720px)]:gap-3" style={{ minHeight: WELCOME_HEIGHT }}>
-      <div className="flex max-h-[300px] min-h-[200px] flex-[3_1_auto] flex-col justify-between overflow-hidden rounded-(--sp-radius) bg-(--sp-card-back) px-5 pt-5 pb-6 [@media(max-height:720px)]:min-h-0 [@media(max-height:720px)]:pb-5 text-(--sp-card-back-text)">
+      {/* Max height grows with the text size (rem), and no overflow-hidden: big text is never cut. */}
+      <div className="flex max-h-[max(300px,calc(140px+8rem))] min-h-[200px] flex-[3_1_auto] flex-col justify-between rounded-(--sp-radius) bg-(--sp-card-back) px-5 pt-5 pb-6 [@media(max-height:720px)]:min-h-0 [@media(max-height:720px)]:pb-5 text-(--sp-card-back-text)">
         <span className="flex size-14 items-center justify-center rounded-full bg-black/10 [@media(max-height:720px)]:size-12">
           <IconWallet className="size-7" aria-hidden />
         </span>
         <div className="mt-6 [@media(max-height:720px)]:mt-4">
-          <h1 className="text-[1.75rem] leading-tight font-medium [@media(max-height:720px)]:text-[1.5rem]">Welcome to your wallet</h1>
-          <p className="mt-2 text-[0.9375rem] opacity-80">Your own private space for your personal money.</p>
+          <h1 className="text-[1.75rem] leading-snug font-medium [@media(max-height:720px)]:text-[1.5rem]">Welcome to your wallet</h1>
+          <p className="mt-2 text-[0.9375rem] leading-snug opacity-80">Your own private space for your personal money.</p>
         </div>
       </div>
       <ul className="flex max-h-[340px] flex-[2_1_auto] flex-col justify-evenly gap-1 rounded-(--sp-radius) bg-(--sp-panel) p-2">
@@ -166,7 +167,7 @@ export function PinUnlock({ lockedUntil }: { lockedUntil: string | null }) {
       <button
         type="button"
         onClick={() => setForgot(true)}
-        className="h-11 rounded-full px-4 text-[0.9375rem] font-medium text-(--sp-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97]"
+        className="min-h-[44px] rounded-full px-[16px] py-[8px] text-[0.9375rem] leading-snug font-medium text-(--sp-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97]"
       >
         Forgot PIN?
       </button>
@@ -189,16 +190,20 @@ function Screen({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center gap-6 pt-2 text-center">
-      <span className="flex size-14 items-center justify-center rounded-full bg-(--sp-card-back) text-(--sp-card-back-text)">
-        <IconLock className="size-6" aria-hidden />
+    <div className="flex flex-col items-center gap-[24px] pt-[8px] text-center">
+      <span className="flex size-[64px] items-center justify-center rounded-full bg-(--sp-card-back) text-(--sp-card-back-text) [&_svg]:size-[26px]">
+        <IconLock aria-hidden />
       </span>
       <div>
-        {step && <p className="mb-1 text-[0.75rem] font-medium tracking-wide text-(--sp-text-muted) uppercase">{step}</p>}
-        <h1 className="text-[22px] font-medium text-(--sp-text)">{title}</h1>
-        <p className="mx-auto mt-1 max-w-[300px] text-sm text-(--sp-text-muted)">{subtitle}</p>
+        {step && (
+          <p className="mb-[4px] text-[0.75rem] leading-snug font-medium tracking-wide text-(--sp-text-muted) uppercase">
+            {step}
+          </p>
+        )}
+        <h1 className="text-[1.375rem] leading-snug font-medium text-(--sp-text)">{title}</h1>
+        <p className="mx-auto mt-[4px] max-w-[300px] text-[0.8125rem] leading-snug text-(--sp-text-muted)">{subtitle}</p>
       </div>
-      <p role="alert" className="min-h-5 text-[0.875rem] text-(--sp-danger)">
+      <p role="alert" className="min-h-[1.25rem] text-[0.8125rem] leading-snug text-(--sp-danger)">
         {error}
       </p>
       {children}

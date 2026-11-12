@@ -6,6 +6,7 @@ import { BottomSheet } from "./bottom-sheet";
 import { DateRangePicker, type IsoDay } from "./date-range-picker";
 import { IconCalendar } from "./icons";
 import { SpButton } from "./sp-button";
+import { SP_INPUT_CLASS } from "./field";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 /** Local today as "YYYY-MM-DD". */
@@ -33,7 +34,7 @@ export type DateFieldProps = {
   optional?: boolean;
   error?: string;
   hint?: string;
-  /** "page" = white on the gray page; "panel" = soft inside a white panel or sheet. */
+  /** @deprecated No effect: one input look everywhere. */
   surface?: "page" | "panel";
   /** How a date shows, e.g. the user's format: (iso) => "12/11/2026". */
   format?: (day: IsoDay) => string;
@@ -65,7 +66,6 @@ export function DateField({
   optional,
   error,
   hint,
-  surface = "page",
   format = defaultFormat,
   today,
   sheetTitle,
@@ -87,8 +87,8 @@ export function DateField({
 
   return (
     <div className={cn("space-y-[8px]", className)}>
-      <div className="px-[4px]">
-        <span id={`${id}-label`} className="text-[0.8125rem] leading-tight font-medium text-(--sp-text)">
+      <div className="flex items-baseline justify-between gap-3 px-[4px]">
+        <span id={`${id}-label`} className="-my-[0.125em] text-[0.8125rem] leading-[1.5] font-medium text-(--sp-text)">
           {label}
           {optional ? <span className="font-normal text-(--sp-text-faint)"> (optional)</span> : null}
         </span>
@@ -104,15 +104,14 @@ export function DateField({
         data-invalid={error ? "" : undefined}
         aria-describedby={error || hint ? `${id}-help` : undefined}
         className={cn(
-          "flex h-[52px] w-full items-center gap-[10px] rounded-[16px] px-[16px] text-left outline-none transition",
-          "focus-visible:ring-2 focus-visible:ring-(--sp-card-front) data-invalid:ring-2 data-invalid:ring-(--sp-danger) disabled:opacity-60",
-          surface === "panel" ? "bg-(--sp-soft)" : "bg-(--sp-panel)"
+          SP_INPUT_CLASS,
+          "flex h-[52px] items-center gap-[10px] px-[16px] text-left"
         )}
       >
         <span className="min-w-0 flex-1 truncate" style={{ fontSize: "max(16px, 1rem)" }}>
-          {shown ? <span className="text-(--sp-text)">{shown}</span> : <span className="text-(--sp-text-faint)">{placeholder}</span>}
+          {shown ? <span className="text-(--sp-text)">{shown}</span> : <span className="text-(--sp-input-placeholder)">{placeholder}</span>}
         </span>
-        <IconCalendar className="size-[20px] text-(--sp-text-muted)" />
+        <IconCalendar className="size-[20px] text-(--sp-input-icon)" />
       </button>
       {name ? <input type="hidden" name={name} value={value ?? ""} /> : null}
       {error ? (

@@ -17,12 +17,12 @@ export type SectionCardProps = {
 export function SectionCard({ title, action, children, className }: SectionCardProps) {
   return (
     <section className={cn("rounded-(--sp-radius) bg-(--sp-panel) pb-[8px]", className)}>
-      <div className="flex h-[49px] items-start justify-between pt-[25px] pr-[12px] pl-[14px] leading-none">
-        <h2 className="text-[13px] font-medium text-(--sp-text)">{title}</h2>
+      <div className="flex h-[49px] items-start justify-between pt-[25px] pr-[12px] pl-[14px] leading-[1.5]">
+        <h2 className="-my-[0.25em] text-[13px] font-medium text-(--sp-text)">{title}</h2>
         {action ? (
           <Link
             href={action.href}
-            className="relative mt-[2px] rounded-full text-[10px] text-(--sp-text-link) outline-none after:absolute after:-inset-x-3 after:-inset-y-4 after:content-[''] hover:text-(--sp-text) focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
+            className="relative mt-[calc(2px-0.25em)] -mb-[0.25em] rounded-full text-[10px] text-(--sp-text-link) outline-none after:absolute after:-inset-x-3 after:-inset-y-4 after:content-[''] hover:text-(--sp-text) focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
           >
             {action.label}
           </Link>

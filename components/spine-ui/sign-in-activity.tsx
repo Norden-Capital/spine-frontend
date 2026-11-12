@@ -30,20 +30,20 @@ export function SignInActivity({ days, months, total, totalLabel, failed = 0, cl
   return (
     <section className={cn("rounded-(--sp-radius) bg-(--sp-panel) px-[14px] pt-[16px] pb-[14px]", className)}>
       <div className="flex items-start justify-between gap-3">
-        <div className="leading-none">
-          <h2 className="text-[0.8125rem] font-medium text-(--sp-text)">Sign-ins</h2>
+        <div className="leading-[1.5]">
+          <h2 className="-my-[0.25em] text-[0.8125rem] font-medium text-(--sp-text)">Sign-ins</h2>
           <p className="mt-[12px] flex items-baseline gap-[8px]">
-            <span className="text-[1.875rem] font-medium tracking-tight text-(--sp-text) tabular-nums">{total}</span>
-            <span className="text-[0.6875rem] text-(--sp-text-muted)">{totalLabel}</span>
+            <span className="-my-[0.25em] text-[1.875rem] font-medium tracking-tight text-(--sp-text) tabular-nums">{total}</span>
+            <span className="-my-[0.25em] text-[0.6875rem] text-(--sp-text-muted)">{totalLabel}</span>
           </p>
         </div>
         {failed > 0 ? (
-          <span className="inline-flex h-[24px] shrink-0 items-center gap-[5px] rounded-full bg-[color-mix(in_oklab,var(--sp-danger)_14%,transparent)] px-[10px] text-[0.625rem] leading-none font-medium text-(--sp-danger)">
+          <span className="inline-flex h-[24px] shrink-0 items-center gap-[5px] rounded-full bg-[color-mix(in_oklab,var(--sp-danger)_14%,transparent)] px-[10px] text-[0.625rem] leading-[1.5] font-medium text-(--sp-danger)">
             <span className="size-[6px] rounded-full bg-(--sp-danger)" />
             {failed} failed {failed === 1 ? "try" : "tries"}
           </span>
         ) : (
-          <span className="inline-flex h-[24px] shrink-0 items-center rounded-full bg-[color-mix(in_oklab,var(--sp-success)_14%,transparent)] px-[10px] text-[0.625rem] leading-none font-medium text-(--sp-success)">
+          <span className="inline-flex h-[24px] shrink-0 items-center rounded-full bg-[color-mix(in_oklab,var(--sp-success)_14%,transparent)] px-[10px] text-[0.625rem] leading-[1.5] font-medium text-(--sp-success)">
             No failed tries
           </span>
         )}
@@ -59,7 +59,7 @@ export function SignInActivity({ days, months, total, totalLabel, failed = 0, cl
             <span key={i} className={cn("aspect-square rounded-full", DOT[d])} />
           ))}
         </div>
-        <div aria-hidden className="relative mt-[8px] h-[10px] text-[0.5625rem] leading-none text-(--sp-text-faint)">
+        <div aria-hidden className="relative mt-[8px] h-[10px] text-[0.5625rem] leading-[1.5] text-(--sp-text-faint) [&>*]:-my-[0.25em]">
           {months.map((m) => (
             <span key={m.label} className="absolute top-0" style={{ left: `${(m.week / weeks) * 100}%` }}>
               {m.label}
@@ -67,7 +67,7 @@ export function SignInActivity({ days, months, total, totalLabel, failed = 0, cl
           ))}
         </div>
       </div>
-      <div className="mt-[12px] flex gap-[14px] text-[0.625rem] leading-none text-(--sp-text-muted)">
+      <div className="mt-[12px] flex gap-[14px] text-[0.625rem] leading-[1.5] text-(--sp-text-muted) [&>*]:-my-[0.25em]">
         {(
           [
             ["ok", "Signed in"],

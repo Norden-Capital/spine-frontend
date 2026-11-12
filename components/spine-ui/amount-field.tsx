@@ -143,7 +143,7 @@ export function AmountField({
   const fontSize = sizeFor(shown, !!onStep);
 
   const amount = (
-    <div className="flex min-w-0 items-baseline justify-center gap-[4px] leading-none" style={{ fontSize }}>
+    <div className="flex min-w-0 items-baseline justify-center gap-[4px] leading-[1.3]" style={{ fontSize }}>
       <span aria-hidden className="font-medium text-(--sp-text-faint)">
         {symbol}
       </span>

@@ -30,7 +30,7 @@ export function PeekCard({ label, trailing, tone = "sun", className, type = "but
     <button
       type={type}
       className={cn(
-        "relative block h-[80px] w-full rounded-(--sp-radius) text-left leading-none outline-none",
+        "relative block h-[80px] w-full rounded-(--sp-radius) text-left leading-[1.5] outline-none",
         TONE[tone],
         "focus-visible:ring-3 focus-visible:ring-(--sp-ring)",
         className
@@ -38,7 +38,7 @@ export function PeekCard({ label, trailing, tone = "sun", className, type = "but
       {...props}
     >
       <SpineLogo className="absolute top-[17px] left-[16px]" />
-      <span className="absolute top-[20px] right-[18px] flex items-center gap-[5px] text-[13px] [&_svg]:size-[12px] [&_svg]:stroke-2">
+      <span className="absolute top-[20px] right-[18px] -my-[0.25em] flex items-center gap-[5px] text-[13px] [&_svg]:size-[12px] [&_svg]:stroke-2">
         {label}
         {trailing}
       </span>

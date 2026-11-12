@@ -8,10 +8,10 @@ export type ListItemProps = {
   title: string;
   /** Small gray line, e.g. "12:40 pm • 12 November, 2026". */
   meta?: string;
-  /** Already formatted, e.g. "$400.00" or "+$1,200.00". */
+  /** Already formatted WITH the sign, e.g. "−$400.00" or "+$1,200.00". */
   amount: string;
-  /** "income" shows the amount in green. */
-  tone?: "expense" | "income";
+  /** Money direction: "expense" = soft red (out), "income" = soft green (in), "neutral" = normal text. */
+  tone?: "expense" | "income" | "neutral";
   /** Makes the whole row a link. */
   href?: string;
   className?: string;
@@ -28,13 +28,13 @@ export function ListItem({ icon, title, meta, amount, tone = "expense", href, cl
         {icon}
       </span>
       <span className="mt-[10.5px] ml-[10.8px] min-w-0 flex-1">
-        <span className="block truncate text-[12px] font-medium text-(--sp-text)">{title}</span>
-        {meta ? <span className="mt-[3.9px] block truncate text-[10px] text-(--sp-text-faint)">{meta}</span> : null}
+        <span className="-my-[0.25em] block truncate text-[12px] font-medium text-(--sp-text)">{title}</span>
+        {meta ? <span className="mt-[calc(3.9px-0.25em)] -mb-[0.25em] block truncate text-[10px] text-(--sp-text-faint)">{meta}</span> : null}
       </span>
       <span
         className={cn(
-          "mt-[13.4px] ml-3 shrink-0 text-[13px] font-semibold whitespace-nowrap tabular-nums",
-          tone === "income" ? "text-(--sp-income)" : "text-(--sp-text)"
+          "mt-[calc(13.4px-0.25em)] -mb-[0.25em] ml-3 shrink-0 text-[13px] font-semibold whitespace-nowrap tabular-nums",
+          tone === "income" ? "text-(--sp-money-in)" : tone === "expense" ? "text-(--sp-money-out)" : "text-(--sp-text)"
         )}
       >
         {amount}
@@ -42,7 +42,7 @@ export function ListItem({ icon, title, meta, amount, tone = "expense", href, cl
     </>
   );
 
-  const base = "flex h-[48px] items-start pr-[9px] pl-[14px] leading-none";
+  const base = "flex h-[48px] items-start pr-[9px] pl-[14px] leading-[1.5]";
 
   if (href) {
     return (

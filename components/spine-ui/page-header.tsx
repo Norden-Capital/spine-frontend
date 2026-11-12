@@ -32,9 +32,9 @@ export function PageHeader({ title, subtitle, back, action, className }: PageHea
         </Link>
       ) : null}
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-[1.375rem] leading-tight font-medium text-(--sp-text)">{title}</h1>
+        <h1 className="-my-[0.125em] line-clamp-2 text-[1.375rem] leading-[1.5] font-medium [overflow-wrap:anywhere] text-(--sp-text)">{title}</h1>
         {subtitle ? (
-          <p className="mt-[3px] truncate text-[0.6875rem] leading-tight text-(--sp-text-muted)">{subtitle}</p>
+          <p className="mt-[calc(3px-0.125em)] -mb-[0.125em] truncate text-[0.6875rem] leading-[1.5] text-(--sp-text-muted)">{subtitle}</p>
         ) : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}

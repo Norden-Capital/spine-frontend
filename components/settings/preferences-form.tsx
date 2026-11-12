@@ -127,12 +127,12 @@ export function PreferencesForm() {
 
       <SpPanel title="Dates and time">
         <div className="rounded-[16px] bg-(--sp-card-front) px-[14px] py-[14px] text-(--sp-card-front-text)">
-          <p className="text-[0.625rem] leading-none text-(--sp-card-front-muted)">Today looks like this</p>
+          <p className="text-[0.625rem] leading-snug text-(--sp-card-front-muted)">Today looks like this</p>
           {/* The minute can differ between server and phone render. */}
-          <p suppressHydrationWarning className="mt-[8px] text-[1.25rem] leading-none font-medium tabular-nums">
+          <p suppressHydrationWarning className="mt-[8px] text-[1.25rem] leading-snug font-medium tabular-nums">
             {formatDateTime(now, { dateFormat: prefs.dateFormat, zone }).replace(" ", " · ")}
           </p>
-          <p className="mt-[6px] truncate text-[0.6875rem] leading-none text-(--sp-card-front-muted)">
+          <p className="mt-[6px] truncate text-[0.6875rem] leading-normal text-(--sp-card-front-muted)">
             {prettyZone(zone)}
             {offset ? ` (${offset})` : ""}
           </p>

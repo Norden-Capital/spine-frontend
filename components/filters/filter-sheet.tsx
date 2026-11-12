@@ -252,12 +252,12 @@ export function FilterSheet({
             type="button"
             data-testid="filter-range-row"
             onClick={openDates}
-            className="mt-[10px] flex h-[52px] w-full items-center gap-[10px] rounded-[16px] bg-(--sp-soft) px-[14px] text-left outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
+            className="mt-[10px] flex min-h-[52px] w-full items-center gap-[10px] py-[8px] rounded-[16px] bg-(--sp-input) px-[14px] hover:bg-(--sp-input-hover) text-left outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
           >
             <span className="text-(--sp-card-front) [&_svg]:size-[20px]">
               <IconCalendar />
             </span>
-            <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-medium text-(--sp-text)">
+            <span className="min-w-0 flex-1 truncate text-[0.8125rem] leading-normal font-medium text-(--sp-text)">
               {isRange ? rangeLabel(period.from, period.to) : longMonth(period.month ?? current)}
             </span>
             <span className="text-[0.6875rem] font-medium text-(--sp-card-front)">Change</span>
@@ -288,7 +288,7 @@ export function FilterSheet({
               return (
                 <div key={g.title ?? "all"} role={g.title ? "group" : undefined} aria-label={g.title}>
                   {g.title ? (
-                    <p className="mb-[10px] text-[0.6875rem] leading-none font-medium text-(--sp-text-muted)">{g.title}</p>
+                    <p className="mb-[10px] text-[0.6875rem] leading-snug font-medium text-(--sp-text-muted)">{g.title}</p>
                   ) : null}
                   <CategoryMultiGrid
                     className="chip-rows"
@@ -330,7 +330,7 @@ export function FilterSheet({
       </SheetSection>
 
       {people.length > 0 && (
-        <SheetSection title="Created by" hint="Admins only">
+        <SheetSection title="Created by" hint="Owner only">
           <div role="group" aria-label="Created by" className="chip-row">
             <FilterChip surface="panel" label="Anyone" active={!by} onClick={() => setBy("")} />
             {people.map((p) => (
@@ -346,7 +346,7 @@ export function FilterSheet({
 function SheetSection({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
     <section className="border-t border-[color-mix(in_oklab,var(--sp-text)_8%,transparent)] pt-[16px] pb-[18px] first:border-t-0 first:pt-[4px]">
-      <div className="mb-[12px] flex items-baseline justify-between gap-3 leading-none">
+      <div className="mb-[12px] flex items-baseline justify-between gap-3 leading-snug">
         <h3 className="text-[0.8125rem] font-medium text-(--sp-text)">{title}</h3>
         {hint ? <span className="text-[0.625rem] text-(--sp-text-faint)">{hint}</span> : null}
       </div>

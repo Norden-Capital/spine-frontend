@@ -22,6 +22,13 @@
   --sp-panel: #ffffff;         /* quick actions panel, section card */
   --sp-soft: #f0f0f0;          /* round icons inside panels */
   --sp-soft-hover: #e6e6e6;
+  /* Inputs: one look everywhere. See-through fill, so it reads on the gray
+     page (#e0e0e0) and in white sheets (#f0f0f0). No border. AA checked. */
+  --sp-input: rgb(0 0 0 / 0.06);
+  --sp-input-hover: rgb(0 0 0 / 0.09);
+  --sp-input-placeholder: #636363;
+  --sp-input-icon: #6b6b6b;
+  --sp-divider: rgb(0 0 0 / 0.08); /* thin lines between groups (rare) */
   --sp-icon-btn: #ffffff;      /* top bar round buttons */
   --sp-icon-btn-text: #000000;
 
@@ -46,10 +53,20 @@
   --sp-avatar-text: #ffffff;
 
   /* Money */
-  --sp-income: #15803d;
+  --sp-income: #137333;            /* AA on gray page (5.1:1) and white */
+  /* Money direction (calm, low saturation). Sign + colour: "−$120.00" out, "+$500.00" in.
+     AA >= 4.6 on the gray page, white panels / sheets and input fills. */
+  --sp-money-in: #356d4c;
+  --sp-money-out: #934f47;
+  /* On a coloured card (purple / yellow / ink) coloured text can't be AA, so the
+     amount sits in a soft pill. Same in light and dark (cards don't change). */
+  --sp-money-in-chip: #e2f3e8;
+  --sp-money-in-chip-text: #2c6043;   /* 6.4 */
+  --sp-money-out-chip: #f8e5e2;
+  --sp-money-out-chip-text: #86423a;  /* 6.1 */
 
   /* Status (alerts, budgets). Not in the reference: calm, same weight as the rest. */
-  --sp-success: #15803d;
+  --sp-success: #137333;
   --sp-warning: #d97706;
   --sp-danger: #dc2626;
   --sp-info: var(--sp-card-front);
@@ -78,6 +95,11 @@
   --sp-panel: #171717;
   --sp-soft: #000000;
   --sp-soft-hover: #0b0b0b;
+  --sp-input: rgb(255 255 255 / 0.1);
+  --sp-input-hover: rgb(255 255 255 / 0.14);
+  --sp-input-placeholder: #9a9a9a;
+  --sp-input-icon: #8a8a8a;
+  --sp-divider: rgb(255 255 255 / 0.1);
   --sp-icon-btn: #292929;
   --sp-icon-btn-text: #ffffff;
 
@@ -100,6 +122,8 @@
   --sp-avatar-text: #ffffff;
 
   --sp-income: #4ade80;
+  --sp-money-in: #50a774;   /* >= 4.6 on black, panels, fills */
+  --sp-money-out: #c28881;
 
   --sp-success: #4ade80;
   --sp-warning: #fbbf24;
@@ -291,4 +315,95 @@
 .sp {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---- Glass cards (BalanceCard glass, SwapStack glass). Values from
+   liquid-glass-react (MIT), at rest; no SVG warp (not shown by iPhone Safari).
+   Tint 72-88% of each card colour (per theme): text AA over the page, the
+   blob and the other card behind (checked). Purple tint is a bit deeper. ---- */
+:root,
+.light {
+  --sp-glass-tint: #7121a8;                  /* light: over the gray page it looks #8f52b9 */
+  --sp-glass-alpha: 76%;
+  --sp-glass-sun-alpha: 72%;
+  --sp-glass-muted: rgb(255 255 255 / 0.9);  /* labels >= 4.5, text >= 4.6 (also over the yellow card) */
+  --sp-glass-blob-1: #9b40da;
+  --sp-glass-blob-2: #ffd463;
+}
+.dark {
+  --sp-glass-tint: #8a28ce;                  /* over black it looks #7422ad */
+  --sp-glass-alpha: 84%;
+  --sp-glass-sun-alpha: 88%;                 /* over black the yellow must stay bright */
+  --sp-glass-muted: rgb(255 255 255 / 0.9);
+}
+.sp-space-wallet,
+.sp-card-sun {
+  --sp-glass-tint: var(--sp-card-back);
+  --sp-glass-alpha: var(--sp-glass-sun-alpha);
+  --sp-glass-muted: rgb(0 0 0 / 0.7);
+}
+.sp-card-ink {
+  --sp-glass-tint: var(--sp-card-ink);
+  --sp-glass-alpha: 82%;
+  --sp-glass-muted: rgb(255 255 255 / 0.72);
+}
+.sp-glass-card {
+  --sp-card-front-muted: var(--sp-glass-muted);
+  isolation: isolate;
+  background: color-mix(in srgb, var(--sp-glass-tint) var(--sp-glass-alpha), transparent);
+  /* library formula 4 + blurAmount * 32, blurAmount 0.5 for a big surface */
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+  box-shadow: 0 12px 40px -14px rgb(0 0 0 / 0.3); /* library: 0 12px 40px rgb(0 0 0/.25), softened */
+}
+/* Soft colour blob behind a glass stack, so the glass has something to show.
+   Only the top part: the card's bottom-right notch still sits on the plain page. */
+.sp-glass-blob {
+  /* Each spot ends well inside the box, then blurs: no straight edges. */
+  background:
+    radial-gradient(closest-side at 28% 45%, color-mix(in srgb, var(--sp-glass-blob-1) 60%, transparent), transparent),
+    radial-gradient(closest-side at 76% 40%, color-mix(in srgb, var(--sp-glass-blob-2) 80%, transparent), transparent);
+  filter: blur(18px);
+}
+/* Glass button (AddPill glass) in the card notch: a frosted dark tint, so the
+   white label is AA on any page (light: 9.9:1 over #eee; dark: 16:1). */
+:root,
+.light {
+  --sp-glass-pill: rgb(0 0 0 / 0.72);
+  --sp-glass-pill-pressed: rgb(0 0 0 / 0.84);
+  --sp-glass-pill-text: #ffffff;
+  --sp-glass-pill-dot: rgb(255 255 255 / 0.92);
+  --sp-glass-pill-dot-text: #000000;
+}
+.dark {
+  --sp-glass-pill: rgb(255 255 255 / 0.12);
+  --sp-glass-pill-pressed: rgb(255 255 255 / 0.2);
+  --sp-glass-pill-text: #ffffff;
+  --sp-glass-pill-dot: rgb(255 255 255 / 0.2);
+  --sp-glass-pill-dot-text: #ffffff;
+}
+.sp-glass-pill {
+  isolation: isolate;
+  background: var(--sp-glass-pill);
+  -webkit-backdrop-filter: blur(6px) saturate(140%); /* library default: 4 + 0.0625 * 32 */
+  backdrop-filter: blur(6px) saturate(140%);
+  box-shadow: 0 6px 18px -8px rgb(0 0 0 / 0.35);
+}
+.sp-glass-pill:active { background: var(--sp-glass-pill-pressed); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .sp-glass-card { background: var(--sp-glass-tint); }
+  .sp-glass-pill { background: var(--sp-pill); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .sp-glass-card {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--sp-glass-tint);
+  }
+  .sp-glass-pill {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--sp-pill);
+  }
+  .sp-glass-blob { display: none; }
 }

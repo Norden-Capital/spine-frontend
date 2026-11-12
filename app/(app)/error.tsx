@@ -14,7 +14,7 @@ const AREA = {
 
 /** Same look as SpButton secondary, for a <Link>. */
 const LINK_SECONDARY =
-  "inline-flex h-[52px] items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--sp-text)_7%,transparent)] px-[24px] text-[14px] leading-none font-medium whitespace-nowrap text-(--sp-text) transition outline-none select-none hover:bg-[color-mix(in_oklab,var(--sp-text)_11%,transparent)] focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.98]";
+  "inline-flex h-[52px] items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--sp-text)_7%,transparent)] px-[24px] text-[14px] leading-snug font-medium whitespace-nowrap text-(--sp-text) transition outline-none select-none hover:bg-[color-mix(in_oklab,var(--sp-text)_11%,transparent)] focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.98]";
 
 export default function AppError({ reset }: { error: Error; reset: () => void }) {
   return (

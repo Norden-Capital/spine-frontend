@@ -509,7 +509,7 @@ function Ghost({ depth, blocked, text }: { depth: 0 | 1; blocked: boolean; text:
     <div
       aria-hidden
       className={cn(
-        "absolute inset-y-[2px] right-[2px] flex items-center rounded-2xl border-2 border-dashed px-[14px] text-[0.75rem] leading-tight font-medium",
+        "absolute inset-y-[2px] right-[2px] flex items-center rounded-2xl border-2 border-dashed px-[14px] text-[0.75rem] leading-snug font-medium",
         // 2 + INDENT: the same place as a subcategory row.
         depth === 1 ? "left-[46px]" : "left-[2px]",
         blocked

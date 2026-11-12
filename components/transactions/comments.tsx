@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { api, errorMessage } from "@/lib/api";
 import { useDates } from "@/components/prefs/prefs-provider";
-import { CommentThread } from "@/components/spine-ui";
+import { CommentThread, IconButton, IconDelete } from "@/components/spine-ui";
 import { UserAvatar } from "@/components/nav/user-avatar";
 import { seedOf } from "@/lib/avatar";
+import { ConfirmSheet } from "@/components/admin/confirm-sheet";
 import type { PersonRef } from "@/lib/transactions-types";
 
 export type Comment = { id: string; text: string; author: PersonRef; createdAt: string; canDelete: boolean };
@@ -37,14 +38,22 @@ export function Comments({ txId, initial }: { txId: string; initial: Comment[] |
     }
   }
 
-  async function remove(c: Comment) {
+  // The comment to delete (kept while the sheet slides away).
+  const [remove, setRemove] = useState<Comment | null>(null);
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+
+  async function confirmRemove() {
+    const c = remove;
+    if (!c || busy !== null) return;
     setBusy(c.id);
-    setError(null);
+    setRemoveError(null);
     try {
       await api(`${base}/${encodeURIComponent(c.id)}`, { method: "DELETE" });
       setComments((list) => list.filter((x) => x.id !== c.id));
+      setRemoveOpen(false);
     } catch (err) {
-      setError(errorMessage(err));
+      setRemoveError(errorMessage(err));
     } finally {
       setBusy(null);
     }
@@ -56,7 +65,7 @@ export function Comments({ txId, initial }: { txId: string; initial: Comment[] |
       <div className="space-y-[14px]">
         {/* The kit CommentThread draws initials and has no picture slot, so the
             list is drawn here in the same style (33 face, name 12 / Medium,
-            time 10, text 13, "Delete"). The kit thread still draws the composer. */}
+            time 10, text 13, trash button). The kit thread still draws the composer. */}
         {comments.length ? (
           <ul className="space-y-[14px]">
             {comments.map((c) => {
@@ -65,19 +74,23 @@ export function Comments({ txId, initial }: { txId: string; initial: Comment[] |
                 <li key={c.id} className="flex gap-[10px]">
                   <UserAvatar seed={seedOf(c.author)} size={33} />
                   <div className="min-w-0 flex-1">
-                    <p className="flex items-baseline gap-[8px] leading-none">
-                      <span className="truncate text-[0.75rem] font-medium text-(--sp-text)">{c.author.name}</span>
+                    <p className="flex items-baseline gap-[8px] leading-snug">
+                      <span className="truncate text-[0.75rem] leading-normal font-medium text-(--sp-text)">{c.author.name}</span>
                       <span className="shrink-0 text-[0.625rem] text-(--sp-text-faint)">{dates.dateTime(c.createdAt)}</span>
                       {mine ? (
-                        <button
-                          type="button"
+                        <IconButton
+                          variant="ghost"
+                          label="Delete comment"
+                          icon={<IconDelete />}
+                          data-testid="comment-delete"
                           onClick={() => {
-                            if (busy === null) void remove(c);
+                            if (busy !== null) return;
+                            setRemove(c);
+                            setRemoveError(null);
+                            setRemoveOpen(true);
                           }}
-                          className="relative ml-auto shrink-0 text-[0.625rem] text-(--sp-text-faint) outline-none after:absolute after:-inset-[14px] after:content-[''] hover:text-(--sp-danger) focus-visible:text-(--sp-danger)"
-                        >
-                          Delete
-                        </button>
+                          className="-my-[13px] -mr-[10px] ml-auto self-center text-(--sp-text-faint) hover:text-(--sp-danger) focus-visible:text-(--sp-danger) active:text-(--sp-danger) [&_svg]:size-[16px]"
+                        />
                       ) : null}
                     </p>
                     <p className="mt-[5px] text-[0.8125rem] leading-snug break-words whitespace-pre-wrap text-(--sp-text-2)">
@@ -123,6 +136,18 @@ export function Comments({ txId, initial }: { txId: string; initial: Comment[] |
           {error}
         </p>
       )}
+      <ConfirmSheet
+        open={removeOpen}
+        onOpenChange={setRemoveOpen}
+        title="Delete this comment?"
+        text="It is gone for everyone."
+        confirm="Delete"
+        destructive
+        busy={remove !== null && busy === remove.id}
+        busyLabel="Deleting…"
+        error={removeError}
+        onConfirm={() => void confirmRemove()}
+      />
     </div>
   );
 }

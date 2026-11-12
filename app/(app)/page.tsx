@@ -17,7 +17,7 @@ import { formatDay, todayIn } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
 import { getRecurringDue } from "@/lib/recurring-server";
 import { getMonth } from "@/lib/transactions-server";
-import { formatMoney, formatNet, monthOf, type Transaction } from "@/lib/transactions-types";
+import { monthOf, signedMoney, txDirection, type Transaction } from "@/lib/transactions-types";
 import { TxLogo } from "@/components/expenses/tx-logo";
 import { LinkAddPill, LinkIconButton, LinkQuickAction, QuickActionsPanel } from "@/components/home/home-links";
 import { DueSoonCard } from "@/components/recurring/due-soon-card";
@@ -57,20 +57,23 @@ export default async function HomePage() {
       />
 
       <SwapStack
+        glass
         labels={["Company", "Personal wallet"]}
         cards={[
           <BalanceCard
+            glass
             key="company"
             tag="Company"
             amountLabel="Out this month"
-            amount={formatMoney(out)}
-            detail={{ label: "In", value: formatMoney(income, Number(income) > 0 ? "+" : undefined) }}
-            footer={{ label: "Net", value: formatNet(net) }}
-            action={<LinkAddPill href="/transactions/new" label="Expense" testId="home-add-expense" />}
+            amount={signedMoney(out, "out")}
+            detail={{ label: "In", value: signedMoney(income, "in") }}
+            footer={{ label: "Net", value: signedMoney(net, "net"), direction: "net" }}
+            action={<LinkAddPill glass href="/transactions/new" label="Expense" testId="home-add-expense" />}
           />,
           // Always locked here: no wallet data is loaded on the company home.
           <div key="wallet" className="sp-card-sun" data-testid="home-wallet-card">
             <BalanceCard
+              glass
               tag={
                 <span className="flex items-center gap-[5px]">
                   Personal wallet <IconLock className="size-[14px]" aria-hidden />
@@ -81,7 +84,7 @@ export default async function HomePage() {
               detail={{ label: "Status", value: "Locked" }}
               footer={{ label: "Only you", value: "PIN to open" }}
               action={
-                <LinkAddPill href="/wallet" label="Unlock" icon={<IconLock aria-hidden />} testId="home-wallet-unlock" />
+                <LinkAddPill glass href="/wallet" label="Unlock" icon={<IconLock aria-hidden />} testId="home-wallet-unlock" />
               }
             />
           </div>,
@@ -100,13 +103,15 @@ export default async function HomePage() {
 
       <SectionCard title="Recent" action={{ label: "View All", href: "/transactions" }}>
         {!res.ok ? (
-          <p className="px-[14px] pt-1 pb-3 text-[12px] text-(--sp-text-faint)">Could not load. Please try again later.</p>
+          <p className="px-[14px] pt-[4px] pb-[12px] text-[0.75rem] leading-snug text-(--sp-text-muted)">
+            Could not load. Please try again later.
+          </p>
         ) : recent.length === 0 ? (
-          <div className="flex flex-col items-start gap-3 px-[14px] pt-1 pb-3">
-            <p className="text-[12px] text-(--sp-text-faint)">Nothing this month yet.</p>
+          <div className="flex flex-col items-start gap-[12px] px-[14px] pt-[4px] pb-[12px]">
+            <p className="text-[0.75rem] leading-snug text-(--sp-text-muted)">Nothing this month yet.</p>
             <Link
               href="/transactions/new"
-              className="inline-flex h-11 items-center rounded-full bg-(--sp-pill) px-5 text-[13px] font-medium text-(--sp-pill-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
+              className="inline-flex min-h-[44px] items-center py-[8px] rounded-full bg-(--sp-chip-active) px-[18px] text-[0.8125rem] leading-snug font-medium text-(--sp-chip-active-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97]"
             >
               Add your first transaction
             </Link>
@@ -120,15 +125,15 @@ export default async function HomePage() {
 }
 
 function RecentRow({ tx, day }: { tx: Transaction; day: string }) {
-  const income = tx.type === "INCOME";
+  const dir = txDirection(tx.type);
   return (
     <ListItem
       href={`/transactions/${encodeURIComponent(tx.id)}`}
       icon={<TxLogo logoUrl={tx.logoUrl} icon={tx.category.icon} />}
       title={tx.description || tx.category.name}
       meta={`${tx.category.name} • ${day}`}
-      amount={formatMoney(tx.amount, income ? "+" : undefined)}
-      tone={income ? "income" : "expense"}
+      amount={signedMoney(tx.amount, dir)}
+      tone={dir === "in" ? "income" : "expense"}
     />
   );
 }

@@ -14,14 +14,15 @@ import {
 } from "@/components/spine-ui";
 import { formatDay, todayIn } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
-import { formatMoney, formatNet } from "@/lib/transactions-types";
+import { formatMoney, signedMoney, txDirection } from "@/lib/transactions-types";
 import { getDashboard, getRecurring, getWalletCategories } from "@/lib/wallet-server";
-import { savingsOf, type Budget } from "@/lib/wallet-types";
+import { movedIntoGoals, savingsOf, type Budget } from "@/lib/wallet-types";
 import { TxLogo } from "@/components/expenses/tx-logo";
 import { LinkAddPill, LinkQuickAction, QuickActionsPanel } from "@/components/home/home-links";
 import { LockWalletIconButton, SheetPill, SheetQuickAction, WalletSheets } from "@/components/home/space-actions";
 import { ProgressBar, statusText } from "@/components/wallet/progress";
 import { WalletDueCard } from "@/components/wallet/wallet-due-card";
+import { WalletLoadError } from "@/components/wallet/wallet-page-head";
 
 export const metadata: Metadata = { title: "Wallet" };
 
@@ -42,15 +43,17 @@ export default async function WalletPage() {
   ]);
   if (!res.ok) {
     return (
-      <p className="rounded-(--sp-radius) bg-(--sp-panel) px-4 py-8 text-center text-sm text-(--sp-text-muted)">
-        Your wallet could not be loaded. Please try again later.
-      </p>
+      <WalletLoadError what="Your wallet" />
     );
   }
   const d = res.data;
   const month = d.thisMonth;
   const today = todayIn(dates.zone);
   const savings = savingsOf(d.goals);
+  // All money now in goals: the API's own total, else the sum of the goals.
+  const savedInGoals = d.savedInGoals ?? savings.saved;
+  // Money moved into goals this month (the Savings card's "In").
+  const savedThisMonth = movedIntoGoals(d.goals, today.slice(0, 7));
 
   return (
     <WalletSheets today={today} categories={categories.ok ? categories.data : []}>
@@ -58,39 +61,48 @@ export default async function WalletPage() {
         <PageHeader title="Wallet" subtitle="Personal · only you" action={<LockWalletIconButton />} />
 
         <SwapStack
+        glass
           labels={["Personal wallet", "Savings"]}
           cards={[
             <div key="wallet" className="sp-card-sun">
               <BalanceCard
+                glass
                 tag="Personal wallet"
                 amountLabel="Balance"
-                amount={formatNet(d.balance ?? "0").replace(/^\+/, "")}
-                detail={month ? { label: "This month", value: formatNet(month.net) } : undefined}
-                footer={month ? { label: "Out this month", value: formatMoney(month.out) } : undefined}
-                action={<LinkAddPill href="/wallet/transactions/new" label="Expense" testId="wallet-add-expense" />}
+                // The balance is a state, not a movement: no "+" (a "−" stays when below 0).
+                amount={Number(d.balance ?? 0) < 0 ? signedMoney(d.balance ?? "0", "net") : formatMoney(d.balance ?? "0")}
+                detail={month ? { label: "In", value: signedMoney(month.in, "in") } : undefined}
+                footer={
+                  month
+                    ? { label: "Out this month", value: signedMoney(month.out, "out"), direction: Number(month.out) ? "out" : undefined }
+                    : undefined
+                }
+                action={<LinkAddPill glass href="/wallet/transactions/new" label="Expense" testId="wallet-add-expense" />}
               />
             </div>,
             <div key="savings" className="sp-card-ink" data-testid="wallet-savings-card">
               {savings.count === 0 ? (
                 <BalanceCard
+                  glass
                   tag="Savings"
                   amountLabel="Saved in goals"
                   amount={formatMoney(0)}
                   footer={{ label: "Savings", value: "No savings goal yet" }}
-                  action={<SheetPill sheet="goal" label="Set a goal" icon={<IconGoal aria-hidden />} />}
+                  action={<SheetPill glass sheet="goal" label="Set a goal" icon={<IconGoal aria-hidden />} />}
                 />
               ) : (
                 <BalanceCard
+                  glass
                   tag={`Savings · ${savings.count} ${savings.count === 1 ? "goal" : "goals"}`}
                   amountLabel="Saved in goals"
-                  amount={formatMoney(savings.saved)}
-                  detail={{ label: "Target", value: formatMoney(savings.target) }}
+                  amount={formatMoney(savedInGoals)}
+                  detail={{ label: "In", value: signedMoney(savedThisMonth, "in") }}
                   footer={{
                     label: "Progress",
-                    value: `${savings.percent}% · ${savings.next ? `${savings.next.name} next` : "All reached"}`,
+                    value: `${savings.percent}% of ${formatMoney(savings.target)}`,
                   }}
                   action={
-                    <LinkAddPill href="/wallet/goals" label="Goals" icon={<IconGoal aria-hidden />} testId="savings-goals" />
+                    <LinkAddPill glass href="/wallet/goals" label="Goals" icon={<IconGoal aria-hidden />} testId="savings-goals" />
                   }
                 />
               )}
@@ -125,7 +137,7 @@ export default async function WalletPage() {
             <Hint href="/wallet/transactions/new" text="Nothing yet." cta="Add your first one" />
           ) : (
             d.recent.map((tx) => {
-              const income = tx.type === "INCOME";
+              const dir = txDirection(tx.type);
               return (
                 <ListItem
                   key={tx.id}
@@ -133,8 +145,8 @@ export default async function WalletPage() {
                   icon={<TxLogo logoUrl={tx.logoUrl} icon={tx.category.icon} />}
                   title={tx.description || tx.category.name}
                   meta={`${tx.category.name} • ${formatDay(tx.date, dates)}`}
-                  amount={formatMoney(tx.amount, income ? "+" : "-")}
-                  tone={income ? "income" : "expense"}
+                  amount={signedMoney(tx.amount, dir)}
+                  tone={dir === "in" ? "income" : "expense"}
                 />
               );
             })
@@ -144,9 +156,9 @@ export default async function WalletPage() {
         <div className="flex justify-center">
           <Link
             href="/wallet/categories"
-            className="inline-flex h-11 items-center gap-2 rounded-full bg-(--sp-panel) px-4 text-[13px] text-(--sp-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
+            className="inline-flex min-h-[44px] items-center py-[8px] gap-[8px] rounded-full bg-(--sp-panel) px-[18px] text-[0.8125rem] leading-snug font-medium text-(--sp-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97] [&_svg]:size-[18px]"
           >
-            <IconCategories className="size-4" aria-hidden />
+            <IconCategories aria-hidden />
             Categories
           </Link>
         </div>
@@ -158,9 +170,9 @@ export default async function WalletPage() {
 function BudgetRow({ b }: { b: Budget }) {
   const name = b.category ? b.category.name : "All spending";
   return (
-    <li className="flex flex-col gap-1.5">
-      <div className="flex items-baseline justify-between gap-2 text-[12px]">
-        <span className="truncate font-medium text-(--sp-text)">{name}</span>
+    <li className="flex flex-col gap-[6px]">
+      <div className="flex items-baseline justify-between gap-[8px] text-[0.75rem] leading-snug">
+        <span className="min-w-0 truncate font-medium text-(--sp-text)">{name}</span>
         <span className="shrink-0 text-(--sp-text-faint) tabular-nums">
           {formatMoney(b.spent)} / {formatMoney(b.limit)}
         </span>
@@ -172,11 +184,11 @@ function BudgetRow({ b }: { b: Budget }) {
 
 function Hint({ href, text, cta }: { href: string; text: string; cta: string }) {
   return (
-    <div className="flex flex-col items-start gap-3 px-[14px] pb-3">
-      <p className="text-[12px] text-(--sp-text-faint)">{text}</p>
+    <div className="flex flex-col items-start gap-[12px] px-[14px] pb-[12px]">
+      <p className="text-[0.75rem] leading-snug text-(--sp-text-muted)">{text}</p>
       <Link
         href={href}
-        className="inline-flex h-11 items-center rounded-full bg-(--sp-pill) px-5 text-[13px] font-medium text-(--sp-pill-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
+        className="inline-flex min-h-[44px] items-center py-[8px] rounded-full bg-(--sp-chip-active) px-[18px] text-[0.8125rem] leading-snug font-medium text-(--sp-chip-active-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97]"
       >
         {cta}
       </Link>

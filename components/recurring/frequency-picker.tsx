@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { FilterChip, Segmented } from "@/components/spine-ui";
+import { FilterChip, Segmented, SpInput } from "@/components/spine-ui";
 import {
   clampEvery,
   isPreset,
@@ -65,7 +65,7 @@ export function FrequencyPicker({
 
   return (
     <div className={cn("space-y-[8px]", className)} data-testid="frequency-picker">
-      <p id={`${ids}-label`} className="px-[4px] text-[0.8125rem] leading-tight font-medium text-(--sp-text)">
+      <p id={`${ids}-label`} className="px-[4px] text-[0.8125rem] leading-snug font-medium text-(--sp-text)">
         How often
       </p>
       <div role="group" aria-labelledby={`${ids}-label`} className="chip-row">
@@ -92,10 +92,11 @@ export function FrequencyPicker({
       {custom && (
         <div className="space-y-[8px] rounded-[16px] bg-(--sp-soft) p-[10px]" data-testid="frequency-custom-fields">
           <div className="flex items-center gap-[10px]">
-            <label htmlFor={`${ids}-every`} className="shrink-0 text-[0.8125rem] font-medium text-(--sp-text)">
+            <label htmlFor={`${ids}-every`} className="shrink-0 text-[0.8125rem] leading-snug font-medium text-(--sp-text)">
               Every
             </label>
-            <input
+            {/* Kit input, white on the soft box (surface "page"), narrow and centered. */}
+            <SpInput
               id={`${ids}-every`}
               type="text"
               inputMode="numeric"
@@ -107,9 +108,9 @@ export function FrequencyPicker({
               aria-invalid={Boolean(error) || undefined}
               aria-describedby={`${ids}-hint`}
               data-testid="frequency-every"
-              className="h-[52px] w-[84px] shrink-0 rounded-[16px] bg-(--sp-panel) px-[14px] text-center text-[16px] text-(--sp-text) tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-(--sp-card-front) aria-invalid:ring-2 aria-invalid:ring-(--sp-danger)"
+              className="w-[84px] shrink-0 px-[14px] text-center tabular-nums"
             />
-            <span className="min-w-0 truncate text-[0.8125rem] text-(--sp-text-muted)">{unitWord(unit, every)}</span>
+            <span className="min-w-0 truncate text-[0.8125rem] leading-normal text-(--sp-text-muted)">{unitWord(unit, every)}</span>
           </div>
           <div data-testid="frequency-unit">
             <Segmented

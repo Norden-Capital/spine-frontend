@@ -77,7 +77,7 @@ export function ChangePasswordCard() {
         <IconTile tone="violet" size={52}>
           <IconKey />
         </IconTile>
-        <div className="min-w-0 flex-1 pt-[4px] leading-tight">
+        <div className="min-w-0 flex-1 pt-[4px] leading-snug">
           <h2 className="text-[0.9375rem] font-medium text-(--sp-text)">Password</h2>
           <p className="mt-[5px] text-[0.6875rem] leading-snug text-(--sp-text-muted)">
             At least {MIN_LENGTH} characters. When you change it, your other devices are logged out.

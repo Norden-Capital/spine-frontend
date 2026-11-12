@@ -1,8 +1,8 @@
-import { DueBadge, RowIcon, SectionCard, SpRow } from "@/components/spine-ui";
+import { DueBadge, RowIcon, SectionCard, SpMoney, SpRow } from "@/components/spine-ui";
 import { CategoryIcon } from "@/components/expenses/category-icon";
 import type { DateFormat } from "@/lib/prefs";
 import { daysBetween, dueState, repeatLabel, shortDay } from "@/lib/repeat-schedule";
-import { formatMoney } from "@/lib/transactions-types";
+import { signedMoney, txDirection } from "@/lib/transactions-types";
 import type { Recurring } from "@/lib/wallet-types";
 
 /** Running items (not paused) whose next date is in the next 7 days, or already passed. Soonest first. */
@@ -36,7 +36,7 @@ export function WalletDueCard({
     <SectionCard className={className} title="Due soon" action={{ label: "See all", href: "/wallet/recurring" }}>
       <div className="px-[4px]" data-testid="wallet-due-card">
         {soon.slice(0, 3).map((r) => {
-          const income = r.type === "INCOME";
+          const dir = txDirection(r.type);
           const due = dueState(r.nextDate, today, { dateFormat });
           return (
             <SpRow
@@ -51,15 +51,9 @@ export function WalletDueCard({
               subtitle={`${repeatLabel(r.unit, r.every)} · ${shortDay(r.nextDate!, { dateFormat, today, weekday: true })}`}
               trailing={
                 <span className="flex shrink-0 flex-col items-end gap-[4px]" data-testid="wallet-due-card-row">
-                  <span
-                    className={
-                      income
-                        ? "text-[0.8125rem] font-semibold whitespace-nowrap tabular-nums text-(--sp-income)"
-                        : "text-[0.8125rem] font-semibold whitespace-nowrap tabular-nums text-(--sp-text)"
-                    }
-                  >
-                    {formatMoney(r.amount, income ? "+" : "-")}
-                  </span>
+                  <SpMoney direction={dir} className="text-[0.8125rem] font-semibold whitespace-nowrap">
+                    {signedMoney(r.amount, dir)}
+                  </SpMoney>
                   {due && <DueBadge state={due.state} label={due.label} />}
                 </span>
               }

@@ -1,5 +1,6 @@
 import { getWalletStatus } from "@/lib/wallet-server";
 import { PinSetup, PinUnlock, WalletSession } from "@/components/wallet/pin-gate";
+import { EmptyState, IconWarning } from "@/components/spine-ui";
 
 // The private wallet: only the user, not even the company owner. The PIN check blocks
 // on the server, so no wallet data renders before the wallet is unlocked.
@@ -9,9 +10,13 @@ export default async function WalletLayout({ children }: LayoutProps<"/wallet">)
   const status = await getWalletStatus();
   if (!status) {
     return (
-      <p className="rounded-(--sp-radius) bg-(--sp-panel) px-4 py-8 text-center text-sm text-(--sp-text-muted)">
-        The wallet could not be opened. Please try again later.
-      </p>
+      <EmptyState
+        framed
+        tone="danger"
+        icon={<IconWarning aria-hidden />}
+        title="The wallet could not be opened"
+        text="Please try again later."
+      />
     );
   }
   if (!status.hasPin) return <PinSetup />;

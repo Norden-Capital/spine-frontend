@@ -226,7 +226,7 @@ function HistoryTimeline({ entries }: { entries: (TimelineEntry & { person: Pers
               <span className="absolute top-[14px] -bottom-[2px] w-[2px] rounded-full bg-(--sp-soft)" />
             ) : null}
           </span>
-          <div className="min-w-0 flex-1 leading-none">
+          <div className="min-w-0 flex-1 leading-snug">
             <p className="text-[0.75rem] font-medium text-(--sp-text)">{e.title}</p>
             <p className="mt-[4px] text-[0.625rem] text-(--sp-text-faint)">{e.meta}</p>
             {e.changes?.length ? (

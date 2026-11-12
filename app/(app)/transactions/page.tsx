@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { IconAdd, IconCalendarRepeat, IconNoResults, IconReceipt, PageHeader } from "@/components/spine-ui";
+import {
+  EmptyState,
+  IconAdd,
+  IconCalendarRepeat,
+  IconNoResults,
+  IconReceipt,
+  IconWarning,
+  PageHeader,
+} from "@/components/spine-ui";
 import { backendGet, requireUser } from "@/lib/auth";
 import { displayName, type AdminUser, type CurrentUser } from "@/lib/auth-types";
 import { isOwner } from "@/lib/roles";
@@ -14,6 +22,7 @@ import { monthLabel, monthOf } from "@/lib/transactions-types";
 import { FilterBar, type PersonOption } from "@/components/filters/filter-bar";
 import { TxList } from "@/components/transactions/tx-list";
 import { PageEmpty } from "@/components/nav/page-empty";
+import { HeaderAddLink } from "@/components/nav/header-add-link";
 
 export const metadata: Metadata = { title: "Expenses" };
 
@@ -54,16 +63,19 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/tra
         title="Expenses"
         subtitle="Company"
         action={
-          // Repeat expenses (/recurring): round 44 link, same look as the kit's back button.
-          <Link
-            href="/recurring"
-            aria-label="Repeat expenses"
-            title="Repeat expenses"
-            data-testid="repeat-expenses-link"
-            className="flex size-[44px] shrink-0 items-center justify-center rounded-full bg-(--sp-icon-btn) text-(--sp-icon-btn-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-95 [&_svg]:size-[20px] [&_svg]:stroke-[1.6]"
-          >
-            <IconCalendarRepeat aria-hidden />
-          </Link>
+          // Repeat expenses (/recurring) then "+" (right-most): round 44 links, 8 apart.
+          <div className="flex items-center gap-[8px]">
+            <Link
+              href="/recurring"
+              aria-label="Repeat expenses"
+              title="Repeat expenses"
+              data-testid="repeat-expenses-link"
+              className="flex size-[44px] shrink-0 items-center justify-center rounded-full bg-(--sp-icon-btn) text-(--sp-icon-btn-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-95 [&_svg]:size-[20px] [&_svg]:stroke-[1.6]"
+            >
+              <IconCalendarRepeat aria-hidden />
+            </Link>
+            <HeaderAddLink href="/transactions/new" label="Add expense" />
+          </div>
         }
       />
 
@@ -75,7 +87,7 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/tra
         apiPath="/transactions"
         placeholder="Description, comment, website"
         totalItems={list?.totalItems}
-        net={list?.totals?.net}
+        totals={list?.totals ?? undefined}
         autoFocusSearch={params.search === "1"}
       />
 
@@ -86,7 +98,6 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/tra
           query={query}
           apiPath="/transactions"
           hrefBase="/transactions"
-          showTotals={false}
           empty={
             hasFilters(filters) ? (
               <PageEmpty icon={<IconNoResults />} title="Nothing matches these filters" />
@@ -96,18 +107,14 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/tra
           }
         />
       ) : (
-        <p className="rounded-(--sp-radius) bg-(--sp-panel) px-4 py-8 text-center text-sm text-(--sp-text-muted)">
-          Transactions could not be loaded. Please try again later.
-        </p>
+        <EmptyState
+          framed
+          tone="danger"
+          icon={<IconWarning aria-hidden />}
+          title="Transactions could not be loaded"
+          text="Please try again later."
+        />
       )}
-
-      <Link
-        href="/transactions/new"
-        aria-label="Add transaction"
-        className="fixed right-[max(1rem,calc(env(safe-area-inset-right)+1rem))] bottom-[calc(var(--sp-dock-h)+var(--sp-dock-gap)+1rem+env(safe-area-inset-bottom))] z-20 flex size-14 items-center justify-center rounded-full bg-(--sp-pill) text-(--sp-pill-text) shadow-lg outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
-      >
-        <IconAdd className="size-7" aria-hidden />
-      </Link>
     </div>
   );
 }
@@ -136,9 +143,9 @@ function Empty({ month }: { month?: string }) {
       action={
         <Link
           href="/transactions/new"
-          className="inline-flex h-11 items-center gap-2 rounded-full bg-(--sp-pill) px-5 text-sm font-medium text-(--sp-pill-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
+          className="inline-flex min-h-[44px] items-center py-[8px] gap-[8px] rounded-full bg-(--sp-chip-active) px-[18px] text-[0.8125rem] leading-snug font-medium text-(--sp-chip-active-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97] [&_svg]:size-[18px]"
         >
-          <IconAdd className="size-4" aria-hidden />
+          <IconAdd aria-hidden />
           Add your first transaction
         </Link>
       }

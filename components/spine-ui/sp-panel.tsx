@@ -21,7 +21,7 @@ export function SpPanel({ title, description, aside, children, className }: SpPa
     <section className={cn("rounded-(--sp-radius) bg-(--sp-panel) px-[14px] pt-[16px] pb-[16px]", className)}>
       {title ? (
         <div className="mb-[14px]">
-          <div className="flex items-baseline justify-between gap-3 leading-none">
+          <div className="flex items-baseline justify-between gap-3 leading-[1.5] [&>*]:-my-[0.25em]">
             <h2 className="text-[0.8125rem] font-medium text-(--sp-text)">{title}</h2>
             {aside}
           </div>

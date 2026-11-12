@@ -32,9 +32,9 @@ export function LoadError({ what }: { what: string }) {
 /** One "label: value" line of a details list (inside a <dl>). */
 export function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex min-h-11 items-center justify-between gap-4 py-2">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 text-right font-medium break-all">{value}</dd>
+    <div className="flex min-h-[44px] items-center justify-between gap-[16px] py-[8px] text-[0.8125rem] leading-snug">
+      <dt className="text-(--sp-text-muted)">{label}</dt>
+      <dd className="min-w-0 text-right font-medium break-all text-(--sp-text)">{value}</dd>
     </div>
   );
 }

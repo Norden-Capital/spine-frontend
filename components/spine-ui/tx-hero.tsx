@@ -39,13 +39,13 @@ export function TxHero({ tone = "company", icon, tag, title, meta, amount, kind,
         <span className="flex size-[44px] items-center justify-center rounded-full bg-current/12 [&_svg]:size-[20px] [&_svg]:stroke-[1.8]">
           {icon}
         </span>
-        {tag ? <span className="text-[0.8125rem] leading-none">{tag}</span> : null}
+        {tag ? <span className="text-[0.8125rem] leading-[1.5]">{tag}</span> : null}
       </div>
       <p className="mt-[18px] text-[0.9375rem] leading-snug font-medium break-words">{title}</p>
       {meta ? <p className="mt-[4px] text-[0.75rem] leading-snug opacity-75">{meta}</p> : null}
-      <div className="mt-[14px] flex items-end justify-between gap-3 leading-none">
-        <p className="text-[34px] font-medium tracking-tight tabular-nums">{amount}</p>
-        {kind ? <span className="pb-[4px] text-[0.75rem] opacity-75">{kind}</span> : null}
+      <div className="mt-[14px] flex items-end justify-between gap-3 leading-[1.5]">
+        <p className="-my-[0.25em] text-[34px] font-medium tracking-tight tabular-nums">{amount}</p>
+        {kind ? <span className="-my-[0.25em] pb-[4px] text-[0.75rem] opacity-75">{kind}</span> : null}
       </div>
     </section>
   );

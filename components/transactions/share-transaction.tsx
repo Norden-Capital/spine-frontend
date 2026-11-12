@@ -40,7 +40,7 @@ export function ShareTransaction({ title, text, path }: { title: string; text: s
   }
 
   return (
-    <div className="relative">
+    <div className="relative flex">
       <SpButton
         size="md"
         variant="secondary"
@@ -55,7 +55,7 @@ export function ShareTransaction({ title, text, path }: { title: string; text: s
         aria-live="polite"
         className={
           note
-            ? "pointer-events-none absolute inset-x-0 -top-[34px] mx-auto w-fit rounded-full bg-(--sp-chip-active) px-[12px] py-[6px] text-[0.75rem] font-medium text-(--sp-chip-active-text) shadow-md"
+            ? "pointer-events-none absolute inset-x-0 -top-[34px] mx-auto w-fit rounded-full bg-(--sp-chip-active) px-[12px] py-[6px] text-[0.75rem] leading-snug font-medium whitespace-nowrap text-(--sp-chip-active-text) shadow-md"
             : "sr-only"
         }
       >

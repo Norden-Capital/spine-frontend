@@ -50,7 +50,9 @@ const addDays = (day: IsoDay, n: number) => {
 
 /**
  * Kit calendar (replaces every browser date input). One month, ‹ › to
- * move, 7 columns of 44 tall day cells. Range mode (filters): start / end =
+ * move, 7 columns of 44 tall day cells, always 6 weeks (one fixed size;
+ * days of the next / previous month are muted, tap one = pick it and go
+ * to its month). Range mode (filters): start / end =
  * black circles, the days between = a soft band. Single mode (forms): the
  * chosen day = black circle. Today = purple dot. Days outside min / max
  * are off. Keyboard: arrows move by day / week (across months), Enter /
@@ -74,8 +76,10 @@ export function DateRangePicker(props: DateRangePickerProps) {
   const first = new Date(y, m, 1).getDay(); // 0 = Sunday
   const lead = weekStart === 1 ? (first + 6) % 7 : first;
   const count = new Date(y, m + 1, 0).getDate();
-  const cells: (number | null)[] = [...Array(lead).fill(null), ...Array.from({ length: count }, (_, i) => i + 1)];
-  while (cells.length % 7) cells.push(null);
+  // Always 6 weeks (42 days), so the calendar never changes height. Days of
+  // the month before / after fill the gaps, muted.
+  const gridStart = addDays(iso(y, m, 1), -lead);
+  const cells: IsoDay[] = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
 
   const off = (day: IsoDay) => (min !== undefined && day < min) || (max !== undefined && day > max);
   const move = (d: number) => {
@@ -87,6 +91,7 @@ export function DateRangePicker(props: DateRangePickerProps) {
 
   const pick = (day: IsoDay) => {
     if (off(day)) return;
+    if (day.slice(0, 7) !== ym) setYm(day.slice(0, 7));
     if (props.mode === "single") return props.onSelect?.(day);
     const onChange = props.onChange;
     if (!onChange) return;
@@ -136,24 +141,26 @@ export function DateRangePicker(props: DateRangePickerProps) {
         <button type="button" aria-label="Month before" onClick={() => move(-1)} disabled={!canPrev} className={navBtn}>
           <IconBack />
         </button>
-        <p className="text-[0.9375rem] leading-none font-medium text-(--sp-text)" aria-live="polite">
+        <p className="min-w-0 flex-1 truncate px-[8px] text-center text-[0.9375rem] leading-[1.5] font-medium whitespace-nowrap text-(--sp-text)" aria-live="polite">
           {MONTHS[m]} {y}
         </p>
         <button type="button" aria-label="Month after" onClick={() => move(1)} disabled={!canNext} className={navBtn}>
           <IconChevronRight />
         </button>
       </div>
-      <div className="mt-[12px] grid grid-cols-7 text-center text-[0.625rem] leading-none font-medium text-(--sp-text-faint)" aria-hidden>
+      <div className="mt-[12px] grid grid-cols-7 text-center text-[0.625rem] leading-[1.5] font-medium text-(--sp-text-faint)" aria-hidden>
         {labels.map((d) => (
-          <span key={d} className="py-[6px]">
+          <span key={d} className="py-[calc(6px-0.25em)]">
             {d}
           </span>
         ))}
       </div>
       <div ref={grid} role="grid" aria-label={`${MONTHS[m]} ${y}`} className="mt-[4px] grid grid-cols-7 gap-y-[2px]">
-        {cells.map((d, i) => {
-          if (d === null) return <span key={`e${i}`} className="h-[44px]" />;
-          const day = iso(y, m, d);
+        {cells.map((day, i) => {
+          const d = Number(day.slice(8, 10));
+          const dm = Number(day.slice(5, 7)) - 1;
+          const dy = Number(day.slice(0, 4));
+          const outside = day.slice(0, 7) !== ym;
           const isStart = !single && day === from;
           const isEnd = !single && day === to;
           const chosen = single && day === value;
@@ -182,17 +189,19 @@ export function DateRangePicker(props: DateRangePickerProps) {
                 tabIndex={day === tabDay ? 0 : -1}
                 aria-pressed={edge}
                 aria-current={day === today ? "date" : undefined}
-                aria-label={`${d} ${MONTHS[m]} ${y}${isStart ? ", start" : ""}${isEnd ? ", end" : ""}${chosen ? ", chosen" : ""}${day === today ? ", today" : ""}`}
+                aria-label={`${d} ${MONTHS[dm]} ${dy}${isStart ? ", start" : ""}${isEnd ? ", end" : ""}${chosen ? ", chosen" : ""}${day === today ? ", today" : ""}`}
                 onClick={() => pick(day)}
                 onKeyDown={(e) => onKey(e as unknown as KeyboardEvent<HTMLDivElement>, day)}
                 onFocus={() => setFocusDay(day)}
                 className={cn(
-                  "relative z-1 flex size-[40px] items-center justify-center rounded-full text-[0.8125rem] leading-none tabular-nums outline-none transition focus-visible:ring-3 focus-visible:ring-(--sp-ring) disabled:opacity-30 motion-reduce:transition-none",
+                  "relative z-1 flex size-[40px] items-center justify-center rounded-full text-[0.8125rem] leading-[1.5] tabular-nums outline-none transition focus-visible:ring-3 focus-visible:ring-(--sp-ring) disabled:opacity-30 motion-reduce:transition-none",
                   edge
                     ? "bg-(--sp-chip-active) font-semibold text-(--sp-chip-active-text)"
                     : inside
                       ? "font-medium text-(--sp-text)"
-                      : "text-(--sp-text) hover:bg-(--sp-soft)"
+                      : outside
+                        ? "text-(--sp-text-faint) hover:bg-(--sp-soft)"
+                        : "text-(--sp-text) hover:bg-(--sp-soft)"
                 )}
               >
                 {d}

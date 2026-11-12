@@ -76,7 +76,7 @@ export function ProgressRing({
         />
       </svg>
       {children != null ? (
-        <span className="absolute inset-0 flex items-center justify-center text-[13px] leading-none font-semibold tabular-nums">
+        <span className="absolute inset-0 flex items-center justify-center text-[13px] leading-[1.5] font-semibold tabular-nums">
           {children}
         </span>
       ) : null}

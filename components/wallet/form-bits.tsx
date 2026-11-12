@@ -2,8 +2,8 @@
 
 // Small form pieces shared by the wallet managers (budgets, goals, recurring).
 import { groupByParent, type Category } from "@/lib/catalog-types";
-import { IconChevronDown } from "@/components/spine-ui";
-import { Segmented as KitSegmented } from "@/components/spine-ui";
+
+import { Segmented as KitSegmented, SpSelect } from "@/components/spine-ui";
 
 /** Label text + " (optional)" in the faint color (same look as SpField `optional`). */
 export function OptionalLabel({ children }: { children: React.ReactNode }) {
@@ -46,24 +46,13 @@ export function CategorySelect({
   emptyLabel?: string;
 }) {
   return (
-    <div className="relative">
-      <select
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-[52px] w-full min-w-0 appearance-none rounded-[16px] bg-(--sp-panel) pr-[44px] pl-[16px] text-(--sp-text) outline-none focus-visible:ring-2 focus-visible:ring-(--sp-card-front)"
-      >
-        <option value="">{emptyLabel ?? "Choose a category"}</option>
-        {groupByParent(categories.filter((c) => !c.archived || c.id === value)).map(({ item, child }) => (
-          <option key={item.id} value={item.id}>
-            {child ? `   ↳ ${item.name}` : item.name}
-          </option>
-        ))}
-      </select>
-      <IconChevronDown
-        aria-hidden
-        className="pointer-events-none absolute top-1/2 right-[16px] size-[18px] -translate-y-1/2 text-(--sp-text-faint)"
-      />
-    </div>
+    <SpSelect id={id} value={value} onChange={(e) => onChange(e.target.value)} className="min-w-0">
+      <option value="">{emptyLabel ?? "Choose a category"}</option>
+      {groupByParent(categories.filter((c) => !c.archived || c.id === value)).map(({ item, child }) => (
+        <option key={item.id} value={item.id}>
+          {child ? `   ↳ ${item.name}` : item.name}
+        </option>
+      ))}
+    </SpSelect>
   );
 }

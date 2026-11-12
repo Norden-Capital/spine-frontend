@@ -39,7 +39,7 @@ export default async function UserPage({ params }: PageProps<"/admin/users/[id]"
       />
       <div className="flex items-center gap-[12px] px-[2px]">
         <UserAvatar seed={seedOf(user)} size={64} className={user.status === "DISABLED" ? "opacity-50" : undefined} />
-        <div className="flex flex-wrap gap-[6px]">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-[6px]">
           <RoleBadge role={user.role} />
           <StatusBadge status={user.status} />
         </div>

@@ -16,7 +16,7 @@ export function SpBadge({ tone = "neutral", children, className }: SpBadgeProps)
   return (
     <span
       className={cn(
-        "inline-flex h-[22px] shrink-0 items-center rounded-full px-[9px] text-[0.625rem] leading-none font-medium whitespace-nowrap",
+        "inline-flex h-[22px] shrink-0 items-center rounded-full px-[9px] text-[0.625rem] leading-[1.5] font-medium whitespace-nowrap",
         TONE[tone],
         className
       )}

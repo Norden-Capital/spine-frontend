@@ -20,7 +20,7 @@ export function Avatar({ name, src, className, ...props }: AvatarProps) {
   return (
     <span
       className={cn(
-        "inline-flex size-[44px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-(--sp-avatar) text-[14px] leading-none font-medium text-(--sp-avatar-text) select-none",
+        "inline-flex size-[44px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-(--sp-avatar) text-[14px] leading-[1.5] font-medium text-(--sp-avatar-text) select-none",
         className
       )}
       {...props}

@@ -29,7 +29,7 @@ import "@/components/spine-ui/tokens.css";
 import { ChipsDemo, PinDemo, SheetDemo } from "./demos";
 
 // New icon set (iconsax Bulk), same names as the old Lucide imports.
-const { Bell, CircleAlert, CircleCheck, ChartColumnBig, Receipt, TriangleAlert, Ellipsis, House, Lock, Plane, Plus, ScanLine, Search, ShoppingCart, TextAlignStart, User, Utensils, Wallet, Wifi } = LUCIDE_TO_SP;
+const { Bell, CircleAlert, CircleCheck, ChartColumnBig, Receipt, TriangleAlert, Ellipsis, House, Lock, Plane, Plus, ScanLine, Search, ShoppingCart, User, Utensils, Wallet, Wifi } = LUCIDE_TO_SP;
 
 // Design preview of the Spine UI kit (components/spine-ui), at /ui-kit.html.
 // Dev only: 404 in production, not linked from the app. The dot in the path
@@ -148,7 +148,6 @@ function HomeScreen({ theme }: { theme: Theme }) {
       className="relative mx-auto flex min-h-[812px] w-full max-w-[430px] flex-col px-(--sp-gutter) pt-[12px] pb-[9px]"
     >
       <TopBar
-        left={<IconButton label="Menu" icon={<TextAlignStart />} />}
         right={
           <>
             <IconButton label="Notifications" icon={<Bell />} />
@@ -183,7 +182,6 @@ function Parts({ theme }: { theme: Theme }) {
       <h2 className="text-lg font-semibold">Parts · {theme}</h2>
       <Part name="1 · Icon buttons (44)">
         <div className="flex items-center gap-3">
-          <IconButton label="Menu" icon={<TextAlignStart />} />
           <IconButton label="Notifications" icon={<Bell />} dot />
           <IconButton label="Search" icon={<Search />} variant="ink" />
           <IconButton label="Add" icon={<Plus />} variant="soft" size="lg" />
@@ -194,7 +192,6 @@ function Parts({ theme }: { theme: Theme }) {
       </Part>
       <Part name="3 · Top bar">
         <TopBar
-          left={<IconButton label="Menu" icon={<TextAlignStart />} />}
           right={
             <>
               <IconButton label="Notifications" icon={<Bell />} />

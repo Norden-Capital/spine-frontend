@@ -9,12 +9,7 @@ import { TxLogo } from "@/components/expenses/tx-logo";
 import { ConfirmSheet } from "@/components/admin/confirm-sheet";
 import { NoticeBox, type Notice } from "@/components/admin/notice";
 import { EmptyState, IconButton, RowGroup, RowIcon, Segmented, SpButton, SpRow } from "@/components/spine-ui";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ActionMenu, ActionMenuItem } from "@/components/nav/action-menu";
 import { cn } from "@/lib/utils";
 import { PageEmpty } from "@/components/nav/page-empty";
 import { COMPANY_CATALOG, CategoryDialog, type CatalogPaths } from "./catalog-dialogs";
@@ -38,8 +33,6 @@ export const kindOf = (c: { kind?: CategoryKind }): CategoryKind => c.kind ?? "E
 
 /** Confirm before archiving / bringing back. */
 type Pending = { title: string; text: string; confirm: string; destructive?: boolean; path: string; done: string };
-
-const ITEM = "min-h-11 gap-3 px-3 text-base";
 
 /**
  * Manager page (and my wallet's): the categories list, an "Archived"
@@ -298,10 +291,10 @@ function ItemList({
               <IconArchive />
             </RowIcon>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[0.8125rem] leading-tight font-medium text-(--sp-text-muted)">
+              <span className="block truncate text-[0.8125rem] leading-normal font-medium text-(--sp-text-muted)">
                 Archived
               </span>
-              <span className="mt-[3px] block truncate text-[0.6875rem] leading-tight text-(--sp-text-muted)">
+              <span className="mt-[3px] block truncate text-[0.6875rem] leading-normal text-(--sp-text-muted)">
                 {archived.length} {archived.length === 1 ? one : many} · {archived.map((i) => i.name).join(", ")}
               </span>
             </span>
@@ -367,27 +360,19 @@ function Actions({
   onArchive: (item: Item) => void;
 }) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={<IconButton label={`Actions for ${item.name}`} icon={<IconMore />} variant="ghost" />}
-      />
-      <DropdownMenuContent align="end" className="w-56 max-w-[calc(100vw-2rem)]">
-        <DropdownMenuItem className={ITEM} onClick={() => onEdit(item)}>
-          <IconEdit aria-hidden />
-          Edit
-        </DropdownMenuItem>
-        {item.archived ? (
-          <DropdownMenuItem className={ITEM} onClick={() => onArchive(item)}>
-            <IconRestore aria-hidden />
-            Bring back
-          </DropdownMenuItem>
-        ) : (
-          <DropdownMenuItem className={ITEM} variant="destructive" onClick={() => onArchive(item)}>
-            <IconArchive aria-hidden />
-            Archive
-          </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <ActionMenu trigger={<IconButton label={`Actions for ${item.name}`} icon={<IconMore />} variant="ghost" />}>
+      <ActionMenuItem icon={<IconEdit aria-hidden />} onClick={() => onEdit(item)}>
+        Edit
+      </ActionMenuItem>
+      {item.archived ? (
+        <ActionMenuItem icon={<IconRestore aria-hidden />} onClick={() => onArchive(item)}>
+          Bring back
+        </ActionMenuItem>
+      ) : (
+        <ActionMenuItem danger icon={<IconArchive aria-hidden />} onClick={() => onArchive(item)}>
+          Archive
+        </ActionMenuItem>
+      )}
+    </ActionMenu>
   );
 }

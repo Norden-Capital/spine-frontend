@@ -31,7 +31,7 @@ export function FilterChip({
       type={type}
       aria-pressed={active}
       className={cn(
-        "relative flex h-[36px] shrink-0 items-center gap-[6px] rounded-full px-[16px] text-[12px] leading-none font-medium whitespace-nowrap transition outline-none select-none",
+        "relative flex h-[36px] shrink-0 items-center gap-[6px] rounded-full px-[16px] text-[12px] leading-[1.5] font-medium whitespace-nowrap transition outline-none select-none",
         "after:absolute after:inset-x-0 after:-inset-y-[4px] after:content-['']",
         "focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97]",
         "[&_svg]:size-[14px] [&_svg]:stroke-[1.8]",

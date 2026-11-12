@@ -45,6 +45,7 @@ import {
   IconButton,
   InfoList,
   ListItem,
+  SpMoney,
   OrDivider,
   PageHeader,
   ProofTiles,
@@ -91,7 +92,6 @@ function dock(active: Tab): DockItem[] {
 function AppTop() {
   return (
     <TopBar
-      left={<IconButton label="Menu" icon={<I.TextAlignStart />} />}
       right={
         <>
           <IconButton label="Notifications" icon={<I.Bell />} dot />
@@ -1206,9 +1206,9 @@ function SettingsPreferencesV2() {
       </SpPanel>
       <SpPanel title="Dates and time">
         <div className="rounded-[16px] bg-(--sp-card-front) px-[14px] py-[14px] text-(--sp-card-front-text)">
-          <p className="text-[0.625rem] leading-none text-(--sp-card-front-muted)">Today looks like this</p>
-          <p className="mt-[8px] text-[1.25rem] leading-none font-medium tabular-nums">12/11/2026 · 14:05</p>
-          <p className="mt-[6px] text-[0.6875rem] leading-none text-(--sp-card-front-muted)">America/Toronto (UTC−5)</p>
+          <p className="-my-[0.25em] text-[0.625rem] leading-[1.5] text-(--sp-card-front-muted)">Today looks like this</p>
+          <p className="mt-[calc(8px-0.25em)] -mb-[0.25em] text-[1.25rem] leading-[1.5] font-medium tabular-nums">12/11/2026 · 14:05</p>
+          <p className="mt-[calc(6px-0.25em)] -mb-[0.25em] text-[0.6875rem] leading-[1.5] text-(--sp-card-front-muted)">America/Toronto (UTC−5)</p>
         </div>
         <div className="mt-[16px] space-y-[16px]">
           <SpField label="Date format">
@@ -1331,7 +1331,7 @@ function CategoryIconsMock() {
           const Icon = old ? CATEGORY_ICONS[k] : CATEGORY_ICON_MAP[k];
           const on = i === 4;
           return (
-            <span key={k} className="flex min-w-0 flex-col items-center gap-[6px] leading-none">
+            <span key={k} className="flex min-w-0 flex-col items-center gap-[6px] leading-[1.5]">
               <span
                 className={
                   "flex size-[48px] items-center justify-center rounded-full [&_svg]:size-[20px] " +
@@ -1340,7 +1340,7 @@ function CategoryIconsMock() {
               >
                 <Icon className="size-[20px] stroke-[1.8]" />
               </span>
-              <span className="w-full truncate text-center text-[0.5625rem] text-(--sp-text-muted)">{k}</span>
+              <span className="-my-[0.25em] w-full truncate text-center text-[0.5625rem] leading-[1.5] text-(--sp-text-muted)">{k}</span>
             </span>
           );
         })}
@@ -1471,7 +1471,7 @@ const FILTER_CATS: CategoryOption[] = [
 function SheetSection({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
     <section className="border-t border-[color-mix(in_oklab,var(--sp-text)_8%,transparent)] pt-[16px] pb-[18px] first:border-t-0 first:pt-[4px]">
-      <div className="mb-[12px] flex items-baseline justify-between gap-3 leading-none">
+      <div className="mb-[12px] flex items-baseline justify-between gap-3 leading-[1.5] [&>*]:-my-[0.25em]">
         <h3 className="text-[0.8125rem] font-medium text-(--sp-text)">{title}</h3>
         {hint ? <span className="text-[0.625rem] text-(--sp-text-faint)">{hint}</span> : null}
       </div>
@@ -1675,7 +1675,7 @@ function CompanyStack({ front = 0 }: { front?: 0 | 1 }) {
           amount="$3,922.40"
           detail={{ label: "In", value: "+$500.00" }}
           footer={{ label: "Net", value: "−$3,422.40" }}
-          action={<AddPill label="Expense" />}
+          action={<AddPill label="Expense" icon={<I.Plus className="size-[16px]" />} />}
         />,
         <div key="wallet" className="sp-card-sun">
           <BalanceCard
@@ -1710,7 +1710,7 @@ function WalletStack({ front = 0, back = "savings" }: { front?: 0 | 1; back?: "s
             amount="$2,486.15"
             detail={{ label: "This month", value: "−$612.00" }}
             footer={{ label: "Out this month", value: "$812.00" }}
-            action={<AddPill label="Expense" />}
+            action={<AddPill label="Expense" icon={<I.Plus className="size-[16px]" />} />}
           />
         </div>,
         back === "savings" ? (
@@ -2024,6 +2024,120 @@ function SpaceForm({ space }: { space: Space }) {
 
 
 /** Repeat payments with due badges (urgency colours), every state. */
+function GlassCardsMock() {
+  const plus = <I.Plus className="size-[16px]" />;
+  return (
+    <AppPage tab="home">
+      <PageHeader title="Glass cards" subtitle="liquid-glass-react values (MIT), iPhone-safe" />
+      <SwapStack
+        glass
+        labels={["Company", "Wallet"]}
+        cards={[
+          <BalanceCard
+            key="c"
+            glass
+            tag="Company"
+            amountLabel="This month"
+            amount="$3,922.40"
+            detail={{ label: "In", value: "+$500.00" }}
+            footer={{ label: "Name", value: "Sam Tremblay" }}
+            action={<AddPill glass label="Expense" icon={plus} />}
+          />,
+          <div key="w" className="sp-card-sun">
+            <BalanceCard glass tag="Wallet" amountLabel="Balance" amount="$812.10" detail={{ label: "In", value: "+$1,200.00" }} />
+          </div>,
+        ]}
+      />
+      <SwapStack
+        glass
+        defaultFront={1}
+        labels={["Company", "Personal wallet"]}
+        cards={[
+          <BalanceCard key="c" glass tag="Company" amountLabel="This month" amount="$3,922.40" detail={{ label: "In", value: "+$500.00" }} />,
+          <div key="w" className="sp-card-sun">
+            <BalanceCard
+              glass
+              tag={
+                <span className="flex items-center gap-[5px]">
+                  Personal wallet <I.Lock className="size-[14px]" />
+                </span>
+              }
+              amountLabel="Balance"
+              amount="••••••"
+              detail={{ label: "Status", value: "Locked" }}
+              footer={{ label: "Only you", value: "PIN to open" }}
+              action={<AddPill glass label="Unlock" icon={<I.Lock className="size-[18px]" />} />}
+            />
+          </div>,
+        ]}
+      />
+      <SwapStack
+        glass
+        labels={["Personal wallet", "Savings"]}
+        cards={[
+          <div key="w" className="sp-card-sun">
+            <BalanceCard
+              glass
+              tag="Personal wallet"
+              amountLabel="Balance"
+              amount="$2,486.15"
+              detail={{ label: "In", value: "+$1,200.00" }}
+              footer={{ label: "Out this month", value: "−$812.00" }}
+              action={<AddPill glass label="Expense" icon={plus} />}
+            />
+          </div>,
+          <div key="s" className="sp-card-ink">
+            <BalanceCard glass tag="Savings · 3 goals" amountLabel="Saved in goals" amount="$1,850.00" detail={{ label: "Target", value: "$5,000" }} />
+          </div>,
+        ]}
+      />
+      <div className="sp-card-ink">
+        <BalanceCard
+          glass
+          tag="Savings · 3 goals"
+          amountLabel="Saved in goals"
+          amount="$1,850.00"
+          detail={{ label: "Target", value: "$5,000" }}
+          footer={{ label: "Progress", value: "37% · Laptop next" }}
+          action={<AddPill glass label="Goals" icon={<I.Target className="size-[18px]" />} />}
+        />
+      </div>
+    </AppPage>
+  );
+}
+
+function MoneyTonesMock() {
+  return (
+    <AppPage>
+      <PageHeader title="Money tones" subtitle="Sign + calm colour, AA everywhere" />
+      <BalanceCard
+        tag="Company"
+        amountLabel="This month"
+        amount="$3,922.40"
+        detail={{ label: "In", value: "+$500.00", direction: "in" }}
+        footer={{ label: "Out", value: "−$4,422.40", direction: "out" }}
+      />
+      <div className="sp-space-wallet">
+        <BalanceCard tag="Wallet" amountLabel="Balance" amount="$812.10" detail={{ label: "In", value: "+$1,200.00", direction: "in" }} footer={{ label: "Out", value: "−$387.90", direction: "out" }} />
+      </div>
+      <div className="sp-card-ink">
+        <BalanceCard tag="Savings" amountLabel="Saved" amount="$2,400.00" detail={{ label: "In", value: "+$300.00", direction: "in" }} footer={{ label: "Out", value: "−$50.00", direction: "out" }} />
+      </div>
+      <SectionCard title="Recent">
+        <ListItem icon={<I.Utensils />} title="Client lunch" meta="12 Nov" amount="−$186.40" tone="expense" />
+        <ListItem icon={<I.Wallet />} title="Refund" meta="11 Nov" amount="+$500.00" tone="income" />
+        <ListItem icon={<I.ArrowLeftRight />} title="Move to savings" meta="10 Nov" amount="$100.00" tone="neutral" />
+      </SectionCard>
+      <p className="px-[4px] text-[0.8125rem]">
+        On the page: <SpMoney direction="in">+$500.00</SpMoney> · <SpMoney direction="out">−$120.00</SpMoney> · Net <SpMoney direction="net">+$380.00</SpMoney>
+      </p>
+      <p className="rounded-[16px] bg-(--sp-input) px-[16px] py-[14px] text-[0.8125rem]">
+        On a fill: <SpMoney direction="in">+$500.00</SpMoney> · <SpMoney direction="out">−$120.00</SpMoney>
+      </p>
+    </AppPage>
+  );
+}
+
 function DueBadgesMock() {
   const rows: { icon: ReactNode; title: string; every: string; amount: string; state: "overdue" | "today" | "soon" | "week" | "later" | "paused"; label: string }[] = [
     { icon: <I.Wifi />, title: "Internet Bill", every: "Monthly", amount: "$55.00", state: "overdue", label: "Overdue · 2 days" },
@@ -2129,6 +2243,8 @@ const MOCKS: Record<string, () => ReactNode> = {
   "date-fields": () => <DateFieldsMock />,
   "date-sheet": () => <DateSheetMock />,
   "due-badges": () => <DueBadgesMock />,
+  "money-tones": () => <MoneyTonesMock />,
+  "glass-cards": () => <GlassCardsMock />,
   "space-dash-company": () => <SpaceDashboard space="company" />,
   "space-dash-wallet": () => <SpaceDashboard space="wallet" />,
   "space-dash-company-swapped": () => <SpaceDashboard space="company" front={1} />,

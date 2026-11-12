@@ -1,7 +1,7 @@
-import { formatMoney, type TxType } from "@/lib/transactions-types";
-import { cn } from "@/lib/utils";
+import { SpMoney } from "@/components/spine-ui";
+import { signedMoney, txDirection, type TxType } from "@/lib/transactions-types";
 
-/** "−$12.00" (expense, red-ish) or "+$500.00" (income, green-ish). Calm colors. */
+/** "−$12.00" (expense, soft red) or "+$500.00" (income, soft green). */
 export function Amount({
   type,
   amount,
@@ -11,16 +11,10 @@ export function Amount({
   amount: string;
   className?: string;
 }) {
-  const income = type === "INCOME";
+  const dir = txDirection(type);
   return (
-    <span
-      className={cn(
-        "font-medium whitespace-nowrap tabular-nums",
-        income ? "text-emerald-700 dark:text-emerald-400" : "text-red-700/90 dark:text-red-400/90",
-        className
-      )}
-    >
-      {formatMoney(amount, income ? "+" : "-")}
-    </span>
+    <SpMoney direction={dir} className={["font-medium whitespace-nowrap", className].filter(Boolean).join(" ")}>
+      {signedMoney(amount, dir)}
+    </SpMoney>
   );
 }

@@ -2,14 +2,12 @@
 
 import { createContext, use, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { IconLock } from "@/components/spine-ui";
+import { AddPill, IconLock } from "@/components/spine-ui";
 import { api } from "@/lib/api";
 import type { Category } from "@/lib/catalog-types";
 import { BudgetSheet } from "@/components/wallet/budgets-manager";
 import { GoalSheet } from "@/components/wallet/goals-manager";
 import {
-  ADD_PILL_CLASS,
-  ADD_PILL_DOT_CLASS,
   ICON_BUTTON_CLASS,
   QUICK_ACTION_CLASS,
   QUICK_ACTION_ICON_CLASS,
@@ -73,19 +71,28 @@ export function SheetQuickAction({ sheet, label, icon }: { sheet: "goal" | "budg
 }
 
 /** Card pill (same look as LinkAddPill) that opens a wallet sheet. */
-export function SheetPill({ sheet, label, icon }: { sheet: "goal" | "budget"; label: string; icon: ReactNode }) {
+export function SheetPill({
+  sheet,
+  label,
+  icon,
+  glass,
+}: {
+  sheet: "goal" | "budget";
+  label: string;
+  icon: ReactNode;
+  /** Glass button for glass cards. */
+  glass?: boolean;
+}) {
   const open = useOpenSheet();
   return (
-    <button
-      type="button"
+    <AddPill
+      glass={glass}
+      label={label}
+      icon={icon}
       onClick={() => open(sheet)}
       aria-haspopup="dialog"
-      className={ADD_PILL_CLASS}
       data-testid={`savings-set-${sheet}`}
-    >
-      <span className={ADD_PILL_DOT_CLASS}>{icon}</span>
-      {label}
-    </button>
+    />
   );
 }
 

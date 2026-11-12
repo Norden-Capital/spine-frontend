@@ -7,8 +7,7 @@ import { IconBell, IconCalendarRepeat, IconRepeat, IconSuccess, IconWarning } fr
 import { api, errorMessage } from "@/lib/api";
 import type { Alert } from "@/lib/alerts-server";
 import { useDates } from "@/components/prefs/prefs-provider";
-import { Button } from "@/components/ui/button";
-import { AlertRow, DueBadge, SectionCard, type AlertTone } from "@/components/spine-ui";
+import { AlertRow, DueBadge, SectionCard, SpButton, type AlertTone } from "@/components/spine-ui";
 import { todayIn } from "@/lib/prefs";
 import { dueState } from "@/lib/repeat-schedule";
 
@@ -74,16 +73,25 @@ export function AlertsList({ items, unread }: { items: Alert[]; unread: number }
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-[22px] font-medium text-(--sp-text)">Alerts</h1>
+      <div className="flex items-center justify-between gap-[12px]">
+        <h1 className="text-[1.375rem] leading-snug font-medium text-(--sp-text)">Alerts</h1>
         {(count > 0 || unread > 0) && (
-          <Button variant="ghost" size="lg" className="h-11" onClick={() => void readAll()} disabled={busy}>
-            <IconSuccess aria-hidden />
+          <SpButton
+            variant="secondary"
+            size="md"
+            icon={<IconSuccess aria-hidden />}
+            onClick={() => void readAll()}
+            disabled={busy}
+          >
             Mark all read
-          </Button>
+          </SpButton>
         )}
       </div>
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && (
+        <p role="alert" className="px-[4px] text-[0.8125rem] leading-snug text-(--sp-danger)">
+          {error}
+        </p>
+      )}
       {list.length === 0 ? (
         <PageEmpty icon={<IconBell />} title="No alerts" text="Budget and recurring alerts show here." />
       ) : (

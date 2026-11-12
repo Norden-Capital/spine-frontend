@@ -1,9 +1,9 @@
-import { DueBadge, RowIcon, SectionCard, SpRow } from "@/components/spine-ui";
+import { DueBadge, RowIcon, SectionCard, SpMoney, SpRow } from "@/components/spine-ui";
 import { TxLogo } from "@/components/expenses/tx-logo";
 import type { DateSettings } from "@/lib/prefs";
 import { dueState, shortDay } from "@/lib/repeat-schedule";
 import { duePath, type Occurrence } from "@/lib/recurring-types";
-import { formatMoney } from "@/lib/transactions-types";
+import { signedMoney, txDirection } from "@/lib/transactions-types";
 
 /** Home, the owner: up to 3 repeat-expense reminders waiting, + "See all". */
 export function DueSoonCard({
@@ -23,7 +23,7 @@ export function DueSoonCard({
     <SectionCard className={className} title="Due soon" action={{ label: "See all", href: "/recurring" }}>
       <div className="px-[4px]" data-testid="due-card">
         {items.slice(0, 3).map((o) => {
-          const income = o.type === "INCOME";
+          const dir = txDirection(o.type);
           const due = dueState(o.dueDate, today, { dateFormat: dates.dateFormat });
           return (
             <SpRow
@@ -38,15 +38,9 @@ export function DueSoonCard({
               subtitle={`Due ${shortDay(o.dueDate, { dateFormat: dates.dateFormat, today, weekday: true })}`}
               trailing={
                 <span className="flex shrink-0 flex-col items-end gap-[4px]" data-testid="due-card-row">
-                  <span
-                    className={
-                      income
-                        ? "text-[0.8125rem] font-semibold whitespace-nowrap tabular-nums text-(--sp-income)"
-                        : "text-[0.8125rem] font-semibold whitespace-nowrap tabular-nums text-(--sp-text)"
-                    }
-                  >
-                    {formatMoney(o.amount, income ? "+" : undefined)}
-                  </span>
+                  <SpMoney direction={dir} className="text-[0.8125rem] font-semibold whitespace-nowrap">
+                    {signedMoney(o.amount, dir)}
+                  </SpMoney>
                   {due && <DueBadge state={due.state} label={due.label} />}
                 </span>
               }

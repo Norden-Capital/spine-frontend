@@ -41,7 +41,7 @@ export function CategoryGrid({
   const chosen = options.find((o) => o.id === value);
   return (
     <div className={cn("rounded-(--sp-radius) bg-(--sp-panel) px-[6px] pt-[14px] pb-[14px]", className)}>
-      <p id="sp-category-label" className="px-[10px] text-[0.8125rem] leading-none font-medium text-(--sp-text)">
+      <p id="sp-category-label" className="-my-[0.25em] px-[10px] text-[0.8125rem] leading-[1.5] font-medium text-(--sp-text)">
         {label}
       </p>
       <div role="radiogroup" aria-labelledby="sp-category-label" className="mt-[14px] grid grid-cols-4 gap-y-[14px]">
@@ -54,7 +54,7 @@ export function CategoryGrid({
               role="radio"
               aria-checked={active}
               onClick={() => onValueChange?.(o.id)}
-              className="group flex min-w-0 flex-col items-center gap-[8px] rounded-2xl py-[2px] leading-none outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
+              className="group flex min-w-0 flex-col items-center gap-[8px] rounded-2xl py-[2px] leading-[1.5] outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
             >
               <span
                 className={cn(
@@ -68,7 +68,7 @@ export function CategoryGrid({
               </span>
               <span
                 className={cn(
-                  "w-full truncate px-[2px] text-center text-[0.6875rem]",
+                  "-my-[0.25em] line-clamp-2 w-full px-[2px] text-center text-[0.6875rem] [overflow-wrap:anywhere]",
                   active ? "font-medium text-(--sp-text)" : "text-(--sp-text-2)"
                 )}
               >
@@ -80,7 +80,7 @@ export function CategoryGrid({
       </div>
       {chosen?.children?.length ? (
         <div className="mt-[16px] px-[10px]">
-          <p className="text-[0.6875rem] leading-none text-(--sp-text-muted)">Subcategory</p>
+          <p className="-my-[0.25em] text-[0.6875rem] leading-[1.5] text-(--sp-text-muted)">Subcategory</p>
           <div role="group" aria-label="Subcategory" className="mt-[10px] flex flex-wrap gap-[8px]">
             <FilterChip
               label={`All ${chosen.name}`}

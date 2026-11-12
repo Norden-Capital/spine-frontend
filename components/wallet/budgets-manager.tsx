@@ -3,23 +3,24 @@
 import { PageEmpty } from "@/components/nav/page-empty";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BottomSheet, IconAdd, IconDelete, IconEdit, IconSavings, SpButton, SpField, SpInput } from "@/components/spine-ui";
+import {
+  BottomSheet,
+  IconAdd,
+  IconButton,
+  IconDelete,
+  IconEdit,
+  IconSavings,
+  SpButton,
+  SpField,
+  SpInput,
+} from "@/components/spine-ui";
 import { api, ApiError, errorMessage, fieldErrorText } from "@/lib/api";
 import type { Category } from "@/lib/catalog-types";
 import { formatMoney, parseAmountInput } from "@/lib/transactions-types";
 import type { Budget } from "@/lib/wallet-types";
 import { CategoryIcon } from "@/components/expenses/category-icon";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+import { ConfirmSheet } from "@/components/admin/confirm-sheet";
+import { NoticeBox } from "@/components/admin/notice";
 import { CategorySelect } from "./form-bits";
 import { ProgressBar, statusText } from "./progress";
 
@@ -31,34 +32,36 @@ export function BudgetsManager({ budgets, categories }: { budgets: Budget[]; cat
   const [remove, setRemove] = useState<Budget | null>(null);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
   async function confirmRemove() {
     if (!remove) return;
     setBusy(true);
+    setRemoveError(null);
     try {
       await api(`/wallet/budgets/${encodeURIComponent(remove.id)}`, { method: "DELETE" });
       setNotice({ kind: "ok", text: "Budget removed." });
+      setRemoveOpen(false);
     } catch (err) {
-      setNotice({ kind: "error", text: errorMessage(err) });
+      setRemoveError(errorMessage(err));
     } finally {
       setBusy(false);
-      setRemoveOpen(false);
       router.refresh();
     }
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <Button size="lg" className="h-12 rounded-full" onClick={() => setEdit({ budget: null, open: true })} data-testid="budget-add">
-        <IconAdd aria-hidden />
+    <div className="flex flex-col gap-[12px]">
+      <SpButton
+        className="w-full"
+        icon={<IconAdd aria-hidden />}
+        onClick={() => setEdit({ budget: null, open: true })}
+        data-testid="budget-add"
+      >
         Add a budget
-      </Button>
-      {notice && (
-        <Alert variant={notice.kind === "error" ? "destructive" : "default"}>
-          <AlertDescription>{notice.text}</AlertDescription>
-        </Alert>
-      )}
+      </SpButton>
+      {notice && <NoticeBox notice={notice} />}
       {budgets.length === 0 ? (
         <PageEmpty
           icon={<IconSavings />}
@@ -66,47 +69,54 @@ export function BudgetsManager({ budgets, categories }: { budgets: Budget[]; cat
           text="A budget is a monthly limit for all your spending or for one category."
         />
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-[12px]">
           {budgets.map((b) => {
             const name = b.category ? b.category.name : "All spending";
             const left = Number(b.limit) - Number(b.spent);
             return (
-              <li key={b.id} className="flex flex-col gap-3 rounded-(--sp-radius) bg-(--sp-panel) p-4">
-                <div className="flex items-start gap-3">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-(--sp-soft)">
+              <li
+                key={b.id}
+                className="flex flex-col gap-[12px] rounded-(--sp-radius) bg-(--sp-panel) pt-[10px] pr-[8px] pb-[16px] pl-[14px]"
+              >
+                <div className="flex items-center gap-[10.8px]">
+                  <span className="flex size-[33px] shrink-0 items-center justify-center rounded-full bg-(--sp-soft) text-(--sp-text) [&_svg]:size-[15px]">
                     <CategoryIcon name={b.category?.icon ?? "banknote"} />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-(--sp-text)">{name}</p>
-                    <p className="text-xs text-(--sp-text-faint) tabular-nums">
+                    <p className="truncate text-[0.9375rem] leading-normal font-medium text-(--sp-text)">{name}</p>
+                    <p className="mt-[2px] text-[0.6875rem] leading-snug text-(--sp-text-muted) tabular-nums">
                       {formatMoney(b.spent)} of {formatMoney(b.limit)} ·{" "}
                       {left >= 0 ? `${formatMoney(left)} left` : `${formatMoney(-left)} over`}
                     </p>
                   </div>
-                  <Button variant="ghost" size="icon" className="size-11" aria-label={`Edit ${name}`} onClick={() => setEdit({ budget: b, open: true })}>
-                    <IconEdit className="size-4" aria-hidden />
-                  </Button>
-                  <Button
+                  <IconButton
                     variant="ghost"
-                    size="icon"
-                    className="size-11"
-                    aria-label={`Remove ${name}`}
+                    label={`Edit ${name}`}
+                    icon={<IconEdit aria-hidden />}
+                    onClick={() => setEdit({ budget: b, open: true })}
+                  />
+                  <IconButton
+                    variant="ghost"
+                    label={`Remove ${name}`}
+                    icon={<IconDelete aria-hidden />}
+                    className="text-(--sp-danger)"
                     onClick={() => {
                       setRemove(b);
+                      setRemoveError(null);
                       setRemoveOpen(true);
                     }}
-                  >
-                    <IconDelete className="size-4" aria-hidden />
-                  </Button>
+                  />
                 </div>
-                <ProgressBar percent={b.percent} status={b.status} label={`${name}: ${statusText(b.status, b.percent)}`} />
+                <div className="pr-[6px]">
+                  <ProgressBar percent={b.percent} status={b.status} label={`${name}: ${statusText(b.status, b.percent)}`} />
+                </div>
                 <p
                   className={
                     b.status === "EXCEEDED"
-                      ? "text-xs font-medium text-red-700 dark:text-red-400"
+                      ? "text-[0.6875rem] leading-snug font-medium text-(--sp-danger)"
                       : b.status === "WARNING"
-                        ? "text-xs font-medium text-amber-700 dark:text-amber-400"
-                        : "text-xs text-(--sp-text-faint)"
+                        ? "text-[0.6875rem] leading-snug font-medium text-(--sp-warning)"
+                        : "text-[0.6875rem] leading-snug text-(--sp-text-muted)"
                   }
                 >
                   {statusText(b.status, b.percent)}
@@ -125,22 +135,18 @@ export function BudgetsManager({ budgets, categories }: { budgets: Budget[]; cat
         onSaved={(text) => setNotice({ kind: "ok", text })}
       />
 
-      <AlertDialog open={removeOpen} onOpenChange={(next) => !next && !busy && setRemoveOpen(false)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove this budget?</AlertDialogTitle>
-            <AlertDialogDescription>Your transactions stay. Only the limit goes away.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel size="lg" className="h-11" disabled={busy}>
-              Cancel
-            </AlertDialogCancel>
-            <Button variant="destructive" size="lg" className="h-11" onClick={confirmRemove} disabled={busy}>
-              {busy ? "Removing…" : "Remove"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmSheet
+        open={removeOpen}
+        onOpenChange={setRemoveOpen}
+        title="Remove this budget?"
+        text="Your transactions stay. Only the limit goes away."
+        confirm="Remove"
+        destructive
+        busy={busy}
+        busyLabel="Removing…"
+        error={removeError}
+        onConfirm={() => void confirmRemove()}
+      />
     </div>
   );
 }
@@ -259,7 +265,6 @@ function BudgetForm({
         optional
         error={categoryError ?? undefined}
         hint="A main category also counts its subcategories."
-        className="[&_select]:bg-(--sp-soft)"
       >
         <CategorySelect
           id="budget-category"

@@ -32,9 +32,9 @@ export function Timeline({ entries, className }: { entries: TimelineEntry[]; cla
               <span className="absolute top-[14px] -bottom-[2px] w-[2px] rounded-full bg-(--sp-soft)" />
             ) : null}
           </span>
-          <div className="min-w-0 flex-1 leading-none">
-            <p className="text-[0.75rem] font-medium text-(--sp-text)">{e.title}</p>
-            <p className="mt-[4px] text-[0.625rem] text-(--sp-text-faint)">{e.meta}</p>
+          <div className="min-w-0 flex-1 leading-[1.5]">
+            <p className="-my-[0.25em] text-[0.75rem] font-medium text-(--sp-text)">{e.title}</p>
+            <p className="mt-[calc(4px-0.25em)] -mb-[0.25em] text-[0.625rem] text-(--sp-text-faint)">{e.meta}</p>
             {e.changes?.length ? (
               <ul className="mt-[8px] space-y-[4px]">
                 {e.changes.map((c) => (

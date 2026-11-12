@@ -140,7 +140,7 @@ export function FloatingDock({ items, pendingHref, position = "fixed", className
           >
             <span
               className={cn(
-                "relative flex h-[38px] items-center rounded-full leading-none",
+                "relative flex h-[38px] items-center rounded-full leading-[1.5]",
                 "transition-[padding,transform,background-color,color] duration-(--sp-dur) ease-(--sp-ease) motion-reduce:transition-none",
                 "group-active:scale-95 motion-reduce:group-active:scale-100",
                 "group-focus-visible:ring-3 group-focus-visible:ring-(--sp-ring)",

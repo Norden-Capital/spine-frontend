@@ -42,7 +42,7 @@ export function Segmented({
   const item = (it: SegmentedItem) => {
     const active = it.value === value;
     const cls = cn(
-      "flex min-w-0 flex-1 items-center justify-center gap-[6px] rounded-full px-[12px] leading-none font-medium whitespace-nowrap transition outline-none select-none",
+      "flex min-w-0 flex-1 items-center justify-center gap-[6px] rounded-full px-[12px] leading-[1.5] font-medium whitespace-nowrap transition outline-none select-none",
       "focus-visible:ring-3 focus-visible:ring-(--sp-ring) [&_svg]:size-[15px] [&_svg]:shrink-0 [&_svg]:stroke-[1.8]",
       size === "md" ? "text-[0.8125rem]" : "text-[0.75rem]",
       active

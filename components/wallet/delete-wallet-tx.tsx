@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconDelete } from "@/components/spine-ui";
 import { api, errorMessage } from "@/lib/api";
+import { walletChanged } from "@/lib/wallet-actions";
 import { BottomSheet, SpButton } from "@/components/spine-ui";
 
 /** Wallet delete is final (no trash): ask first and say so. */
@@ -18,12 +19,20 @@ export function DeleteWalletTx({ id, month }: { id: string; month: string }) {
     setError(null);
     try {
       await api(`/wallet/transactions/${encodeURIComponent(id)}`, { method: "DELETE" });
-      router.replace(`/wallet/transactions?month=${month}`);
-      router.refresh();
     } catch (err) {
       setPending(false);
       setOpen(false);
       setError(errorMessage(err));
+      return;
+    }
+    // Deleted: leave this page and make every wallet page fresh (list, dashboard, totals).
+    const to = `/wallet/transactions?month=${encodeURIComponent(month)}`;
+    try {
+      await walletChanged(to);
+    } catch {
+      // The server step failed (network): still leave and reload the data.
+      router.replace(to);
+      router.refresh();
     }
   }
 

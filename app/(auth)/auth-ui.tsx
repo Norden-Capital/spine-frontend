@@ -8,7 +8,7 @@ export const AUTH_HEADER_CENTER = "flex flex-col items-center text-center";
 
 /** Same look as SpButton (size lg), for a <Link>: the kit button is a <button> only. */
 const LINK_BUTTON =
-  "inline-flex h-[52px] items-center justify-center gap-[8px] rounded-full px-[24px] text-[14px] leading-none font-medium whitespace-nowrap transition outline-none select-none " +
+  "inline-flex h-[52px] items-center justify-center gap-[8px] rounded-full px-[24px] text-[14px] leading-snug font-medium whitespace-nowrap transition outline-none select-none " +
   "focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.98] [&_svg]:size-[18px] [&_svg]:shrink-0 [&_svg]:stroke-[1.8]";
 
 export function linkButton(variant: "primary" | "secondary" = "primary", className?: string) {

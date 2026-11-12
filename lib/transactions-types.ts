@@ -63,6 +63,19 @@ export function formatNet(amount: string): string {
   return formatMoney(n, n > 0 ? "+" : n < 0 ? "-" : undefined);
 }
 
+/** Money with its direction: in "+$500.00", out "−$120.00", net its own sign; zero is "$0.00". */
+export function signedMoney(amount: string | number, direction: "in" | "out" | "net"): string {
+  const n = Number(amount);
+  if (!n) return formatMoney(0);
+  if (direction === "net") return formatNet(String(n));
+  return formatMoney(n, direction === "in" ? "+" : "-");
+}
+
+/** In / out of a transaction type (INCOME = in, everything else = out). */
+export function txDirection(type: string | null | undefined): "in" | "out" {
+  return type === "INCOME" ? "in" : "out";
+}
+
 /** Money typed by a person: "1 234,5" -> "1234.50"; null if not a valid positive amount. */
 export function parseAmountInput(raw: string): string | null {
   const cleaned = raw.trim().replace(/[\s ']/g, "").replace(",", ".");

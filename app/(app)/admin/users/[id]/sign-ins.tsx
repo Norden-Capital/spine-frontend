@@ -91,7 +91,7 @@ function SignInsSkeleton() {
       aria-label="Loading sign-ins"
       className="rounded-(--sp-radius) bg-(--sp-panel) p-[14px]"
     >
-      <div className="flex items-baseline justify-between gap-3 leading-none">
+      <div className="flex items-baseline justify-between gap-3 leading-snug">
         <h2 className="text-[0.8125rem] font-medium text-(--sp-text)">Sign-ins</h2>
         <SpSkeleton className="h-[8px] w-[96px]" />
       </div>
