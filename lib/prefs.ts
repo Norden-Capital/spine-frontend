@@ -92,41 +92,51 @@ export function todayIn(zone: string): string {
 
 // ---------------------------------------------------------------------------
 // Look and feel on <html>. The same steps run in three places:
-// - PREFS_HEAD_SCRIPT, inline in <head>, before the first paint (cookie);
-// - the (app) layout, inline, with the prefs from the backend;
+// - PREFS_HEAD_SCRIPT, inline in <head>, before the first paint (device copy);
+// - the (app) layout, inline, with the prefs from the backend (server wins);
 // - applyPrefs(), in the browser, right after the user changes a setting.
+//
+// The look (theme, font, text size) is also kept on the device, in
+// localStorage AND a cookie, as "THEME.FONT.SIZE". Logout keeps it, so the
+// login page shows in the user's theme. Nothing saved = follow the phone.
 
-/** Cookie the head script reads: "THEME.FONT.SIZE", e.g. "DARK.INTER.LARGE". */
+/** Cookie copy of the look: "THEME.FONT.SIZE", e.g. "DARK.INTER.LARGE". */
 export const PREFS_COOKIE = "spine-prefs";
+/** localStorage copy of the look (same value as the cookie). */
+export const LOOK_STORAGE_KEY = "spine-look";
 /** Cookie with the device time zone, so the server can format dates. */
 export const DEVICE_ZONE_COOKIE = "spine-tz";
 
 /** Plain JS (also inlined as a string): set theme, font and text size. */
 const APPLY_JS = `function(t,f,s){var d=document.documentElement;var k=t==="DARK"||(t==="SYSTEM"&&matchMedia("(prefers-color-scheme: dark)").matches);d.dataset.theme=t;d.classList.toggle("dark",k);d.style.colorScheme=k?"dark":"light";d.dataset.font=String(f).toLowerCase();d.dataset.textSize=String(s).toLowerCase()}`;
 
+/** Plain JS (also inlined as a string): save the look on the device (cookie + localStorage). */
+const SAVE_JS = `function(v){document.cookie="${PREFS_COOKIE}="+encodeURIComponent(v)+";path=/;max-age=31536000;samesite=lax";try{localStorage.setItem("${LOOK_STORAGE_KEY}",v)}catch(e){}}`;
+
 /**
- * Runs first in <head>. Logged-out pages (login, forgot, set password) use the
- * defaults; other pages use the cookie. Also keeps the device zone cookie
- * fresh and follows the phone's light/dark switch live for "SYSTEM".
+ * Runs first in <head>, on every page (logged-in or not). Applies the look
+ * saved on this device (localStorage, else cookie, else follow the phone).
+ * Also keeps the device zone cookie fresh and follows the phone's light/dark
+ * switch live for "SYSTEM".
  */
 export const PREFS_HEAD_SCRIPT = `(function(){try{
 var apply=${APPLY_JS};
 document.cookie="${DEVICE_ZONE_COOKIE}="+encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone)+";path=/;max-age=31536000;samesite=lax";
-var guest=/^\\/(login|forgot-password|set-password)(\\/|$)/.test(location.pathname);
-var m=document.cookie.match(/(?:^|; )${PREFS_COOKIE}=([^;]*)/);
-var p=(!guest&&m)?decodeURIComponent(m[1]).split("."):[];
+var v=null;try{v=localStorage.getItem("${LOOK_STORAGE_KEY}")}catch(e){}
+if(!v){var m=document.cookie.match(/(?:^|; )${PREFS_COOKIE}=([^;]*)/);if(m)v=decodeURIComponent(m[1])}
+var p=v?String(v).split("."):[];
 apply(p[0]||"SYSTEM",p[1]||"GEIST",p[2]||"NORMAL");
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",function(){var d=document.documentElement;if(d.dataset.theme==="SYSTEM")apply("SYSTEM",d.dataset.font,d.dataset.textSize)});
 }catch(e){}})()`;
 
-function cookieValue(p: Pick<Preferences, "theme" | "font" | "textSize">) {
+function lookValue(p: Pick<Preferences, "theme" | "font" | "textSize">) {
   return `${p.theme}.${p.font}.${p.textSize}`;
 }
 
-/** Inline script for the (app) layout: apply the backend prefs + save the cookie. */
+/** Inline script for the (app) layout: apply the backend prefs + save them on the device. */
 export function appLayoutPrefsScript(p: Preferences): string {
-  const v = JSON.stringify(cookieValue(p));
-  return `(function(){try{(${APPLY_JS})(${JSON.stringify(p.theme)},${JSON.stringify(p.font)},${JSON.stringify(p.textSize)});document.cookie="${PREFS_COOKIE}="+encodeURIComponent(${v})+";path=/;max-age=31536000;samesite=lax"}catch(e){}})()`;
+  const v = JSON.stringify(lookValue(p));
+  return `(function(){try{(${APPLY_JS})(${JSON.stringify(p.theme)},${JSON.stringify(p.font)},${JSON.stringify(p.textSize)});(${SAVE_JS})(${v})}catch(e){}})()`;
 }
 
 /** Browser only: apply prefs now and remember them for the next page load. */
@@ -139,15 +149,17 @@ export function applyPrefs(p: Pick<Preferences, "theme" | "font" | "textSize">) 
   d.style.colorScheme = dark ? "dark" : "light";
   d.dataset.font = p.font.toLowerCase();
   d.dataset.textSize = p.textSize.toLowerCase();
-  document.cookie = `${PREFS_COOKIE}=${encodeURIComponent(cookieValue(p))};path=/;max-age=31536000;samesite=lax`;
+  rememberPrefs(p);
 }
 
-/** Browser only: remember prefs for the next page load, without applying them now. */
+/** Browser only: save the look on the device (cookie + localStorage), without applying it now. */
 export function rememberPrefs(p: Pick<Preferences, "theme" | "font" | "textSize">) {
-  document.cookie = `${PREFS_COOKIE}=${encodeURIComponent(cookieValue(p))};path=/;max-age=31536000;samesite=lax`;
-}
-
-/** Browser only: forget the prefs cookie (on logout). */
-export function clearPrefsCookie() {
-  document.cookie = `${PREFS_COOKIE}=;path=/;max-age=0;samesite=lax`;
+  // Same steps as SAVE_JS.
+  const v = lookValue(p);
+  document.cookie = `${PREFS_COOKIE}=${encodeURIComponent(v)};path=/;max-age=31536000;samesite=lax`;
+  try {
+    localStorage.setItem(LOOK_STORAGE_KEY, v);
+  } catch {
+    // Private mode / blocked storage: the cookie is enough.
+  }
 }

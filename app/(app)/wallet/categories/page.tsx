@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { getCategoryIcons } from "@/lib/catalog-server";
-import { getAllWalletCategories, getAllWalletTags } from "@/lib/wallet-server";
+import { getAllWalletCategories } from "@/lib/wallet-server";
 import { CatalogAdmin } from "@/components/catalog/catalog-admin";
+import { kindFromParam } from "@/lib/catalog-types";
 import { WALLET_CATALOG } from "@/components/catalog/catalog-dialogs";
 import { WalletPageHead } from "@/components/wallet/wallet-page-head";
 
@@ -10,19 +11,17 @@ export const metadata: Metadata = { title: "Wallet categories" };
 // Blocks on the server on purpose (session + URL data), so nothing flashes.
 export const instant = false;
 
-/** My private categories and tags (same screen as the company one). */
+/** My private categories (same screen as the company one). */
 export default async function WalletCategoriesPage({ searchParams }: PageProps<"/wallet/categories">) {
-  const { tab } = await searchParams;
-  const [categories, tags, icons] = await Promise.all([getAllWalletCategories(), getAllWalletTags(), getCategoryIcons()]);
+  const [params, categories, icons] = await Promise.all([searchParams, getAllWalletCategories(), getCategoryIcons()]);
   return (
     <div className="flex flex-col gap-4">
-      <WalletPageHead title="Categories & tags" subtitle="Only for your wallet." />
+      <WalletPageHead title="Categories" subtitle="Only for your wallet." />
       <CatalogAdmin
-        initialTab={tab === "tags" ? "tags" : "categories"}
         categories={categories.ok ? categories.data : null}
-        tags={tags.ok ? tags.data : null}
         icons={icons}
         paths={WALLET_CATALOG}
+        kind={kindFromParam(params.kind)}
       />
     </div>
   );

@@ -1,19 +1,24 @@
 "use client";
 
+import { PageEmpty } from "@/components/nav/page-empty";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Bell, CalendarClock, CheckCheck, Repeat } from "lucide-react";
+import { IconBell, IconCalendarRepeat, IconRepeat, IconSuccess, IconWarning } from "@/components/spine-ui";
 import { api, errorMessage } from "@/lib/api";
 import type { Alert } from "@/lib/alerts-server";
 import { useDates } from "@/components/prefs/prefs-provider";
 import { Button } from "@/components/ui/button";
-import { AlertRow, SectionCard, type AlertTone } from "@/components/spine-ui";
+import { AlertRow, DueBadge, SectionCard, type AlertTone } from "@/components/spine-ui";
+import { todayIn } from "@/lib/prefs";
+import { dueState } from "@/lib/repeat-schedule";
 
 const ICONS: Record<string, React.ReactNode> = {
-  BUDGET_80: <AlertTriangle aria-hidden />,
-  BUDGET_100: <AlertTriangle aria-hidden />,
-  RECURRING_CREATED: <Repeat aria-hidden />,
-  RECURRING_DUE_TOMORROW: <CalendarClock aria-hidden />,
+  BUDGET_80: <IconWarning aria-hidden />,
+  BUDGET_100: <IconWarning aria-hidden />,
+  RECURRING_CREATED: <IconRepeat aria-hidden />,
+  RECURRING_DUE_TOMORROW: <IconCalendarRepeat aria-hidden />,
+  // Company repeat expense due: link "/recurring/due/<occurrenceId>".
+  COMPANY_RECURRING_DUE: <IconCalendarRepeat aria-hidden />,
 };
 
 const TONES: Record<string, AlertTone> = {
@@ -21,7 +26,12 @@ const TONES: Record<string, AlertTone> = {
   BUDGET_100: "danger",
   RECURRING_CREATED: "success",
   RECURRING_DUE_TOMORROW: "info",
+  COMPANY_RECURRING_DUE: "warning",
 };
+
+/** COMPANY_RECURRING_DUE body: "USD 1200.00 · due 2026-11-12. Tap to add it…" → "2026-11-12". */
+const dueDateOf = (a: Alert) =>
+  a.kind === "COMPANY_RECURRING_DUE" ? (/\bdue (\d{4}-\d{2}-\d{2})\b/.exec(a.body ?? "")?.[1] ?? null) : null;
 
 /** Only links inside the app (the backend sends a path hint). */
 const safeLink = (link: string | null) => (link && link.startsWith("/") && !link.startsWith("//") ? link : null);
@@ -34,6 +44,7 @@ export function AlertsList({ items, unread }: { items: Alert[]; unread: number }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const count = list.filter((a) => !a.read).length;
+  const today = todayIn(dates.settings.zone);
 
   /** The row is a link; tapping it also marks the alert read. */
   async function markRead(a: Alert) {
@@ -67,24 +78,25 @@ export function AlertsList({ items, unread }: { items: Alert[]; unread: number }
         <h1 className="text-[22px] font-medium text-(--sp-text)">Alerts</h1>
         {(count > 0 || unread > 0) && (
           <Button variant="ghost" size="lg" className="h-11" onClick={() => void readAll()} disabled={busy}>
-            <CheckCheck aria-hidden />
+            <IconSuccess aria-hidden />
             Mark all read
           </Button>
         )}
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
       {list.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-(--sp-radius) bg-(--sp-panel) px-4 py-10 text-center">
-          <Bell className="size-8 text-(--sp-text-faint)" aria-hidden />
-          <p className="text-sm text-(--sp-text-muted)">No alerts. Budget and recurring alerts show here.</p>
-        </div>
+        <PageEmpty icon={<IconBell />} title="No alerts" text="Budget and recurring alerts show here." />
       ) : (
         <SectionCard title="Latest">
           <ul className="flex flex-col">
-            {list.map((a) => (
+            {list.map((a) => {
+              // Unread repeat-expense reminder: how urgent it is (read = done, skipped or seen).
+              const dueDate = a.read ? null : dueDateOf(a);
+              const due = dueDate ? dueState(dueDate, today, { dateFormat: dates.settings.dateFormat }) : null;
+              return (
               <li key={a.id} onClick={() => void markRead(a)}>
                 <AlertRow
-                  icon={ICONS[a.kind] ?? <Bell aria-hidden />}
+                  icon={ICONS[a.kind] ?? <IconBell aria-hidden />}
                   tone={TONES[a.kind] ?? "info"}
                   title={a.title}
                   message={a.body || undefined}
@@ -92,8 +104,14 @@ export function AlertsList({ items, unread }: { items: Alert[]; unread: number }
                   unread={!a.read}
                   href={safeLink(a.link) ?? "/alerts"}
                 />
+                {due && (
+                  <div className="-mt-[2px] pb-[8px] pl-[57.8px]" data-testid="alert-due-badge">
+                    <DueBadge state={due.state} label={due.label} />
+                  </div>
+                )}
               </li>
-            ))}
+              );
+            })}
           </ul>
         </SectionCard>
       )}

@@ -1,35 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
-import { api, apiWithStatus, ApiError, errorMessage } from "@/lib/api";
-import type { Category, Tag } from "@/lib/catalog-types";
+import { IconChevronDown } from "@/components/spine-ui";
+import { api, ApiError, errorMessage } from "@/lib/api";
+import type { Category } from "@/lib/catalog-types";
 import { CATEGORY_ICONS, CategoryIcon } from "@/components/expenses/category-icon";
 import { NoticeBox } from "@/components/admin/notice";
-import { BottomSheet, SpButton, SpField, SpInput } from "@/components/spine-ui";
+import { BottomSheet, Segmented, SpButton, SpField, SpInput } from "@/components/spine-ui";
 import { cn } from "@/lib/utils";
 
 const MAX_NAME = 60;
 
-/** Where a catalog lives: the company (managers) or my private wallet. */
+/** Where a catalog lives: the company (the owner) or my private wallet. */
 export type CatalogPaths = {
   /** e.g. "/admin/categories" or "/wallet/categories" (POST, PATCH {id}, {id}/archive). */
   categories: string;
-  /** e.g. "/admin/tags" or "/wallet/tags" (PATCH {id}, {id}/archive). */
-  tags: string;
-  /** e.g. "/tags" or "/wallet/tags" (POST: 201 new, 200 existing). */
-  createTag: string;
 };
 
 export const COMPANY_CATALOG: CatalogPaths = {
   categories: "/admin/categories",
-  tags: "/admin/tags",
-  createTag: "/tags",
 };
 export const WALLET_CATALOG: CatalogPaths = {
   categories: "/wallet/categories",
-  tags: "/wallet/tags",
-  createTag: "/wallet/tags",
 };
 
 /** Main button at the bottom of a sheet form: stays in view while the form scrolls. */
@@ -43,12 +35,16 @@ function SubmitBar({ children, disabled }: { children: React.ReactNode; disabled
   );
 }
 
-/** Add (category = null) or edit a category: name + icon grid. */
+type Kind = "EXPENSE" | "INCOME";
+const kindOf = (c: { kind?: Kind }): Kind => c.kind ?? "EXPENSE";
+
+/** Add (category = null) or edit a category: kind (main only), name, main category, website, icon. */
 export function CategoryDialog({
   open,
   category,
   icons,
   all,
+  defaultKind = "EXPENSE",
   paths,
   onOpenChange,
   onSaved,
@@ -59,6 +55,8 @@ export function CategoryDialog({
   icons: string[];
   /** Every category (to choose a main category for a subcategory). */
   all: Category[];
+  /** Kind of a new category: the tab the page shows. */
+  defaultKind?: Kind;
   paths: CatalogPaths;
   onOpenChange: (open: boolean) => void;
   onSaved: (text: string) => void;
@@ -72,6 +70,7 @@ export function CategoryDialog({
           category={category}
           icons={icons.length > 0 ? icons : Object.keys(CATEGORY_ICONS)}
           all={all}
+          defaultKind={defaultKind}
           path={paths.categories}
           onDone={(text) => {
             onOpenChange(false);
@@ -87,21 +86,27 @@ function CategoryForm({
   category,
   icons,
   all,
+  defaultKind,
   path,
   onDone,
 }: {
   category: Category | null;
   icons: string[];
   all: Category[];
+  defaultKind: Kind;
   path: string;
   onDone: (text: string) => void;
 }) {
   const [name, setName] = useState(category?.name ?? "");
   const [parentId, setParentId] = useState<string>(category?.parentId ?? "");
+  // Main categories choose expense / income; a subcategory has its main's kind.
+  const [kind, setKind] = useState<Kind>(category ? kindOf(category) : defaultKind);
+  const [kindError, setKindError] = useState<string | null>(null);
   // One level only: a category with subcategories can't go under another,
-  // and only top-level, active categories (not itself) can be a parent.
+  // and only top-level, active categories (not itself) of the same kind can be a parent.
   const hasChildren = Boolean(category && all.some((c) => c.parentId === category.id));
-  const parents = all.filter((c) => !c.parentId && !c.archived && c.id !== category?.id);
+  const parents = all.filter((c) => !c.parentId && !c.archived && c.id !== category?.id && kindOf(c) === kind);
+  const isSub = Boolean(parentId);
   const [icon, setIcon] = useState<string | null>(category?.icon ?? null);
   const [website, setWebsite] = useState(category?.website ?? "");
   const [websiteError, setWebsiteError] = useState<string | null>(null);
@@ -120,6 +125,7 @@ function CategoryForm({
     setError(null);
     setNameError(null);
     setWebsiteError(null);
+    setKindError(null);
     if (missingName || missingIcon) return;
     const site = website.trim();
     setPending(true);
@@ -132,6 +138,8 @@ function CategoryForm({
             name: trimmed,
             icon,
             ...(hasChildren ? {} : { parentId: parentId || null }),
+            // Kind: main categories only (its subcategories follow).
+            ...(isSub || kind === kindOf(category) ? {} : { kind }),
             // Left out = keep; null = remove; text = set.
             ...(site === (category.website ?? "") ? {} : { website: site || null }),
           },
@@ -140,13 +148,16 @@ function CategoryForm({
       } else {
         await api(path, {
           method: "POST",
-          body: { name: trimmed, icon, parentId: parentId || null, website: site || null },
+          // A subcategory takes its main's kind: leave kind out.
+          body: { name: trimmed, icon, parentId: parentId || null, website: site || null, ...(isSub ? {} : { kind }) },
         });
         onDone(`"${trimmed}" is added.`);
       }
     } catch (err) {
       if (err instanceof ApiError && err.code === "name_taken") setNameError(err.message);
       else if (err instanceof ApiError && err.field === "website") setWebsiteError("Enter a website like example.com.");
+      else if (err instanceof ApiError && (err.field === "kind" || err.field === "parentId"))
+        setKindError("A subcategory always has the kind of its main category (expense or income).");
       else setError(errorMessage(err));
       setPending(false);
     }
@@ -155,6 +166,30 @@ function CategoryForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-[16px] pt-[4px]" noValidate>
       {error && <NoticeBox notice={{ kind: "error", text: error }} />}
+      {isSub ? null : (
+        <SpField
+          label="Kind"
+          hint={category && hasChildren ? "Its subcategories change with it." : undefined}
+          error={kindError ?? undefined}
+        >
+          <div data-testid="category-kind-choice">
+            <Segmented
+              label="Kind"
+              surface="panel"
+              value={kind}
+              onValueChange={(v) => {
+                setKind(v as Kind);
+                setKindError(null);
+              }}
+              items={[
+                { value: "EXPENSE", label: "Expense" },
+                { value: "INCOME", label: "Income" },
+              ]}
+            />
+          </div>
+        </SpField>
+      )}
+      {isSub && kindError && <NoticeBox notice={{ kind: "error", text: kindError }} />}
       <SpField
         label="Name"
         htmlFor="category-name"
@@ -174,6 +209,7 @@ function CategoryForm({
       <SpField
         label="Main category"
         htmlFor="category-parent"
+        optional
         hint={hasChildren ? "It has subcategories, so it stays a main category." : undefined}
       >
         <div className="relative">
@@ -191,16 +227,17 @@ function CategoryForm({
               </option>
             ))}
           </select>
-          <ChevronDown
+          <IconChevronDown
             aria-hidden
-            className="pointer-events-none absolute top-1/2 right-[16px] size-[18px] -translate-y-1/2 stroke-[1.8] text-(--sp-text-faint)"
+            className="pointer-events-none absolute top-1/2 right-[16px] size-[18px] -translate-y-1/2 text-(--sp-text-faint)"
           />
         </div>
       </SpField>
       <SpField
         label="Website"
         htmlFor="category-website"
-        hint="Optional. Its logo shows on expenses in this category that have no website."
+        optional
+        hint="Its logo shows on expenses in this category that have no website."
         error={websiteError ?? undefined}
       >
         <SpInput
@@ -246,92 +283,6 @@ function CategoryForm({
         </div>
       </SpField>
       <SubmitBar disabled={pending}>{pending ? "Saving…" : category ? "Save" : "Add category"}</SubmitBar>
-    </form>
-  );
-}
-
-/** Add (tag = null) or rename a tag. */
-export function TagDialog({
-  open,
-  tag,
-  paths,
-  onOpenChange,
-  onSaved,
-}: {
-  open: boolean;
-  tag: Tag | null;
-  paths: CatalogPaths;
-  onOpenChange: (open: boolean) => void;
-  onSaved: (text: string) => void;
-}) {
-  return (
-    <BottomSheet open={open} onOpenChange={onOpenChange} title={tag ? "Rename tag" : "Add tag"}>
-      {open && (
-        <TagForm
-          key={tag?.id ?? "new"}
-          tag={tag}
-          paths={paths}
-          onDone={(text) => {
-            onOpenChange(false);
-            onSaved(text);
-          }}
-        />
-      )}
-    </BottomSheet>
-  );
-}
-
-function TagForm({ tag, paths, onDone }: { tag: Tag | null; paths: CatalogPaths; onDone: (text: string) => void }) {
-  const [name, setName] = useState(tag?.name ?? "");
-  const [touched, setTouched] = useState(false);
-  const [nameError, setNameError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-
-  const trimmed = name.trim();
-  const missing = trimmed.length === 0;
-
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setTouched(true);
-    setNameError(null);
-    if (missing) return;
-    setPending(true);
-    try {
-      if (tag) {
-        await api(`${paths.tags}/${tag.id}`, {
-          method: "PATCH",
-          body: { name: trimmed },
-        });
-        onDone(`Tag renamed to "${trimmed}".`);
-      } else {
-        // 200 = a tag with this name already exists (nothing new made).
-        const { status, data } = await apiWithStatus<Tag>(paths.createTag, {
-          method: "POST",
-          body: { name: trimmed },
-        });
-        onDone(status === 201 ? `Tag "${data.name}" is added.` : `Tag "${data.name}" already exists.`);
-      }
-    } catch (err) {
-      setNameError(errorMessage(err));
-      setPending(false);
-    }
-  }
-
-  return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-[16px] pt-[4px]" noValidate>
-      <SpField label="Name" htmlFor="tag-name" error={nameError ?? (touched && missing ? "Enter a name." : undefined)}>
-        <SpInput
-          id="tag-name"
-          surface="panel"
-          placeholder="e.g. Client visit"
-          maxLength={MAX_NAME}
-          autoComplete="off"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          aria-invalid={Boolean(nameError) || (touched && missing)}
-        />
-      </SpField>
-      <SubmitBar disabled={pending}>{pending ? "Saving…" : tag ? "Save" : "Add tag"}</SubmitBar>
     </form>
   );
 }

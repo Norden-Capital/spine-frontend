@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CloudOff, Mail } from "lucide-react";
+import { IconMail, IconOffline } from "@/components/spine-ui";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import { AuthHeader, EmptyState, SpButton, SpField, SpPasswordInput } from "@/components/spine-ui";
-import { linkButton, Notice } from "../auth-ui";
+import { AUTH_HEADER_CENTER, linkButton, Notice } from "../auth-ui";
+import { PLAIN_STATE_ICON } from "@/components/nav/state-icon";
 
 const MIN_LENGTH = 12;
 
@@ -22,8 +23,9 @@ export function SetPasswordForm({ token, check }: { token: string; check: TokenC
     return (
       <CenteredState>
         <EmptyState
+          className={PLAIN_STATE_ICON}
           tone="danger"
-          icon={<CloudOff />}
+          icon={<IconOffline />}
           title="Can't check this link right now"
           text="Please try again later."
           action={
@@ -82,7 +84,7 @@ function PasswordForm({
 
   return (
     <div>
-      <AuthHeader
+      <AuthHeader className={AUTH_HEADER_CENTER}
         title={isInvite ? "Create your password" : "Choose a new password"}
         subtitle={`For ${info.email}. You use it to log in to Spine.`}
       />
@@ -140,9 +142,9 @@ function InvalidLink() {
     <CenteredState>
       <EmptyState
         tone="danger"
-        icon={<Mail />}
+        icon={<IconMail />}
         title="This link does not work"
-        text="It has expired or was already used. Ask your admin for a new invite, or request a new reset link."
+        text="It has expired or was already used. Ask the owner for a new invite, or request a new reset link."
         action={
           <div className="flex w-full flex-col gap-[10px]">
             <Link href="/forgot-password" className={linkButton("primary", "flex w-full")}>
@@ -153,7 +155,7 @@ function InvalidLink() {
             </Link>
           </div>
         }
-        className="w-full"
+        className={`w-full ${PLAIN_STATE_ICON}`}
       />
     </CenteredState>
   );

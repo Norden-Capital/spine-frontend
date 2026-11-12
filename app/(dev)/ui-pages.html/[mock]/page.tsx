@@ -20,8 +20,10 @@ export function generateStaticParams() {
 export default async function MockPage({ params }: { params: Promise<{ mock: string }> }) {
   if (process.env.NODE_ENV === "production") notFound();
   const { mock } = await params;
-  const theme = mock.endsWith("-dark") ? "dark" : "light";
-  const name = mock.replace(/-(light|dark)$/, "");
+  const old = mock.endsWith("-old"); // before/after: old Lucide icons
+  const base = old ? mock.slice(0, -4) : mock;
+  const theme = base.endsWith("-dark") ? "dark" : "light";
+  const name = base.replace(/-(light|dark)$/, "");
   if (!MOCK_LIST.some((m) => m.name === name)) notFound();
 
   return (
@@ -30,7 +32,7 @@ export default async function MockPage({ params }: { params: Promise<{ mock: str
       className={`${theme} ${spineFont.variable} sp sp-poppins relative mx-auto flex min-h-svh w-full max-w-[430px] flex-col bg-(--sp-bg) px-(--sp-gutter) pt-[12px] text-(--sp-text)`}
       style={{ colorScheme: theme }}
     >
-      <MockView name={name} />
+      <MockView name={name} icons={old ? "lucide" : "sp"} />
     </div>
   );
 }

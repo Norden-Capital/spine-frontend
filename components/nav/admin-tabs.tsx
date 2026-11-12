@@ -10,7 +10,7 @@ const TABS = [
 ];
 
 /**
- * "Admin" title + page tabs (Segmented links) at the top of the manager
+ * "Admin" title + page tabs (Segmented links) at the top of the owner
  * pages. Hidden on one user's page: it has its own header with a back button.
  */
 export function AdminTabs() {

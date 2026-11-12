@@ -1,22 +1,23 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { IconAdd } from "@/components/spine-ui";
 import { SpineLogo } from "@/components/spine-ui";
 import { cn } from "@/lib/utils";
 
-// Link versions of the kit's AddPill / QuickAction (the kit ships buttons;
-// these go to a page). Same sizes and tokens as components/spine-ui.
+// Link versions of the kit's AddPill / QuickAction / IconButton (the kit
+// ships buttons; these go to a page). Same sizes and tokens as components/spine-ui.
+// The class strings are shared with the button versions in ./space-actions.tsx.
 
-/** Black "+ label" pill (116 × 48), for BalanceCard's cut-out corner. */
-export function LinkAddPill({ href, label }: { href: string; label: string }) {
+export const ADD_PILL_CLASS =
+  "inline-flex h-[48px] shrink-0 items-center gap-[7px] rounded-full bg-(--sp-pill) pr-[16px] pl-[8.5px] text-[13px] leading-none font-medium text-(--sp-pill-text) transition outline-none select-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97] motion-reduce:transition-none";
+export const ADD_PILL_DOT_CLASS =
+  "flex size-[31px] items-center justify-center rounded-full bg-(--sp-pill-dot) text-(--sp-pill-dot-text) [&_svg]:size-[16px]";
+
+/** Black "+ label" pill (116 × 48), for BalanceCard's cut-out corner. `icon` replaces the "+". */
+export function LinkAddPill({ href, label, icon, testId }: { href: string; label: string; icon?: ReactNode; testId?: string }) {
   return (
-    <Link
-      href={href}
-      className="inline-flex h-[48px] shrink-0 items-center gap-[7px] rounded-full bg-(--sp-pill) pr-[16px] pl-[8.5px] text-[13px] leading-none font-medium text-(--sp-pill-text) transition outline-none select-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97]"
-    >
-      <span className="flex size-[31px] items-center justify-center rounded-full bg-(--sp-pill-dot) text-(--sp-pill-dot-text)">
-        <Plus className="size-[16px]" strokeWidth={1.75} aria-hidden />
-      </span>
+    <Link href={href} className={ADD_PILL_CLASS} data-testid={testId}>
+      <span className={ADD_PILL_DOT_CLASS}>{icon ?? <IconAdd aria-hidden />}</span>
       {label}
     </Link>
   );
@@ -61,32 +62,48 @@ export function LinkPeekCard({
   );
 }
 
+export const QUICK_ACTION_CLASS =
+  "group flex min-w-0 flex-col items-center rounded-2xl pt-[17.7px] pb-[18.2px] leading-none outline-none select-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) focus-visible:ring-inset";
+export const QUICK_ACTION_ICON_CLASS =
+  "flex size-[48px] items-center justify-center rounded-full bg-(--sp-soft) text-(--sp-text) transition group-hover:bg-(--sp-soft-hover) group-active:scale-95 motion-reduce:transition-none [&_svg]:size-[18px] [&_svg]:stroke-[1.9]";
+// rem: follows the text-size setting. Line height 1.3 + no fixed panel height,
+// so letters like g, y, p are never cut off (any font, any size).
+export const QUICK_ACTION_LABEL_CLASS =
+  "mt-[11.2px] w-full truncate px-[2px] text-center text-[0.75rem] leading-[1.3] text-(--sp-text-2)";
+
 /** Round soft icon (48) + label (12) 11 under it; the whole column is the tap area. */
 export function LinkQuickAction({ href, label, icon }: { href: string; label: string; icon: ReactNode }) {
   return (
-    <Link
-      href={href}
-      className="group flex min-w-0 flex-col items-center rounded-2xl pt-[19.5px] pb-[20px] leading-none outline-none select-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) focus-visible:ring-inset"
-    >
-      <span className="flex size-[48px] items-center justify-center rounded-full bg-(--sp-soft) text-(--sp-text) transition group-hover:bg-(--sp-soft-hover) group-active:scale-95 [&_svg]:size-[18px] [&_svg]:stroke-[1.9]">
-        {icon}
-      </span>
-      <span className="mt-[11.2px] w-full truncate text-center text-[12px] text-(--sp-text-2)">{label}</span>
+    <Link href={href} className={QUICK_ACTION_CLASS}>
+      <span className={QUICK_ACTION_ICON_CLASS}>{icon}</span>
+      <span className={QUICK_ACTION_LABEL_CLASS}>{label}</span>
     </Link>
   );
 }
 
-/** The quick actions panel (339 × 112, radius 22), 4 equal columns. */
+/** The quick actions panel (339 × 112 at normal text size, grows with bigger text; radius 22), equal columns. */
 export function QuickActionsPanel({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <nav
       aria-label="Quick actions"
       className={cn(
-        "grid h-[112px] auto-cols-fr grid-flow-col rounded-(--sp-radius) bg-(--sp-panel) px-[2px]",
+        "grid min-h-[112px] auto-cols-fr grid-flow-col rounded-(--sp-radius) bg-(--sp-panel) px-[2px]",
         className
       )}
     >
       {children}
     </nav>
+  );
+}
+
+export const ICON_BUTTON_CLASS =
+  "relative inline-flex size-[44px] shrink-0 items-center justify-center rounded-full bg-(--sp-icon-btn) text-(--sp-icon-btn-text) transition outline-none select-none hover:brightness-95 focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-95 motion-reduce:transition-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-[18px] [&_svg]:shrink-0 [&_svg]:stroke-[1.6]";
+
+/** Round 44 icon link (kit IconButton look, "surface"), e.g. Search in the page header. */
+export function LinkIconButton({ href, label, icon }: { href: string; label: string; icon: ReactNode }) {
+  return (
+    <Link href={href} aria-label={label} className={ICON_BUTTON_CLASS}>
+      {icon}
+    </Link>
   );
 }

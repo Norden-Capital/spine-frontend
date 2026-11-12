@@ -1,7 +1,7 @@
 import { getWalletStatus } from "@/lib/wallet-server";
 import { PinSetup, PinUnlock, WalletSession } from "@/components/wallet/pin-gate";
 
-// The private wallet: only its owner, never a manager. The PIN check blocks
+// The private wallet: only the user, not even the company owner. The PIN check blocks
 // on the server, so no wallet data renders before the wallet is unlocked.
 export const instant = false;
 

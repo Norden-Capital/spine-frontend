@@ -44,7 +44,7 @@ export function CategoryPicker({
   if (active.length === 0) {
     return (
       <p className="rounded-(--sp-radius) bg-(--sp-panel) px-[16px] py-[20px] text-center text-[0.8125rem] text-(--sp-text-muted)">
-        No categories yet. Ask a manager to add some.
+        No categories yet. Ask the owner to add some.
       </p>
     );
   }

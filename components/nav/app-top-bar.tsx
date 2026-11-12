@@ -2,11 +2,13 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, ChevronRight, LogOut, Menu, Settings, Shapes, Trash2, Users, Wallet, X } from "lucide-react";
+import { IconBell, IconCalendarRepeat, IconCategories, IconChevronRight, IconClose, IconDelete, IconLogout, IconMenu, IconSettings, IconUsers, IconWallet } from "@/components/spine-ui";
 import { Avatar, IconButton, TopBar } from "@/components/spine-ui";
 import { LogoutDialog } from "@/components/auth/logout-button";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { canSeeUsers, displayName, type CurrentUser } from "@/lib/auth-types";
+import { displayName, type CurrentUser } from "@/lib/auth-types";
+import { isOwner } from "@/lib/roles";
+import { avatarDataUri, seedOf } from "@/lib/avatar";
 
 /** A swipe to the left longer than this (px) closes the menu. */
 const SWIPE_CLOSE = 60;
@@ -31,7 +33,7 @@ function MenuLink({
     <Link href={href} onClick={onPick} className={`${ROW} text-(--sp-text)`}>
       <span className={ICON}>{icon}</span>
       <span className="min-w-0 flex-1 truncate">{label}</span>
-      <ChevronRight aria-hidden className="size-[18px] shrink-0 stroke-[1.8] text-(--sp-text-faint)" />
+      <IconChevronRight aria-hidden className="size-[18px] shrink-0 text-(--sp-text-faint)" />
     </Link>
   );
 }
@@ -46,7 +48,8 @@ export function AppTopBar({ user, unread }: { user: CurrentUser; unread: number 
   const [logoutOpen, setLogoutOpen] = useState(false);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const name = displayName(user);
-  const manager = canSeeUsers(user.role);
+  const face = avatarDataUri(seedOf(user));
+  const owner = isOwner(user);
   const close = () => setMenuOpen(false);
 
   return (
@@ -54,7 +57,7 @@ export function AppTopBar({ user, unread }: { user: CurrentUser; unread: number 
       <TopBar
         left={
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-            <SheetTrigger render={<IconButton label="Menu" icon={<Menu />} />} />
+            <SheetTrigger render={<IconButton label="Menu" icon={<IconMenu />} />} />
             <SheetContent
               side="left"
               showCloseButton={false}
@@ -73,32 +76,39 @@ export function AppTopBar({ user, unread }: { user: CurrentUser; unread: number 
               }}
             >
               <div className="flex items-center gap-[12px] px-[4px] pb-[16px]">
-                <Avatar name={name} aria-hidden />
+                <Avatar name={name} src={face} aria-hidden />
                 <div className="min-w-0 flex-1 leading-tight">
                   <SheetTitle className="truncate text-[0.9375rem] font-medium text-(--sp-text)">{name}</SheetTitle>
                   <SheetDescription className="mt-[3px] truncate text-[0.6875rem] text-(--sp-text-muted)">
                     {name !== user.email ? user.email : "Menu"}
                   </SheetDescription>
                 </div>
-                <SheetClose render={<IconButton label="Close menu" icon={<X />} variant="ghost" />} />
+                <SheetClose render={<IconButton label="Close menu" icon={<IconClose />} variant="ghost" />} />
               </div>
 
               <nav aria-label="Menu" className="flex min-h-0 flex-1 flex-col gap-[4px] overflow-y-auto">
-                <MenuLink href="/wallet" icon={<Wallet aria-hidden />} label="Personal wallet" onPick={close} />
-                <MenuLink href="/settings" icon={<Settings aria-hidden />} label="Settings" onPick={close} />
-                {manager && (
+                <MenuLink href="/wallet" icon={<IconWallet aria-hidden />} label="Personal wallet" onPick={close} />
+                <MenuLink
+                  href="/recurring"
+                  icon={<IconCalendarRepeat aria-hidden />}
+                  label="Repeat expenses"
+                  onPick={close}
+                />
+                <MenuLink href="/settings" icon={<IconSettings aria-hidden />} label="Settings" onPick={close} />
+                {/* The owner's Admin area. Members have none. */}
+                {owner && (
                   <>
                     <p className="px-[12px] pt-[16px] pb-[6px] text-[0.6875rem] font-medium text-(--sp-text-muted)">
                       Admin
                     </p>
-                    <MenuLink href="/admin/users" icon={<Users aria-hidden />} label="Users" onPick={close} />
+                    <MenuLink href="/admin/users" icon={<IconUsers aria-hidden />} label="Users" onPick={close} />
                     <MenuLink
                       href="/admin/categories"
-                      icon={<Shapes aria-hidden />}
-                      label="Categories & tags"
+                      icon={<IconCategories aria-hidden />}
+                      label="Categories"
                       onPick={close}
                     />
-                    <MenuLink href="/admin/trash" icon={<Trash2 aria-hidden />} label="Trash" onPick={close} />
+                    <MenuLink href="/admin/trash" icon={<IconDelete aria-hidden />} label="Trash" onPick={close} />
                   </>
                 )}
               </nav>
@@ -111,7 +121,7 @@ export function AppTopBar({ user, unread }: { user: CurrentUser; unread: number 
                 }}
                 className={`${ROW} mt-[12px] shrink-0 justify-center bg-[color-mix(in_oklab,var(--sp-danger)_10%,transparent)] text-(--sp-danger) hover:bg-[color-mix(in_oklab,var(--sp-danger)_15%,transparent)] [&_svg]:size-[18px] [&_svg]:stroke-[1.8]`}
               >
-                <LogOut aria-hidden />
+                <IconLogout aria-hidden />
                 Log out
               </button>
             </SheetContent>
@@ -124,7 +134,7 @@ export function AppTopBar({ user, unread }: { user: CurrentUser; unread: number 
               aria-label={unread > 0 ? `Alerts, ${unread} unread` : "Alerts"}
               className="relative inline-flex size-[44px] items-center justify-center rounded-full bg-(--sp-icon-btn) text-(--sp-icon-btn-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-95"
             >
-              <Bell className="size-[18px] stroke-[1.6]" aria-hidden />
+              <IconBell className="size-[18px]" aria-hidden />
               {unread > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-(--sp-card-front) px-1 text-[10px] leading-none font-semibold text-white ring-2 ring-(--sp-bg)">
                   {unread > 99 ? "99+" : unread}
@@ -136,7 +146,7 @@ export function AppTopBar({ user, unread }: { user: CurrentUser; unread: number 
               aria-label={`Your account: ${name}`}
               className="rounded-full outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
             >
-              <Avatar name={name} aria-hidden />
+              <Avatar name={name} src={face} aria-hidden />
             </Link>
           </>
         }

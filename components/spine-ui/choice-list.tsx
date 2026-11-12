@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Check } from "lucide-react";
+import { IconCheckGlyph } from "./icons";
 import { cn } from "@/lib/utils";
 
 export type Choice = { value: string; label: string; hint?: string; icon?: ReactNode };
@@ -45,7 +45,7 @@ export function ChoiceList({ options, value, onValueChange, label, surface = "pa
             </span>
             {active ? (
               <span className="flex size-[22px] shrink-0 items-center justify-center rounded-full bg-(--sp-chip-active) text-(--sp-chip-active-text)">
-                <Check aria-hidden className="size-[13px] stroke-[2.6]" />
+                <IconCheckGlyph className="size-[13px]" />
               </span>
             ) : (
               <span aria-hidden className="size-[22px] shrink-0 rounded-full ring-[1.5px] ring-(--sp-text-faint) ring-inset" />

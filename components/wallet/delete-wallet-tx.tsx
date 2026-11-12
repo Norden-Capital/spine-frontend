@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { IconDelete } from "@/components/spine-ui";
 import { api, errorMessage } from "@/lib/api";
 import { BottomSheet, SpButton } from "@/components/spine-ui";
 
@@ -29,7 +29,7 @@ export function DeleteWalletTx({ id, month }: { id: string; month: string }) {
 
   return (
     <>
-      <SpButton size="md" variant="danger" icon={<Trash2 />} onClick={() => setOpen(true)}>
+      <SpButton size="md" variant="danger" icon={<IconDelete />} onClick={() => setOpen(true)}>
         Delete
       </SpButton>
       {error && (

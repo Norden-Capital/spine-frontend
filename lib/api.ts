@@ -40,13 +40,11 @@ const ERROR_MESSAGES: Record<string, string> = {
   user_not_found: "This user no longer exists.",
   cannot_disable_self: "You can't disable your own account.",
   not_invited: "This user already set a password. No invite needed.",
-  last_admin: "You can't do this: there must always be at least one active admin.",
+  last_admin: "You can't do this: there must always be an active owner.",
   email_taken: "This email already has an account.",
   not_active: "This user is not active, so no reset email can be sent.",
   name_taken: "This name is already used. Pick another one.",
-  tag_archived: "This tag exists but is archived. A manager can bring it back.",
   category_not_found: "This category no longer exists.",
-  tag_not_found: "This tag no longer exists.",
   passkey_invalid: "This Face ID / fingerprint is not known here. Log in with your password.",
   passkey_not_found: "This passkey no longer exists.",
   file_too_large: "This file is too big. The limit is 10 MB.",
@@ -62,7 +60,14 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalid_pin: "Wrong PIN. Try again.",
   invalid_password: "Your password is wrong.",
   wallet_locked: "Your wallet is locked. Enter your PIN.",
-  budget_exists: "There is already a budget for this currency and category.",
+  budget_exists: "You already have a budget for this category.",
+  recurring_not_found: "This repeat expense no longer exists.",
+  occurrence_not_found: "This reminder no longer exists.",
+  occurrence_not_due: "This reminder is already done or skipped.",
+  // Repeat payments: skip dates
+  too_late: "Too late to undo: this date has already come.",
+  already_created: "This one is already added, so it can't be skipped.",
+  occurrence_exists: "The reminder for this date is already there.",
   // Client side
   network_error: "Can't reach the server. Check your connection.",
 };
@@ -79,6 +84,17 @@ const FALLBACK_MESSAGE = "Something went wrong. Please try again.";
 /** The text to show the user for any error thrown by `api()`. */
 export function errorMessage(err: unknown): string {
   return err instanceof ApiError ? err.message : FALLBACK_MESSAGE;
+}
+
+/**
+ * A field error in the backend's own words, without the field name:
+ * "categoryId: this is an expense category; …" → "This is an expense category; …".
+ * Falls back to the friendly text.
+ */
+export function fieldErrorText(err: ApiError): string {
+  const raw = typeof err.data?.message === "string" ? err.data.message : "";
+  const text = raw.replace(/^[A-Za-z][\w.]*:\s*/, "");
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : err.message;
 }
 
 function friendlyMessage(status: number, code: string, field?: string): string {

@@ -1,9 +1,12 @@
 import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { canSeeUsers, safeNextPath } from "@/lib/auth-types";
+import { safeNextPath } from "@/lib/auth-types";
+import { isOwner } from "@/lib/roles";
 import { appLayoutPrefsScript } from "@/lib/prefs";
-import { deviceZone, getPreferences } from "@/lib/prefs-server";
+import { deviceZone, getPreferences, isFallbackPrefs } from "@/lib/prefs-server";
 import { AppDock, AppMain, NavPending } from "@/components/nav/app-dock";
+import { WalletAutoLock } from "@/components/wallet/wallet-auto-lock";
 import { AppTopBar } from "@/components/nav/app-top-bar";
 import { getUnreadAlerts } from "@/lib/alerts-server";
 import { PrefsProvider } from "@/components/prefs/prefs-provider";
@@ -22,6 +25,11 @@ export const instant = false;
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const wanted = safeNextPath((await headers()).get("x-spine-path"));
   const [user, prefs, unread] = await Promise.all([requireUser(wanted), getPreferences(), getUnreadAlerts()]);
+  const owner = isOwner(user);
+  // Members have no Admin area: /admin/* typed in is "Page not found", before
+  // anything of this layout (or a loading skeleton) renders. The admin layout
+  // checks again (for in-app navigations, where this layout does not re-run).
+  if (!owner && /^\/admin(\/|\?|$)/.test(wanted)) notFound();
   const device = await deviceZone();
 
   return (
@@ -29,15 +37,19 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       {/* Runs before the page below paints: applies the saved prefs (they may
           differ from the cookie the <head> script used, e.g. changed on
           another phone) and refreshes that cookie. */}
-      <InlineScript html={appLayoutPrefsScript(prefs)} />
+      {/* If loading the prefs failed, keep the look already saved on this
+          device (the <head> script applied it) instead of saving defaults. */}
+      {!isFallbackPrefs(prefs) && <InlineScript html={appLayoutPrefsScript(prefs)} />}
       {/* Spine UI kit layout: 18px sides, top bar, page, floating dock. */}
       {/* Tap feedback: the tapped page's skeleton and dock item show at once. */}
-      <NavPending>
+      {/* The private wallet locks as soon as you leave it. */}
+      <WalletAutoLock />
+      <NavPending owner={owner}>
         <div className="mx-auto flex min-h-svh w-full max-w-2xl flex-col px-(--sp-gutter) pt-3">
           <AppTopBar user={user} unread={unread} />
           {/* Form pages (add / edit) hide the dock and its bottom space. */}
           <AppMain>{children}</AppMain>
-          <AppDock isManager={canSeeUsers(user.role)} />
+          <AppDock owner={owner} />
         </div>
       </NavPending>
     </PrefsProvider>

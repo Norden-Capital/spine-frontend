@@ -6,7 +6,7 @@ import { TrashList } from "@/components/transactions/trash-list";
 export const metadata: Metadata = { title: "Trash" };
 
 // Blocks on the server on purpose (session data), so nothing flashes.
-// Managers only: the admin layout sends employees home before render.
+// The owner only: for members the admin layout shows "Page not found" before render.
 export const instant = false;
 
 export default async function TrashPage() {

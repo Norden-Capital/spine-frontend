@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { CloudOff, RotateCcw } from "lucide-react";
+import { IconOffline, IconRestore } from "@/components/spine-ui";
 import { EmptyState, SpButton } from "@/components/spine-ui";
+import { PLAIN_STATE_ICON } from "@/components/nav/state-icon";
 
 // Height of the space between the top bar and the dock (see app/(app)/layout.tsx:
 // 12 top padding, 44 top bar, 17.5 gap, dock space), so the state sits in its middle.
@@ -19,13 +20,14 @@ export default function AppError({ reset }: { error: Error; reset: () => void })
   return (
     <div style={AREA} className="flex flex-col items-center justify-center">
       <EmptyState
+        className={PLAIN_STATE_ICON}
         tone="danger"
-        icon={<CloudOff />}
+        icon={<IconOffline />}
         title="Something went wrong"
         text="We could not load this page. Check your connection and try again."
         action={
           <>
-            <SpButton icon={<RotateCcw />} onClick={() => reset()}>
+            <SpButton icon={<IconRestore />} onClick={() => reset()}>
               Try again
             </SpButton>
             {/* No browser back button in the home-screen app: always a way out. */}

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { IconChevronRight } from "./icons";
 import { cn } from "@/lib/utils";
 
 export type SpRowProps = {
@@ -57,7 +57,7 @@ export function SpRow({ leading, title, subtitle, trailing, href, onClick, inden
       </span>
       {trailing ??
         (href ? (
-          <ChevronRight aria-hidden className="size-[18px] shrink-0 stroke-[1.8] text-(--sp-text-faint)" />
+          <IconChevronRight className="size-[22px] text-(--sp-text-faint)" />
         ) : null)}
     </>
   );

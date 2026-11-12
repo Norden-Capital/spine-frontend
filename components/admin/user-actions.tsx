@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { CircleCheck, KeyRound, LogOut, Mail, X } from "lucide-react";
+import { IconClose, IconKey, IconLogout, IconMail, IconSuccess } from "@/components/spine-ui";
 import { api, errorMessage } from "@/lib/api";
 import { displayName, type AdminUser } from "@/lib/auth-types";
 import { RowGroup, RowIcon, SpRow } from "@/components/spine-ui";
@@ -113,7 +113,7 @@ export function UserActions({ user, onNotice }: { user: AdminUser; onNotice: (no
       <RowGroup title="Manage">
         {user.status === "INVITED" && (
           <SpRow
-            leading={<RowIcon><Mail /></RowIcon>}
+            leading={<RowIcon><IconMail /></RowIcon>}
             title="Send the invite again"
             subtitle="They have not set a password yet."
             onClick={() => ask(actions.resend)}
@@ -123,13 +123,13 @@ export function UserActions({ user, onNotice }: { user: AdminUser; onNotice: (no
         {user.status === "ACTIVE" && (
           <>
             <SpRow
-              leading={<RowIcon><KeyRound /></RowIcon>}
+              leading={<RowIcon><IconKey /></RowIcon>}
               title="Send reset password email"
               onClick={() => ask(actions.reset)}
               trailing={none}
             />
             <SpRow
-              leading={<RowIcon><LogOut /></RowIcon>}
+              leading={<RowIcon><IconLogout /></RowIcon>}
               title="Log out on all devices"
               onClick={() => ask(actions.logoutAll)}
               trailing={none}
@@ -138,7 +138,7 @@ export function UserActions({ user, onNotice }: { user: AdminUser; onNotice: (no
         )}
         {user.status === "DISABLED" ? (
           <SpRow
-            leading={<RowIcon><CircleCheck /></RowIcon>}
+            leading={<RowIcon><IconSuccess /></RowIcon>}
             title="Enable this user"
             subtitle="They can log in again."
             onClick={() => ask(actions.enable)}
@@ -146,7 +146,7 @@ export function UserActions({ user, onNotice }: { user: AdminUser; onNotice: (no
           />
         ) : (
           <SpRow
-            leading={<DangerIcon><X /></DangerIcon>}
+            leading={<DangerIcon><IconClose /></DangerIcon>}
             title={<span className="text-(--sp-danger)">Disable this user</span>}
             subtitle="They can no longer log in. You can undo it."
             onClick={() => ask(actions.disable)}

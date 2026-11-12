@@ -1,26 +1,45 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarClock, PiggyBank, Plus, Shapes, Target } from "lucide-react";
-import { formatDay } from "@/lib/prefs";
+import {
+  BalanceCard,
+  IconCalendarRepeat,
+  IconCategories,
+  IconGoal,
+  IconSavings,
+  IconSearch,
+  ListItem,
+  PageHeader,
+  SectionCard,
+  SwapStack,
+} from "@/components/spine-ui";
+import { formatDay, todayIn } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
-import { formatMoney, formatNet, type Currency } from "@/lib/transactions-types";
-import { getDashboard } from "@/lib/wallet-server";
-import type { Budget, Goal } from "@/lib/wallet-types";
+import { formatMoney, formatNet } from "@/lib/transactions-types";
+import { getDashboard, getRecurring, getWalletCategories } from "@/lib/wallet-server";
+import { savingsOf, type Budget } from "@/lib/wallet-types";
 import { TxLogo } from "@/components/expenses/tx-logo";
-import { LinkAddPill, LinkPeekCard, LinkQuickAction, QuickActionsPanel } from "@/components/home/home-links";
-import { BalanceCard, CardStack, GreetingHeader, ListItem, SectionCard } from "@/components/spine-ui";
-import { TotalsPanel } from "@/components/transactions/tx-list";
-import { LockWalletButton } from "@/components/wallet/lock-button";
+import { LinkAddPill, LinkQuickAction, QuickActionsPanel } from "@/components/home/home-links";
+import { LockWalletIconButton, SheetPill, SheetQuickAction, WalletSheets } from "@/components/home/space-actions";
 import { ProgressBar, statusText } from "@/components/wallet/progress";
+import { WalletDueCard } from "@/components/wallet/wallet-due-card";
 
 export const metadata: Metadata = { title: "Wallet" };
 
 // Blocks on the server on purpose (session data), so nothing flashes.
 export const instant = false;
 
-/** Wallet dashboard (reference style): balances, month, actions, budgets, goals, recent. */
+/**
+ * Wallet dashboard (one structure with the company home): header with lock,
+ * two cards (Personal wallet in front, Savings behind, swap them), quick
+ * actions, due soon, budgets, recent.
+ */
 export default async function WalletPage() {
-  const [res, dates] = await Promise.all([getDashboard(), getDateSettings()]);
+  const [res, dates, recurring, categories] = await Promise.all([
+    getDashboard(),
+    getDateSettings(),
+    getRecurring(),
+    getWalletCategories(),
+  ]);
   if (!res.ok) {
     return (
       <p className="rounded-(--sp-radius) bg-(--sp-panel) px-4 py-8 text-center text-sm text-(--sp-text-muted)">
@@ -29,48 +48,65 @@ export default async function WalletPage() {
     );
   }
   const d = res.data;
-  const usd = d.balance.USD ?? "0.00";
-  const mad = d.balance.MAD ?? "0.00";
-  // Front card: USD, unless only MAD is used.
-  const main: Currency = Number(usd) === 0 && Number(mad) !== 0 ? "MAD" : "USD";
-  const other: Currency = main === "USD" ? "MAD" : "USD";
-  const month = d.thisMonth[main];
+  const month = d.thisMonth;
+  const today = todayIn(dates.zone);
+  const savings = savingsOf(d.goals);
 
   return (
-    <div className="flex flex-col">
-      <GreetingHeader title="Wallet" subtitle="Your personal money. Only you can see it." />
+    <WalletSheets today={today} categories={categories.ok ? categories.data : []}>
+      <div className="sp-space-wallet flex flex-col gap-[16px]">
+        <PageHeader title="Wallet" subtitle="Personal · only you" action={<LockWalletIconButton />} />
 
-      <CardStack
-        className="mt-[16.3px]"
-        back={[
-          <LinkPeekCard
-            key={other}
-            tone="ink"
-            href={`/wallet/transactions?currency=${other}`}
-            label={`Balance · ${formatMoney(d.balance[other] ?? "0", other)}`}
-          />,
-        ]}
-        front={
-          <BalanceCard
-            tag="Personal"
-            amountLabel={`${main} balance`}
-            amount={formatNet(d.balance[main] ?? "0", main).replace(/^\+/, "")}
-            detail={month ? { label: "This month", value: formatNet(month.net, main) } : undefined}
-            footer={month ? { label: "Spent this month", value: formatMoney(month.out, main) } : undefined}
-            action={<LinkAddPill href="/wallet/transactions/new" label="Add" />}
-          />
-        }
-      />
+        <SwapStack
+          labels={["Personal wallet", "Savings"]}
+          cards={[
+            <div key="wallet" className="sp-card-sun">
+              <BalanceCard
+                tag="Personal wallet"
+                amountLabel="Balance"
+                amount={formatNet(d.balance ?? "0").replace(/^\+/, "")}
+                detail={month ? { label: "This month", value: formatNet(month.net) } : undefined}
+                footer={month ? { label: "Out this month", value: formatMoney(month.out) } : undefined}
+                action={<LinkAddPill href="/wallet/transactions/new" label="Expense" testId="wallet-add-expense" />}
+              />
+            </div>,
+            <div key="savings" className="sp-card-ink" data-testid="wallet-savings-card">
+              {savings.count === 0 ? (
+                <BalanceCard
+                  tag="Savings"
+                  amountLabel="Saved in goals"
+                  amount={formatMoney(0)}
+                  footer={{ label: "Savings", value: "No savings goal yet" }}
+                  action={<SheetPill sheet="goal" label="Set a goal" icon={<IconGoal aria-hidden />} />}
+                />
+              ) : (
+                <BalanceCard
+                  tag={`Savings · ${savings.count} ${savings.count === 1 ? "goal" : "goals"}`}
+                  amountLabel="Saved in goals"
+                  amount={formatMoney(savings.saved)}
+                  detail={{ label: "Target", value: formatMoney(savings.target) }}
+                  footer={{
+                    label: "Progress",
+                    value: `${savings.percent}% · ${savings.next ? `${savings.next.name} next` : "All reached"}`,
+                  }}
+                  action={
+                    <LinkAddPill href="/wallet/goals" label="Goals" icon={<IconGoal aria-hidden />} testId="savings-goals" />
+                  }
+                />
+              )}
+            </div>,
+          ]}
+        />
 
-      <QuickActionsPanel className="mt-[25.4px]">
-        <LinkQuickAction href="/wallet/transactions/new" label="Add" icon={<Plus />} />
-        <LinkQuickAction href="/wallet/budgets" label="Budgets" icon={<PiggyBank />} />
-        <LinkQuickAction href="/wallet/goals" label="Goals" icon={<Target />} />
-        <LinkQuickAction href="/wallet/recurring" label="Recurring" icon={<CalendarClock />} />
-      </QuickActionsPanel>
+        {/* No "Add": the card's "+ Expense" pill does it. */}
+        <QuickActionsPanel>
+          <LinkQuickAction href="/wallet/recurring" label="Recurring" icon={<IconCalendarRepeat />} />
+          <SheetQuickAction sheet="goal" label="Set a goal" icon={<IconGoal />} />
+          <SheetQuickAction sheet="budget" label="Set a budget" icon={<IconSavings />} />
+          <LinkQuickAction href="/wallet/transactions?search=1" label="Search" icon={<IconSearch />} />
+        </QuickActionsPanel>
 
-      <div className="mt-[17.2px] flex flex-col gap-[17.2px]">
-        <TotalsPanel totals={d.thisMonth} />
+        {recurring.ok && <WalletDueCard items={recurring.data} today={today} dateFormat={dates.dateFormat} />}
 
         <SectionCard title="Budgets this month" action={{ label: "View All", href: "/wallet/budgets" }}>
           {d.budgets.length === 0 ? (
@@ -84,19 +120,7 @@ export default async function WalletPage() {
           )}
         </SectionCard>
 
-        <SectionCard title="Goals" action={{ label: "View All", href: "/wallet/goals" }}>
-          {d.goals.length === 0 ? (
-            <Hint href="/wallet/goals" text="Save for something: a trip, a phone, a rainy day." cta="Add a goal" />
-          ) : (
-            <ul className="flex flex-col gap-4 px-[14px] pb-3">
-              {d.goals.slice(0, 3).map((g) => (
-                <GoalRow key={g.id} g={g} />
-              ))}
-            </ul>
-          )}
-        </SectionCard>
-
-        <SectionCard title="Recent activity" action={{ label: "View All", href: "/wallet/transactions" }}>
+        <SectionCard title="Recent" action={{ label: "View All", href: "/wallet/transactions" }}>
           {d.recent.length === 0 ? (
             <Hint href="/wallet/transactions/new" text="Nothing yet." cta="Add your first one" />
           ) : (
@@ -109,7 +133,7 @@ export default async function WalletPage() {
                   icon={<TxLogo logoUrl={tx.logoUrl} icon={tx.category.icon} />}
                   title={tx.description || tx.category.name}
                   meta={`${tx.category.name} • ${formatDay(tx.date, dates)}`}
-                  amount={formatMoney(tx.amount, tx.currency, income ? "+" : "-")}
+                  amount={formatMoney(tx.amount, income ? "+" : "-")}
                   tone={income ? "income" : "expense"}
                 />
               );
@@ -117,46 +141,31 @@ export default async function WalletPage() {
           )}
         </SectionCard>
 
-        <div className="flex flex-wrap items-center justify-center gap-2">
+        <div className="flex justify-center">
           <Link
             href="/wallet/categories"
             className="inline-flex h-11 items-center gap-2 rounded-full bg-(--sp-panel) px-4 text-[13px] text-(--sp-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
           >
-            <Shapes className="size-4" aria-hidden />
-            Categories &amp; tags
+            <IconCategories className="size-4" aria-hidden />
+            Categories
           </Link>
-          <LockWalletButton />
         </div>
       </div>
-    </div>
+    </WalletSheets>
   );
 }
 
 function BudgetRow({ b }: { b: Budget }) {
-  const name = b.category ? b.category.name : `All ${b.currency}`;
+  const name = b.category ? b.category.name : "All spending";
   return (
     <li className="flex flex-col gap-1.5">
       <div className="flex items-baseline justify-between gap-2 text-[12px]">
         <span className="truncate font-medium text-(--sp-text)">{name}</span>
         <span className="shrink-0 text-(--sp-text-faint) tabular-nums">
-          {formatMoney(b.spent, b.currency)} / {formatMoney(b.limit, b.currency)}
+          {formatMoney(b.spent)} / {formatMoney(b.limit)}
         </span>
       </div>
       <ProgressBar percent={b.percent} status={b.status} label={`${name}: ${statusText(b.status, b.percent)}`} />
-    </li>
-  );
-}
-
-function GoalRow({ g }: { g: Goal }) {
-  return (
-    <li className="flex flex-col gap-1.5">
-      <div className="flex items-baseline justify-between gap-2 text-[12px]">
-        <span className="truncate font-medium text-(--sp-text)">{g.name}</span>
-        <span className="shrink-0 text-(--sp-text-faint) tabular-nums">
-          {formatMoney(g.saved, g.currency)} / {formatMoney(g.target, g.currency)}
-        </span>
-      </div>
-      <ProgressBar percent={g.percent} label={`${g.name}: ${g.percent}% saved`} />
     </li>
   );
 }

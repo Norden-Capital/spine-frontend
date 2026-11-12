@@ -5,16 +5,24 @@ import { unstable_rethrow } from "next/navigation";
 import { backendGet } from "./auth";
 import { DEFAULT_PREFERENCES, DEVICE_ZONE_COOKIE, type DateSettings, type Preferences } from "./prefs";
 
+/** Returned when the backend can't answer (same object every time, so it can be recognised). */
+const FALLBACK_PREFERENCES: Preferences = { ...DEFAULT_PREFERENCES };
+
+/** True if these prefs are only the defaults because loading failed (not the user's choice). */
+export function isFallbackPrefs(p: Preferences): boolean {
+  return p === FALLBACK_PREFERENCES;
+}
+
 /** The saved prefs, or the defaults if the backend can't answer. */
 export const getPreferences = cache(async (): Promise<Preferences> => {
   try {
     const res = await backendGet("/me/preferences");
-    if (!res.ok) return DEFAULT_PREFERENCES;
+    if (!res.ok) return FALLBACK_PREFERENCES;
     return { ...DEFAULT_PREFERENCES, ...((await res.json()) as Partial<Preferences>) };
   } catch (err) {
     // Let Next.js internal signals (dynamic rendering, redirect) through.
     unstable_rethrow(err);
-    return DEFAULT_PREFERENCES;
+    return FALLBACK_PREFERENCES;
   }
 });
 

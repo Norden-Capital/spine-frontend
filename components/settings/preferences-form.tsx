@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ChevronRight, Clock, Search } from "lucide-react";
+import { IconCheckGlyph, IconChevronRight, IconClock, IconSearch } from "@/components/spine-ui";
 import { api, errorMessage } from "@/lib/api";
 import {
   formatDateTime,
@@ -153,13 +153,13 @@ export function PreferencesForm() {
               className="bg-(--sp-soft) pl-[12px]"
               leading={
                 <IconTile tone="sun">
-                  <Clock />
+                  <IconClock />
                 </IconTile>
               }
               title={prefs.timeZone ? prettyZone(prefs.timeZone) : "Follow my phone"}
               subtitle={prefs.timeZone ? "Tap to change" : `Now: ${prettyZone(deviceZone)}`}
               onClick={() => setZoneOpen(true)}
-              trailing={<ChevronRight aria-hidden className="size-[18px] shrink-0 stroke-[1.8] text-(--sp-text-faint)" />}
+              trailing={<IconChevronRight aria-hidden className="size-[18px] shrink-0 text-(--sp-text-faint)" />}
             />
           </SpField>
         </div>
@@ -218,7 +218,7 @@ function ZonePicker({
         <span className="min-w-0 flex-1 break-words">{text}</span>
         {on ? (
           <span className="flex size-[22px] shrink-0 items-center justify-center rounded-full bg-(--sp-chip-active) text-(--sp-chip-active-text)">
-            <Check aria-hidden className="size-[13px] stroke-[2.6]" />
+            <IconCheckGlyph aria-hidden className="size-[13px]" />
           </span>
         ) : null}
       </button>
@@ -240,7 +240,7 @@ function ZonePicker({
         <SpInput
           type="search"
           surface="panel"
-          icon={<Search />}
+          icon={<IconSearch />}
           aria-label="Search time zones"
           placeholder="Search, e.g. Toronto"
           value={query}

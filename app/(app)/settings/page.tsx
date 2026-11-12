@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Lock, Palette, User } from "lucide-react";
+import { IconLock, IconPalette, IconUser } from "@/components/spine-ui";
 import { getDateSettings } from "@/lib/prefs-server";
 import { IconTile, PageHeader, RowGroup, SpRow } from "@/components/spine-ui";
 import { LogoutButton } from "@/components/auth/logout-button";
@@ -16,21 +16,21 @@ const ENTRIES = [
     href: "/settings/account",
     title: "My account",
     subtitle: "Name, email, role, sign-ins",
-    icon: <User />,
+    icon: <IconUser />,
     tone: "violet",
   },
   {
     href: "/settings/security",
     title: "Security",
     subtitle: "Password, Face ID / fingerprint",
-    icon: <Lock />,
+    icon: <IconLock />,
     tone: "ink",
   },
   {
     href: "/settings/preferences",
     title: "Preferences",
     subtitle: "Theme, text size, font, dates",
-    icon: <Palette />,
+    icon: <IconPalette />,
     tone: "sun",
   },
 ] as const;

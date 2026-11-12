@@ -1,5 +1,5 @@
 import type { ComponentProps, ReactNode } from "react";
-import { Plus } from "lucide-react";
+import { IconAdd } from "./icons";
 import { cn } from "@/lib/utils";
 
 export type AddPillProps = Omit<ComponentProps<"button">, "children"> & {
@@ -25,7 +25,7 @@ export function AddPill({ label, icon, className, type = "button", ...props }: A
       {...props}
     >
       <span className="flex size-[31px] items-center justify-center rounded-full bg-(--sp-pill-dot) text-(--sp-pill-dot-text)">
-        {icon ?? <Plus className="size-[16px]" strokeWidth={1.75} aria-hidden />}
+        {icon ?? <IconAdd className="size-[18px]" />}
       </span>
       {label}
     </button>

@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, Paperclip, RotateCcw } from "lucide-react";
+import { IconAttach, IconCamera, IconCloseGlyph, IconFile, IconRestore } from "@/components/spine-ui";
 import { errorMessage, uploadFile } from "@/lib/api";
 import { formatSize, MAX_FILE_BYTES, MAX_FILES, type FileRef } from "@/lib/transactions-types";
-import { BottomSheet, ProofTiles, SpButton } from "@/components/spine-ui";
+import { SpButton } from "@/components/spine-ui";
 import { cn } from "@/lib/utils";
 
 /** One proof in the form: already on the server, uploading, or failed. */
@@ -64,8 +64,8 @@ export function proofFromRef(ref: FileRef): ProofItem {
 }
 
 /**
- * Proofs: "Add proof" tile -> "Take photo" (camera) or "Choose file" (image or PDF). Up to 5,
- * 10 MB each. Each file uploads as soon as it is picked; a failed one stays
+ * Proofs: two options on one row, "Take a photo" (camera) and "Upload a file"
+ * (photo or PDF), then one row per file. Up to 5, 10 MB each. Each file uploads as soon as it is picked; a failed one stays
  * in the list with Retry, so nothing else in the form is lost.
  */
 export function ProofPicker({
@@ -80,15 +80,13 @@ export function ProofPicker({
   invalid?: boolean;
   /** Wallet: a proof is not required. */
   optional?: boolean;
-  /** "page" = white tiles on the gray page (form); "panel" = inside a white panel. */
+  /** "page" = white rows on the gray page (form); "panel" = inside a white panel. */
   surface?: "page" | "panel";
 }) {
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const uploads = useRef(new Map<string, AbortController>());
   const [limitNote, setLimitNote] = useState<string | null>(null);
-  /** The "Take photo / Choose file" sheet. */
-  const [chooser, setChooser] = useState(false);
 
   // Stop uploads and free previews when the form goes away.
   useEffect(() => {
@@ -163,70 +161,123 @@ export function ProofPicker({
   }
 
   const full = items.length >= MAX_FILES;
-  const failed = items.filter((it) => it.status === "error");
   const help = optional
     ? `A photo of the receipt, or a PDF. Up to ${MAX_FILES}, 10 MB each.`
     : `Add at least one: a photo of the receipt, or a PDF. Up to ${MAX_FILES}, 10 MB each.`;
+  const optionBg = surface === "page" ? "bg-(--sp-panel)" : "bg-(--sp-soft)";
+  const optionClass = cn(
+    "flex min-h-[56px] w-full min-w-0 items-center justify-center gap-[10px] rounded-[16px] px-[12px] py-[8px] text-left text-(--sp-text) outline-none",
+    "touch-manipulation transition-[transform,opacity,filter] duration-150 hover:brightness-95 active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100",
+    "focus-visible:ring-3 focus-visible:ring-(--sp-ring) disabled:pointer-events-none disabled:opacity-40",
+    invalid && items.length === 0 && "ring-2 ring-(--sp-danger)",
+    optionBg
+  );
+  const optionIcon =
+    "flex size-[36px] shrink-0 items-center justify-center rounded-full bg-(--sp-chip-active) text-(--sp-chip-active-text) [&_svg]:size-[18px] [&_svg]:stroke-[1.8]";
 
   return (
     <div className="flex flex-col gap-[10px]">
-      {/* Kit ProofTiles: "Add proof" tile first (opens Take photo / Choose
-          file), then one tile per file. Upload state shows under the name. */}
-      <ProofTiles
-        surface={surface}
-        addLabel="Add proof"
-        onAdd={full ? undefined : () => setChooser(true)}
-        onRemove={(key) => {
-          const it = items.find((x) => x.key === key);
-          if (it) remove(it);
-        }}
-        files={items.map((it) => ({
-          id: it.key,
-          name: it.name,
-          size:
-            it.status === "uploading"
-              ? `Uploading… ${Math.round(it.progress * 100)}%`
-              : it.status === "error"
-                ? "Not uploaded"
-                : formatSize(it.size),
-          url:
-            it.contentType.startsWith("image/") && (it.preview || it.ref)
-              ? (it.preview ?? `/api/files/${encodeURIComponent(it.ref!.id)}`)
-              : undefined,
-        }))}
-      />
-
-      {items.some((it) => it.status === "uploading") && (
-        <div
-          className="h-[4px] overflow-hidden rounded-full bg-(--sp-soft)"
-          role="progressbar"
-          aria-label="Uploading proof"
-          aria-valuenow={uploadPercent(items)}
-          aria-valuemin={0}
-          aria-valuemax={100}
+      {/* Two options on one row: the camera, or a photo / PDF from the phone. */}
+      <div className="grid grid-cols-2 gap-[10px]">
+        <button
+          type="button"
+          className={optionClass}
+          disabled={full}
+          data-testid="proof-take-photo"
+          onClick={() => cameraRef.current?.click()}
         >
-          <span className="block h-full bg-(--sp-card-front) transition-[width]" style={{ width: `${uploadPercent(items)}%` }} />
-        </div>
+          <span className={optionIcon}>
+            <IconCamera />
+          </span>
+          <span className="min-w-0 text-[0.8125rem] leading-tight font-medium break-words">Take a photo</span>
+        </button>
+        <button
+          type="button"
+          className={optionClass}
+          disabled={full}
+          data-testid="proof-upload-file"
+          onClick={() => fileRef.current?.click()}
+        >
+          <span className={optionIcon}>
+            <IconAttach />
+          </span>
+          <span className="min-w-0 text-[0.8125rem] leading-tight font-medium break-words">Upload a file</span>
+        </button>
+      </div>
+
+      {full && (
+        <p className="px-[4px] text-[0.6875rem] leading-snug text-(--sp-text-muted)">
+          You have {MAX_FILES} proofs. Remove one to add another.
+        </p>
       )}
 
-      {failed.length > 0 && (
-        <ul className="flex flex-col gap-[6px]" aria-label="Proofs not uploaded">
-          {failed.map((it) => (
-            <li
-              key={it.key}
-              className="flex min-h-[44px] items-center gap-[10px] rounded-[16px] bg-[color-mix(in_oklab,var(--sp-danger)_10%,transparent)] py-[6px] pr-[6px] pl-[14px]"
-            >
-              <span className="min-w-0 flex-1 leading-snug">
-                <span className="block truncate text-[0.75rem] font-medium text-(--sp-text)">{it.name}</span>
-                <span className="block text-[0.6875rem] text-(--sp-danger)">{it.error}</span>
-              </span>
-              {it.file && (
-                <SpButton size="md" variant="secondary" icon={<RotateCcw />} onClick={() => void start(it)}>
-                  Retry
-                </SpButton>
-              )}
-            </li>
-          ))}
+      {items.length > 0 && (
+        <ul className="flex flex-col gap-[8px]" aria-label="Proof files">
+          {items.map((it) => {
+            const url =
+              it.contentType.startsWith("image/") && (it.preview || it.ref)
+                ? (it.preview ?? `/api/files/${encodeURIComponent(it.ref!.id)}`)
+                : undefined;
+            const failed = it.status === "error";
+            const percent = Math.round(it.progress * 100);
+            return (
+              <li
+                key={it.key}
+                data-testid="proof-row"
+                className={cn(
+                  "flex min-h-[60px] items-center gap-[10px] rounded-[16px] py-[8px] pr-[4px] pl-[8px]",
+                  failed ? "bg-[color-mix(in_oklab,var(--sp-danger)_10%,transparent)]" : optionBg
+                )}
+              >
+                <span className="flex size-[44px] shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-(--sp-soft) text-(--sp-text-muted) [&_svg]:size-[20px] [&_svg]:stroke-[1.6]">
+                  {url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={url} alt="" className="size-full object-cover" />
+                  ) : (
+                    <IconFile />
+                  )}
+                </span>
+                <span className="min-w-0 flex-1 leading-snug">
+                  <span className="block truncate text-[0.8125rem] font-medium text-(--sp-text)">{it.name}</span>
+                  {it.status === "uploading" ? (
+                    <>
+                      <span className="block text-[0.6875rem] text-(--sp-text-muted)">Uploading… {percent}%</span>
+                      <span
+                        className="mt-[4px] block h-[4px] overflow-hidden rounded-full bg-(--sp-soft)"
+                        role="progressbar"
+                        aria-label={`Uploading ${it.name}`}
+                        aria-valuenow={percent}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                      >
+                        <span
+                          className="block h-full bg-(--sp-card-front) transition-[width]"
+                          style={{ width: `${percent}%` }}
+                        />
+                      </span>
+                    </>
+                  ) : failed ? (
+                    <span className="block text-[0.6875rem] text-(--sp-danger)">{it.error ?? "Not uploaded"}</span>
+                  ) : (
+                    <span className="block text-[0.6875rem] text-(--sp-text-muted)">{formatSize(it.size)}</span>
+                  )}
+                </span>
+                {failed && it.file && (
+                  <SpButton size="md" variant="secondary" icon={<IconRestore />} onClick={() => void start(it)}>
+                    Retry
+                  </SpButton>
+                )}
+                <button
+                  type="button"
+                  aria-label={`Remove ${it.name}`}
+                  onClick={() => remove(it)}
+                  className="flex size-[44px] shrink-0 items-center justify-center rounded-full text-(--sp-text-muted) outline-none hover:bg-(--sp-soft-hover) focus-visible:ring-3 focus-visible:ring-(--sp-ring) [&_svg]:size-[18px] [&_svg]:stroke-[2]"
+                >
+                  <IconCloseGlyph />
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
 
@@ -236,14 +287,14 @@ export function ProofPicker({
         {help}
       </p>
 
-      {/* Hidden inputs; the sheet buttons open them. Reset so the same file can be picked again. */}
+      {/* Hidden inputs; the two options open them. Reset so the same file can be picked again. */}
       <input
         ref={cameraRef}
         type="file"
         accept="image/*"
         capture="environment"
         className="hidden"
-        aria-label="Take photo"
+        aria-label="Take a photo"
         data-testid="proof-camera-input"
         onChange={(e) => {
           add(e.target.files);
@@ -253,54 +304,16 @@ export function ProofPicker({
       <input
         ref={fileRef}
         type="file"
-        accept="image/*,application/pdf"
+        accept="image/jpeg,image/png,image/heic,image/heif,image/webp,application/pdf,.heic,.heif,.pdf"
         multiple
         className="hidden"
-        aria-label="Choose file"
+        aria-label="Upload a file"
         data-testid="proof-file-input"
         onChange={(e) => {
           add(e.target.files);
           e.target.value = "";
         }}
       />
-
-      <BottomSheet
-        open={chooser}
-        onOpenChange={setChooser}
-        title="Add proof"
-        description={help}
-      >
-        <div className="flex flex-col gap-[8px] pb-[4px]">
-          <SpButton
-            className="w-full"
-            icon={<Camera />}
-            onClick={() => {
-              setChooser(false);
-              cameraRef.current?.click();
-            }}
-          >
-            Take photo
-          </SpButton>
-          <SpButton
-            variant="secondary"
-            className="w-full"
-            icon={<Paperclip />}
-            onClick={() => {
-              setChooser(false);
-              fileRef.current?.click();
-            }}
-          >
-            Choose file
-          </SpButton>
-        </div>
-      </BottomSheet>
     </div>
   );
-}
-
-/** Average upload progress of the files still uploading, 0-100. */
-function uploadPercent(items: ProofItem[]): number {
-  const up = items.filter((it) => it.status === "uploading");
-  if (up.length === 0) return 100;
-  return Math.round((up.reduce((sum, it) => sum + it.progress, 0) / up.length) * 100);
 }

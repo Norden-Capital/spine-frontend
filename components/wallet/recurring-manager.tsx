@@ -1,30 +1,26 @@
 "use client";
 
+import { PageEmpty } from "@/components/nav/page-empty";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pause, Pencil, Play, Plus, Trash2 } from "lucide-react";
-import { api, errorMessage } from "@/lib/api";
-import type { Category } from "@/lib/catalog-types";
-import { formatMoney, parseAmountInput, type Currency, type TxType } from "@/lib/transactions-types";
-import { FREQUENCY_LABEL, type Frequency, type Recurring } from "@/lib/wallet-types";
-import { CategoryIcon } from "@/components/expenses/category-icon";
+import { DateField, IconAdd, IconCalendarRepeat, SpButton } from "@/components/spine-ui";
 import { useDates } from "@/components/prefs/prefs-provider";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { api, ApiError, errorMessage, fieldErrorText } from "@/lib/api";
+import type { Category } from "@/lib/catalog-types";
+import type { RepeatUnit } from "@/lib/repeat-schedule";
+import { parseAmountInput, type TxType } from "@/lib/transactions-types";
+import type { Recurring } from "@/lib/wallet-types";
+import { CategoryIcon } from "@/components/expenses/category-icon";
+import { NoticeBox, type Notice } from "@/components/admin/notice";
+import { ConfirmSheet } from "@/components/admin/confirm-sheet";
+import { FrequencyPicker } from "@/components/recurring/frequency-picker";
+import { RepeatRow } from "@/components/recurring/repeat-row";
+import { RepeatSheet, type RepeatView } from "@/components/recurring/repeat-sheet";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
-import { CategorySelect, CurrencyChoice, Segmented } from "./form-bits";
+import { CategorySelect, Segmented } from "./form-bits";
 
 /** Repeating wallet items (rent, salary…): the server adds them on their next date. */
 export function RecurringManager({
@@ -37,24 +33,33 @@ export function RecurringManager({
   today: string;
 }) {
   const router = useRouter();
-  const dates = useDates();
+  // The list on screen: server data, replaced item by item by the sheet's answers.
+  const [list, setList] = useState(items);
+  const [prevItems, setPrevItems] = useState(items);
+  if (items !== prevItems) {
+    setPrevItems(items);
+    setList(items);
+  }
   const [edit, setEdit] = useState<{ item: Recurring | null } | null>(null);
   const [remove, setRemove] = useState<Recurring | null>(null);
   const [removeOpen, setRemoveOpen] = useState(false);
+  const [sheetId, setSheetId] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const sheetItem = list.find((r) => r.id === sheetId) ?? null;
 
-  async function toggle(r: Recurring) {
-    setBusy(r.id);
-    try {
-      await api(`/wallet/recurring/${encodeURIComponent(r.id)}/${r.active ? "pause" : "resume"}`, { method: "POST" });
-      setNotice({ kind: "ok", text: r.active ? `"${r.name}" is paused.` : `"${r.name}" is running again.` });
-      router.refresh();
-    } catch (err) {
-      setNotice({ kind: "error", text: errorMessage(err) });
-    } finally {
-      setBusy(null);
-    }
+  async function reload(id: string): Promise<Recurring> {
+    const all = await api<Recurring[]>("/wallet/recurring");
+    const found = all.find((r) => r.id === id);
+    if (!found) throw new ApiError(404, "recurring_not_found", "This recurring item no longer exists.");
+    return found;
+  }
+
+  function updated(next: Recurring) {
+    setList((l) => l.map((r) => (r.id === next.id ? next : r)));
+    // The wallet dashboard ("Due soon") reads the same items.
+    router.refresh();
   }
 
   async function confirmRemove() {
@@ -73,70 +78,53 @@ export function RecurringManager({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <Button size="lg" className="h-12 rounded-full" onClick={() => setEdit({ item: null })}>
-        <Plus aria-hidden />
+    <div className="flex flex-col gap-[16px]">
+      <SpButton icon={<IconAdd />} className="w-full" onClick={() => setEdit({ item: null })} data-testid="wallet-recurring-add">
         Add a recurring item
-      </Button>
-      {notice && (
-        <Alert variant={notice.kind === "error" ? "destructive" : "default"}>
-          <AlertDescription>{notice.text}</AlertDescription>
-        </Alert>
-      )}
-      {items.length === 0 ? (
-        <p className="rounded-(--sp-radius) bg-(--sp-panel) px-4 py-8 text-center text-sm text-(--sp-text-muted)">
-          Nothing repeats yet. Add rent, a subscription or your salary once, and it is added for you.
-        </p>
+      </SpButton>
+      {notice && <NoticeBox notice={notice} />}
+      {list.length === 0 ? (
+        <PageEmpty
+          icon={<IconCalendarRepeat />}
+          title="Nothing repeats yet"
+          text="Add rent, a subscription or your salary once, and it is added for you."
+        />
       ) : (
-        <ul className="flex flex-col gap-3">
-          {items.map((r) => (
-            <li key={r.id} className={cn("flex flex-col gap-3 rounded-(--sp-radius) bg-(--sp-panel) p-4", !r.active && "opacity-70")}>
-              <div className="flex items-start gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-(--sp-soft)">
-                  <CategoryIcon name={r.category.icon} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-(--sp-text)">{r.name}</p>
-                  <p className="text-xs text-(--sp-text-faint)">
-                    {FREQUENCY_LABEL[r.frequency]} ·{" "}
-                    {r.active ? `next ${dates.day(r.nextDate)}` : "paused"}
-                  </p>
-                </div>
-                <span
-                  className={cn(
-                    "shrink-0 text-sm font-semibold tabular-nums",
-                    r.type === "INCOME" ? "text-(--sp-income)" : "text-(--sp-text)"
-                  )}
-                >
-                  {formatMoney(r.amount, r.currency, r.type === "INCOME" ? "+" : "-")}
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <Button variant="outline" size="lg" className="h-11" onClick={() => void toggle(r)} disabled={busy === r.id}>
-                  {r.active ? <Pause aria-hidden /> : <Play aria-hidden />}
-                  {r.active ? "Pause" : "Resume"}
-                </Button>
-                <Button variant="outline" size="lg" className="h-11" onClick={() => setEdit({ item: r })}>
-                  <Pencil aria-hidden />
-                  Edit
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-11 text-destructive"
-                  onClick={() => {
-                    setRemove(r);
-                    setRemoveOpen(true);
-                  }}
-                >
-                  <Trash2 aria-hidden />
-                  Remove
-                </Button>
-              </div>
-            </li>
+        <ul className="flex flex-col gap-[12px]" data-testid="wallet-recurring-list">
+          {list.map((r) => (
+            <RepeatRow
+              key={r.id}
+              view={walletView(r)}
+              today={today}
+              onMore={() => {
+                setSheetId(r.id);
+                setSheetOpen(true);
+              }}
+            />
           ))}
         </ul>
       )}
+
+      <RepeatSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        item={sheetItem}
+        view={walletView}
+        basePath="/wallet/recurring"
+        today={today}
+        canManage
+        onUpdated={updated}
+        reload={reload}
+        onEdit={() => {
+          setSheetOpen(false);
+          setEdit({ item: sheetItem });
+        }}
+        onDelete={() => {
+          setSheetOpen(false);
+          setRemove(sheetItem);
+          setRemoveOpen(true);
+        }}
+      />
 
       <Dialog open={edit !== null} onOpenChange={(open) => !open && setEdit(null)}>
         <DialogContent className="flex max-h-[90svh] flex-col">
@@ -159,24 +147,37 @@ export function RecurringManager({
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={removeOpen} onOpenChange={(next) => !next && busy !== "remove" && setRemoveOpen(false)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove &quot;{remove?.name}&quot;?</AlertDialogTitle>
-            <AlertDialogDescription>Nothing new is added. Transactions it already made stay.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel size="lg" className="h-11" disabled={busy === "remove"}>
-              Cancel
-            </AlertDialogCancel>
-            <Button variant="destructive" size="lg" className="h-11" onClick={confirmRemove} disabled={busy === "remove"}>
-              {busy === "remove" ? "Removing…" : "Remove"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmSheet
+        open={removeOpen}
+        onOpenChange={setRemoveOpen}
+        title={`Remove "${remove?.name ?? ""}"?`}
+        text="Nothing new is added. Transactions it already made stay."
+        confirm="Remove"
+        destructive
+        busy={busy === "remove"}
+        busyLabel="Removing…"
+        onConfirm={() => void confirmRemove()}
+      />
     </div>
   );
+}
+
+/** What the row and the sheet show for a wallet item. */
+function walletView(r: Recurring): RepeatView {
+  return {
+    id: r.id,
+    name: r.name,
+    amount: r.amount,
+    type: r.type,
+    unit: r.unit,
+    every: r.every,
+    nextDate: r.nextDate,
+    paused: !r.active,
+    pausedUntil: r.pausedUntil ?? null,
+    upcoming: r.upcoming ?? [],
+    logo: <CategoryIcon name={r.category.icon} />,
+    minusForExpense: true,
+  };
 }
 
 function RecurringForm({
@@ -190,35 +191,53 @@ function RecurringForm({
   today: string;
   onDone: (text: string) => void;
 }) {
+  const dates = useDates();
   const [name, setName] = useState(item?.name ?? "");
   const [type, setType] = useState<TxType>(item?.type ?? "EXPENSE");
   const [amountText, setAmountText] = useState(item?.amount ?? "");
-  const [currency, setCurrency] = useState<Currency>(item?.currency ?? "USD");
   const [categoryId, setCategoryId] = useState(item?.category.id ?? "");
   const [description, setDescription] = useState(item?.description ?? "");
-  const [frequency, setFrequency] = useState<Frequency>(item?.frequency ?? "MONTHLY");
+  const [unit, setUnit] = useState<RepeatUnit>(item?.unit ?? "MONTH");
+  const [every, setEvery] = useState(item?.every ?? 1);
+  const [frequencyError, setFrequencyError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState(item?.startDate ?? today);
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const amount = parseAmountInput(amountText);
   const okName = name.trim().length > 0;
+  // Only categories of the chosen type (no kind = expense). The saved one stays while it is chosen.
+  const kindOf = (c: Category): TxType => c.kind ?? "EXPENSE";
+  const typeCategories = categories.filter(
+    (c) => kindOf(c) === type || (c.id === item?.category.id && c.id === categoryId)
+  );
+
+  function changeType(next: TxType) {
+    setType(next);
+    setCategoryError(null);
+    // A category of the other kind no longer fits.
+    const chosen = categories.find((c) => c.id === categoryId);
+    if (chosen && kindOf(chosen) !== next) setCategoryId("");
+  }
   const okDescription = description.trim().length > 0;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setTouched(true);
     setError(null);
+    setCategoryError(null);
+    setFrequencyError(null);
     if (!okName || !amount || !categoryId || !okDescription || !startDate) return;
     setPending(true);
     const body = {
       name: name.trim(),
       type,
       amount,
-      currency,
       categoryId,
       description: description.trim(),
-      frequency,
+      unit,
+      every,
       startDate,
     };
     try {
@@ -227,7 +246,9 @@ function RecurringForm({
       onDone(item ? "Saved." : startDate <= today ? "Added. Today's one is already in your wallet." : "Added.");
     } catch (err) {
       setPending(false);
-      setError(errorMessage(err));
+      if (err instanceof ApiError && err.field === "categoryId") setCategoryError(fieldErrorText(err));
+      else if (err instanceof ApiError && (err.field === "unit" || err.field === "every")) setFrequencyError(fieldErrorText(err));
+      else setError(errorMessage(err));
     }
   }
 
@@ -242,48 +263,60 @@ function RecurringForm({
       <Segmented
         label="Type"
         value={type}
-        onChange={setType}
+        onChange={changeType}
         options={[
           { value: "EXPENSE", label: "Expense" },
           { value: "INCOME", label: "Income" },
         ]}
       />
       <Field data-invalid={touched && !amount}>
-        <FieldLabel htmlFor="rec-amount">Amount</FieldLabel>
-        <Input id="rec-amount" inputMode="decimal" placeholder="0.00" value={amountText} onChange={(e) => setAmountText(e.target.value)} className="h-11" />
+        <FieldLabel htmlFor="rec-amount">Amount ($)</FieldLabel>
+        <Input id="rec-amount" inputMode="decimal" placeholder="$0.00" value={amountText} onChange={(e) => setAmountText(e.target.value)} className="h-11" />
         {touched && !amount && <FieldError>Enter an amount.</FieldError>}
       </Field>
-      <CurrencyChoice value={currency} onChange={setCurrency} />
-      <Field data-invalid={touched && !categoryId}>
+      <Field data-invalid={(touched && !categoryId) || Boolean(categoryError)}>
         <FieldLabel htmlFor="rec-category">Category</FieldLabel>
-        <CategorySelect id="rec-category" categories={categories} value={categoryId} onChange={setCategoryId} />
-        {touched && !categoryId && <FieldError>Choose a category.</FieldError>}
+        <CategorySelect
+          id="rec-category"
+          categories={typeCategories}
+          value={categoryId}
+          onChange={(id) => {
+            setCategoryId(id);
+            setCategoryError(null);
+          }}
+        />
+        {touched && !categoryId ? (
+          <FieldError>Choose a category.</FieldError>
+        ) : (
+          categoryError && <FieldError>{categoryError}</FieldError>
+        )}
       </Field>
       <Field data-invalid={touched && !okDescription}>
         <FieldLabel htmlFor="rec-description">Description</FieldLabel>
         <Input id="rec-description" maxLength={200} placeholder="e.g. Apartment rent" value={description} onChange={(e) => setDescription(e.target.value)} className="h-11" />
         {touched && !okDescription && <FieldError>Enter a description.</FieldError>}
       </Field>
-      <Field>
-        <FieldLabel>How often</FieldLabel>
-        <Segmented
-          label="How often"
-          value={frequency}
-          onChange={setFrequency}
-          options={[
-            { value: "WEEKLY", label: "Weekly" },
-            { value: "MONTHLY", label: "Monthly" },
-            { value: "YEARLY", label: "Yearly" },
-          ]}
+      <FrequencyPicker
+        unit={unit}
+        every={every}
+        onChange={(u, n) => {
+          setUnit(u);
+          setEvery(n);
+          setFrequencyError(null);
+        }}
+        error={frequencyError ?? undefined}
+      />
+      <div data-testid="repeat-start">
+        <DateField
+          label="First date"
+          surface="panel"
+          value={startDate || null}
+          onChange={(day) => setStartDate(day ?? "")}
+          today={today}
+          format={dates.day}
+          hint="If it is today, the first one is added right away. On the 31st, short months use their last day."
         />
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="rec-start">First date</FieldLabel>
-        <Input id="rec-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-11" />
-        <p className="text-xs text-muted-foreground">
-          If it is today, the first one is added right away. A monthly one on the 31st uses the last day in short months.
-        </p>
-      </Field>
+      </div>
       <Button type="submit" size="lg" className="h-11 w-full shrink-0" disabled={pending}>
         {pending ? "Saving…" : item ? "Save" : "Add"}
       </Button>

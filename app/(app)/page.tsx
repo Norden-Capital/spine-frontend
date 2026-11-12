@@ -1,69 +1,104 @@
 import Link from "next/link";
-import { Ellipsis, Lock, Plus, ScanLine, Search } from "lucide-react";
+import {
+  BalanceCard,
+  IconBell,
+  IconExpenses,
+  IconLock,
+  IconRepeat,
+  IconSearch,
+  ListItem,
+  PageHeader,
+  SectionCard,
+  SwapStack,
+} from "@/components/spine-ui";
 import { requireUser } from "@/lib/auth";
-import { displayName } from "@/lib/auth-types";
+import { isOwner } from "@/lib/roles";
 import { formatDay, todayIn } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
+import { getRecurringDue } from "@/lib/recurring-server";
 import { getMonth } from "@/lib/transactions-server";
-import { formatMoney, monthOf, type Currency, type Transaction } from "@/lib/transactions-types";
+import { formatMoney, formatNet, monthOf, type Transaction } from "@/lib/transactions-types";
 import { TxLogo } from "@/components/expenses/tx-logo";
-import { BalanceCard, CardStack, GreetingHeader, ListItem, SectionCard } from "@/components/spine-ui";
-import { LinkAddPill, LinkPeekCard, LinkQuickAction, QuickActionsPanel } from "@/components/home/home-links";
+import { LinkAddPill, LinkIconButton, LinkQuickAction, QuickActionsPanel } from "@/components/home/home-links";
+import { DueSoonCard } from "@/components/recurring/due-soon-card";
 
 // Blocks on the server on purpose (session data), so nothing flashes.
 export const instant = false;
 
-/** Home (Design kit, reference layout): greeting, cards, quick actions, recent expenses. */
+/**
+ * Company home (one structure with the wallet): header, two cards (Company
+ * in front, the locked Personal wallet behind, swap them), quick actions,
+ * due soon, recent. The wallet balance is never loaded here (privacy).
+ */
 export default async function HomePage() {
   const [user, dates] = await Promise.all([requireUser("/"), getDateSettings()]);
-  const month = monthOf(todayIn(dates.zone));
-  const res = await getMonth(month);
+  const today = todayIn(dates.zone);
+  const month = monthOf(today);
+  // The owner: repeat-expense reminders waiting ("Due soon" card; the alerts go to the owner only).
+  const [res, due] = await Promise.all([getMonth(month), isOwner(user) ? getRecurringDue() : null]);
   const items = res.ok ? res.data.items : [];
-  const expenses = items.filter((t) => t.type === "EXPENSE");
 
-  // The card shows this month's company expenses in the main currency
-  // (USD, or MAD when there are only MAD expenses).
-  const currency: Currency = expenses.some((t) => t.currency === "USD") || expenses.length === 0 ? "USD" : "MAD";
-  const out = res.ok ? res.data.totals[currency]?.out ?? "0" : "0";
-  const count = expenses.filter((t) => t.currency === currency).length;
-  const name = displayName(user);
-  const first = user.firstName?.trim() || name.split(/[\s@]/)[0];
+  // The Company card: this month's company money (USD).
+  const totals = res.ok ? res.data.totals : undefined;
+  const out = totals?.out ?? "0";
+  const income = totals?.in ?? "0";
+  const net = totals?.net ?? "0";
 
   const recent = [...items]
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
     .slice(0, 5);
 
   return (
-    <div className="flex flex-col">
-      <GreetingHeader title={`Hello ${first}!`} subtitle="Let's track your spending." />
-
-      <CardStack
-        className="mt-[16.3px]"
-        back={<LinkPeekCard href="/wallet" label="Personal wallet" trailing={<Lock aria-hidden />} />}
-        front={
-          <BalanceCard
-            tag="Company"
-            amountLabel="This month"
-            amount={formatMoney(out, currency)}
-            detail={{ label: "Expenses", value: String(count) }}
-            footer={{ label: "Name", value: name }}
-            action={<LinkAddPill href="/transactions/new" label="Expense" />}
-          />
-        }
+    <div className="flex flex-col gap-[16px]">
+      <PageHeader
+        title="Company"
+        subtitle="Norden Capital · your team's expenses"
+        action={<LinkIconButton href="/transactions?search=1" label="Search" icon={<IconSearch />} />}
       />
 
-      <QuickActionsPanel className="mt-[25.4px]">
-        <LinkQuickAction href="/transactions/new" label="Add" icon={<Plus />} />
-        <LinkQuickAction href="/transactions/new?scan=1" label="Scan" icon={<ScanLine />} />
-        <LinkQuickAction href="/transactions?search=1" label="Search" icon={<Search />} />
-        <LinkQuickAction href="/transactions" label="More" icon={<Ellipsis />} />
+      <SwapStack
+        labels={["Company", "Personal wallet"]}
+        cards={[
+          <BalanceCard
+            key="company"
+            tag="Company"
+            amountLabel="Out this month"
+            amount={formatMoney(out)}
+            detail={{ label: "In", value: formatMoney(income, Number(income) > 0 ? "+" : undefined) }}
+            footer={{ label: "Net", value: formatNet(net) }}
+            action={<LinkAddPill href="/transactions/new" label="Expense" testId="home-add-expense" />}
+          />,
+          // Always locked here: no wallet data is loaded on the company home.
+          <div key="wallet" className="sp-card-sun" data-testid="home-wallet-card">
+            <BalanceCard
+              tag={
+                <span className="flex items-center gap-[5px]">
+                  Personal wallet <IconLock className="size-[14px]" aria-hidden />
+                </span>
+              }
+              amountLabel="Balance"
+              amount="••••••"
+              detail={{ label: "Status", value: "Locked" }}
+              footer={{ label: "Only you", value: "PIN to open" }}
+              action={
+                <LinkAddPill href="/wallet" label="Unlock" icon={<IconLock aria-hidden />} testId="home-wallet-unlock" />
+              }
+            />
+          </div>,
+        ]}
+      />
+
+      {/* Same for every role. No "Add": the card's "+ Expense" pill does it. */}
+      <QuickActionsPanel>
+        <LinkQuickAction href="/recurring" label="Repeat" icon={<IconRepeat />} />
+        <LinkQuickAction href="/transactions" label="All" icon={<IconExpenses />} />
+        <LinkQuickAction href="/alerts" label="Alerts" icon={<IconBell />} />
+        <LinkQuickAction href="/transactions?search=1" label="Search" icon={<IconSearch />} />
       </QuickActionsPanel>
 
-      <SectionCard
-        className="mt-[17.2px]"
-        title="Recent Expenses"
-        action={{ label: "View All", href: "/transactions" }}
-      >
+      {due?.ok && <DueSoonCard items={due.data} dates={dates} today={today} />}
+
+      <SectionCard title="Recent" action={{ label: "View All", href: "/transactions" }}>
         {!res.ok ? (
           <p className="px-[14px] pt-1 pb-3 text-[12px] text-(--sp-text-faint)">Could not load. Please try again later.</p>
         ) : recent.length === 0 ? (
@@ -92,7 +127,7 @@ function RecentRow({ tx, day }: { tx: Transaction; day: string }) {
       icon={<TxLogo logoUrl={tx.logoUrl} icon={tx.category.icon} />}
       title={tx.description || tx.category.name}
       meta={`${tx.category.name} • ${day}`}
-      amount={formatMoney(tx.amount, tx.currency, income ? "+" : undefined)}
+      amount={formatMoney(tx.amount, income ? "+" : undefined)}
       tone={income ? "income" : "expense"}
     />
   );

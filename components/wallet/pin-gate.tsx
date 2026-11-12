@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Check, EyeOff, KeyRound, Lock, Target, Wallet as WalletIcon } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { IconCheckGlyph, IconEyeOff, IconGoal, IconKey, IconLock, IconWallet } from "@/components/spine-ui";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import { useDates } from "@/components/prefs/prefs-provider";
 import { BottomSheet, SpButton, SpField, SpInput, SpPasswordInput } from "@/components/spine-ui";
@@ -54,7 +54,7 @@ export function PinSetup() {
     return (
       <div role="status" className="flex min-h-[60svh] flex-col items-center justify-center gap-4 text-center">
         <span className="flex size-16 items-center justify-center rounded-full bg-(--sp-card-back) text-(--sp-card-back-text)">
-          <Check className="size-7" strokeWidth={2.2} aria-hidden />
+          <IconCheckGlyph className="size-7" aria-hidden />
         </span>
         <h1 className="text-[1.375rem] font-medium text-(--sp-text)">Your wallet is ready</h1>
         <p className="text-[0.875rem] text-(--sp-text-muted)">Opening it now…</p>
@@ -74,33 +74,44 @@ export function PinSetup() {
 }
 
 const WELCOME_POINTS = [
-  { icon: <EyeOff aria-hidden />, text: "Only you can see it — not even the Owner." },
-  { icon: <Target aria-hidden />, text: "Track your own spending, budgets, goals and repeat payments." },
-  { icon: <KeyRound aria-hidden />, text: "Protected by a 6-digit PIN you choose." },
+  { icon: <IconEyeOff aria-hidden />, text: "Only you can see it — not even the Owner." },
+  { icon: <IconGoal aria-hidden />, text: "Track your own spending, budgets, goals and repeat payments." },
+  { icon: <IconKey aria-hidden />, text: "Protected by a 6-digit PIN you choose." },
 ];
 
-/** First-time welcome, in the wallet's yellow card look. */
+/** Space between the top bar and the dock (same sum as the full-page states). */
+const WELCOME_HEIGHT =
+  "calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 12px - 44px - 17.5px - var(--sp-dock-h) - var(--sp-dock-gap) - 16px)";
+
+/**
+ * (Short phones, under 720px tall: a bit tighter so nothing scrolls.)
+ * First-time welcome, in the wallet's yellow card look. Fills the screen
+ * between the top bar and the dock: the hero and the points grow on big
+ * phones, and "Set up my PIN" sits at the bottom (thumb zone).
+ */
 function WalletWelcome({ onStart }: { onStart: () => void }) {
   return (
-    <div className="flex flex-col gap-5 pt-2">
-      <div className="rounded-(--sp-radius) bg-(--sp-card-back) px-5 pt-6 pb-5 text-(--sp-card-back-text)">
-        <span className="flex size-12 items-center justify-center rounded-full bg-black/10">
-          <WalletIcon className="size-6" aria-hidden />
+    <div className="flex flex-col gap-4 [@media(max-height:720px)]:gap-3" style={{ minHeight: WELCOME_HEIGHT }}>
+      <div className="flex max-h-[300px] min-h-[200px] flex-[3_1_auto] flex-col justify-between overflow-hidden rounded-(--sp-radius) bg-(--sp-card-back) px-5 pt-5 pb-6 [@media(max-height:720px)]:min-h-0 [@media(max-height:720px)]:pb-5 text-(--sp-card-back-text)">
+        <span className="flex size-14 items-center justify-center rounded-full bg-black/10 [@media(max-height:720px)]:size-12">
+          <IconWallet className="size-7" aria-hidden />
         </span>
-        <h1 className="mt-4 text-[1.625rem] leading-tight font-medium">Welcome to your wallet</h1>
-        <p className="mt-1.5 text-[0.875rem] opacity-80">Your own private space for your personal money.</p>
+        <div className="mt-6 [@media(max-height:720px)]:mt-4">
+          <h1 className="text-[1.75rem] leading-tight font-medium [@media(max-height:720px)]:text-[1.5rem]">Welcome to your wallet</h1>
+          <p className="mt-2 text-[0.9375rem] opacity-80">Your own private space for your personal money.</p>
+        </div>
       </div>
-      <ul className="flex flex-col gap-1 rounded-(--sp-radius) bg-(--sp-panel) p-2">
+      <ul className="flex max-h-[340px] flex-[2_1_auto] flex-col justify-evenly gap-1 rounded-(--sp-radius) bg-(--sp-panel) p-2">
         {WELCOME_POINTS.map((p) => (
-          <li key={p.text} className="flex items-center gap-3 px-2 py-2.5">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-(--sp-soft) text-(--sp-text) [&_svg]:size-[18px]">
+          <li key={p.text} className="flex items-center gap-3 px-2 py-2.5 [@media(max-height:720px)]:py-1.5">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-(--sp-soft) text-(--sp-text) [&_svg]:size-[19px]">
               {p.icon}
             </span>
             <span className="text-[0.9375rem] leading-snug text-(--sp-text)">{p.text}</span>
           </li>
         ))}
       </ul>
-      <SpButton onClick={onStart} className="w-full">
+      <SpButton onClick={onStart} className="mt-auto w-full shrink-0">
         Set up my PIN
       </SpButton>
     </div>
@@ -180,7 +191,7 @@ function Screen({
   return (
     <div className="flex flex-col items-center gap-6 pt-2 text-center">
       <span className="flex size-14 items-center justify-center rounded-full bg-(--sp-card-back) text-(--sp-card-back-text)">
-        <Lock className="size-6" aria-hidden />
+        <IconLock className="size-6" aria-hidden />
       </span>
       <div>
         {step && <p className="mb-1 text-[0.75rem] font-medium tracking-wide text-(--sp-text-muted) uppercase">{step}</p>}
@@ -289,6 +300,7 @@ function ForgotPin({ open, onOpenChange }: { open: boolean; onOpenChange: (open:
  */
 export function WalletSession({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -313,5 +325,9 @@ export function WalletSession({ children }: { children: React.ReactNode }) {
     };
   }, [router]);
 
-  return <>{children}</>;
+  // Next keeps earlier pages (hidden) for the back button. Once you leave the
+  // wallet it is locked, so drop its content too: no wallet data stays in
+  // the page. Coming back asks the server again (PIN screen).
+  const inWallet = pathname === "/wallet" || pathname.startsWith("/wallet/");
+  return inWallet ? <>{children}</> : null;
 }

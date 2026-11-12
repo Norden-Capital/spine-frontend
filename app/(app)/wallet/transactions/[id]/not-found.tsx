@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { SearchX } from "lucide-react";
+import { IconNoResults } from "@/components/spine-ui";
 import { EmptyState } from "@/components/spine-ui";
+import { PLAIN_STATE_ICON } from "@/components/nav/state-icon";
 
 // Height of the space between the top bar and the dock (see app/(app)/layout.tsx),
 // so the state sits in its middle.
@@ -17,8 +18,9 @@ export default function WalletTxNotFound() {
   return (
     <div style={AREA} className="flex flex-col items-center justify-center">
       <EmptyState
+        className={PLAIN_STATE_ICON}
         tone="accent"
-        icon={<SearchX />}
+        icon={<IconNoResults />}
         title="Not found"
         text="This wallet transaction does not exist."
         action={

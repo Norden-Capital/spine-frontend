@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { KeyRound } from "lucide-react";
+import { IconKey } from "@/components/spine-ui";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import { BottomSheet, IconTile, SpButton, SpField, SpPasswordInput } from "@/components/spine-ui";
 import { SettingsNotice } from "./settings-notice";
@@ -75,7 +75,7 @@ export function ChangePasswordCard() {
     <section className="rounded-(--sp-radius) bg-(--sp-panel) px-[14px] pt-[16px] pb-[16px]">
       <div className="flex items-start gap-[12px]">
         <IconTile tone="violet" size={52}>
-          <KeyRound />
+          <IconKey />
         </IconTile>
         <div className="min-w-0 flex-1 pt-[4px] leading-tight">
           <h2 className="text-[0.9375rem] font-medium text-(--sp-text)">Password</h2>
@@ -92,7 +92,7 @@ export function ChangePasswordCard() {
       <SpButton
         className="mt-[16px] w-full"
         variant="secondary"
-        icon={<KeyRound aria-hidden />}
+        icon={<IconKey aria-hidden />}
         onClick={() => {
           setDone(false);
           setOpen(true);

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Ellipsis, Fingerprint, Laptop, Pencil, ScanFace, Smartphone, Trash2 } from "lucide-react";
+import { IconDelete, IconEdit, IconFaceId, IconLaptop, IconMore, IconPhone } from "@/components/spine-ui";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import {
   credentialToJSON,
@@ -49,9 +49,9 @@ const TONES: IconTileTone[] = ["violet", "sun", "ink"];
 
 /** Icon by the name the user gave (look only). */
 function deviceIcon(name: string) {
-  if (/iphone|android|phone|pixel|galaxy/i.test(name)) return <Smartphone aria-hidden />;
-  if (/mac|laptop|windows|\bpc\b|chromebook/i.test(name)) return <Laptop aria-hidden />;
-  return <Fingerprint aria-hidden />;
+  if (/iphone|android|phone|pixel|galaxy/i.test(name)) return <IconPhone aria-hidden />;
+  if (/mac|laptop|windows|\bpc\b|chromebook/i.test(name)) return <IconLaptop aria-hidden />;
+  return <IconFaceId aria-hidden />;
 }
 
 /**
@@ -105,7 +105,7 @@ export function PasskeysSection({ passkeys }: { passkeys: Passkey[] | null }) {
       <section className="rounded-(--sp-radius) bg-(--sp-panel) px-[14px] pt-[16px] pb-[16px]">
         <div className="flex items-start gap-[12px]">
           <IconTile tone="ink" size={52}>
-            <ScanFace />
+            <IconFaceId />
           </IconTile>
           <div className="min-w-0 flex-1 pt-[4px] leading-tight">
             <h2 className="text-[0.9375rem] font-medium text-(--sp-text)">Face ID &amp; fingerprint</h2>
@@ -138,11 +138,11 @@ export function PasskeysSection({ passkeys }: { passkeys: Passkey[] | null }) {
                   action={
                     <DropdownMenu>
                       <DropdownMenuTrigger
-                        render={<IconButton label={`Actions for ${p.name}`} icon={<Ellipsis />} variant="ghost" />}
+                        render={<IconButton label={`Actions for ${p.name}`} icon={<IconMore />} variant="ghost" />}
                       />
                       <DropdownMenuContent align="end" className="w-52 max-w-[calc(100vw-2rem)]">
                         <DropdownMenuItem className={ITEM} onClick={() => setRename(p)}>
-                          <Pencil aria-hidden />
+                          <IconEdit aria-hidden />
                           Rename
                         </DropdownMenuItem>
                         <DropdownMenuItem
@@ -153,7 +153,7 @@ export function PasskeysSection({ passkeys }: { passkeys: Passkey[] | null }) {
                             setRemoveOpen(true);
                           }}
                         >
-                          <Trash2 aria-hidden />
+                          <IconDelete aria-hidden />
                           Remove
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -169,7 +169,7 @@ export function PasskeysSection({ passkeys }: { passkeys: Passkey[] | null }) {
           </p>
         )}
 
-        <SpButton className="mt-[14px] w-full" icon={<Fingerprint aria-hidden />} onClick={() => setAddOpen(true)}>
+        <SpButton className="mt-[14px] w-full" icon={<IconFaceId aria-hidden />} onClick={() => setAddOpen(true)}>
           Add Face ID / fingerprint
         </SpButton>
         <p className="mt-[10px] text-center text-[0.625rem] leading-snug text-(--sp-text-faint)">
@@ -194,7 +194,7 @@ export function PasskeysSection({ passkeys }: { passkeys: Passkey[] | null }) {
             <SpButton
               className="w-full"
               variant="danger"
-              icon={<Trash2 aria-hidden />}
+              icon={<IconDelete aria-hidden />}
               onClick={confirmRemove}
               disabled={busy}
             >
@@ -310,7 +310,7 @@ function AddPasskeyForm({ onDone }: { onDone: (name: string) => void }) {
       <SpButton
         type="submit"
         className="w-full"
-        icon={<Fingerprint aria-hidden />}
+        icon={<IconFaceId aria-hidden />}
         disabled={pending || !options || !trimmed}
       >
         {pending ? "Waiting for Face ID…" : options ? "Continue" : "Getting ready…"}

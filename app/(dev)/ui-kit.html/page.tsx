@@ -1,27 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
-import {
-  Bell,
-  CircleAlert,
-  CircleCheck,
-  ChartColumnBig,
-  Receipt,
-  TriangleAlert,
-  Ellipsis,
-  House,
-  Lock,
-  Plane,
-  Plus,
-  ScanLine,
-  Search,
-  ShoppingCart,
-  TextAlignStart,
-  User,
-  Utensils,
-  Wallet,
-  Wifi,
-} from "lucide-react";
+import { LUCIDE_TO_SP } from "@/components/spine-ui/icons";
 import {
   AddPill,
   AlertRow,
@@ -47,6 +27,9 @@ import {
 } from "@/components/spine-ui";
 import "@/components/spine-ui/tokens.css";
 import { ChipsDemo, PinDemo, SheetDemo } from "./demos";
+
+// New icon set (iconsax Bulk), same names as the old Lucide imports.
+const { Bell, CircleAlert, CircleCheck, ChartColumnBig, Receipt, TriangleAlert, Ellipsis, House, Lock, Plane, Plus, ScanLine, Search, ShoppingCart, TextAlignStart, User, Utensils, Wallet, Wifi } = LUCIDE_TO_SP;
 
 // Design preview of the Spine UI kit (components/spine-ui), at /ui-kit.html.
 // Dev only: 404 in production, not linked from the app. The dot in the path
@@ -76,7 +59,7 @@ const DOCK: DockItem[] = [
     href: "/ui-kit.html#home",
     label: "Home",
     icon: <House />,
-    activeIcon: <House fill="currentColor" />,
+    activeIcon: <House />,
     active: true,
   },
   { href: "/ui-kit.html#wallet", label: "Wallet", icon: <Wallet /> },
@@ -314,15 +297,14 @@ function Extras({ theme }: { theme: Theme }) {
       <Part name="18 · Bottom sheet">
         <SheetDemo />
       </Part>
-      <Part name="19 · Wallet stack (one card per currency)">
+      <Part name="19 · Card stack (several cards)">
         <CardStack
           back={[
-            <PeekCard key="usd" tone="ink" label="USD · $1,240.00" />,
-            <PeekCard key="eur" label="EUR · €310.00" />,
+            <PeekCard key="savings" tone="ink" label="Savings · $1,850.00" />,
           ]}
           front={
             <BalanceCard
-              tag="CAD"
+              tag="Personal wallet"
               amountLabel="Wallet balance"
               amount="$2,486.15"
               detail={{ label: "This month", value: "-$612" }}

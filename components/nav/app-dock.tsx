@@ -1,10 +1,10 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { ArrowLeftRight, House, Settings, Shield, Wallet } from "lucide-react";
+import { IconAdmin, IconExpenses, IconHome, IconSettings, IconWallet } from "@/components/spine-ui";
 import { createContext, use, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { DOCK_SPACE_CLASS, FloatingDock, type DockItem } from "@/components/spine-ui";
-import { hasSkeleton, RouteSkeleton } from "@/components/nav/route-skeleton";
+import { hasSkeleton, OwnerContext, RouteSkeleton } from "@/components/nav/route-skeleton";
 
 /** Add / edit forms hide the dock: their Save button sits in a bottom bar instead. */
 export function isFormPath(pathname: string): boolean {
@@ -41,8 +41,11 @@ function useShownPath(): string {
   return use(PendingPathContext) ?? pathname;
 }
 
-/** Watches link taps for the whole app area (top bar, page, dock). */
-export function NavPending({ children }: { children: ReactNode }) {
+/**
+ * Watches link taps for the whole app area (top bar, page, dock).
+ * `owner`: only the owner gets Admin skeletons (members have no Admin area).
+ */
+export function NavPending({ owner, children }: { owner: boolean; children: ReactNode }) {
   const pathname = usePathname();
   // `from`: the page we were on. When the URL changes the pending tap is over
   // (no state reset needed: it simply no longer matches).
@@ -66,7 +69,7 @@ export function NavPending({ children }: { children: ReactNode }) {
       const url = new URL(link.href, window.location.href);
       const from = here.current;
       // Same page (month / filter change, hash): it stays, no skeleton.
-      if (url.origin !== window.location.origin || url.pathname === from || !hasSkeleton(url.pathname)) return;
+      if (url.origin !== window.location.origin || url.pathname === from || !hasSkeleton(url.pathname, owner)) return;
       window.clearTimeout(showTimer);
       window.clearTimeout(giveUpTimer);
       showTimer = window.setTimeout(() => {
@@ -82,10 +85,14 @@ export function NavPending({ children }: { children: ReactNode }) {
       window.clearTimeout(showTimer);
       window.clearTimeout(giveUpTimer);
     };
-  }, []);
+  }, [owner]);
 
   const to = pending && pending.from === pathname ? pending.to : null;
-  return <PendingPathContext value={to}>{children}</PendingPathContext>;
+  return (
+    <OwnerContext value={owner}>
+      <PendingPathContext value={to}>{children}</PendingPathContext>
+    </OwnerContext>
+  );
 }
 
 /**
@@ -130,24 +137,24 @@ export function AppMain({ children }: { children: ReactNode }) {
 
 /**
  * The floating dock (Design kit): Home · Transactions · Wallet · Settings,
- * plus Admin for managers. The active item shows its label; it moves to the
- * tapped item right away.
+ * plus Admin for the owner (members: no Admin item). The active item shows
+ * its label; it moves to the tapped item right away.
  */
-export function AppDock({ isManager }: { isManager: boolean }) {
+export function AppDock({ owner }: { owner: boolean }) {
   const pathname = useShownPath();
   if (isFormPath(pathname)) return null;
   const items: DockItem[] = [
-    { href: "/", label: "Home", icon: <House />, activeIcon: <House fill="currentColor" />, active: pathname === "/" },
+    { href: "/", label: "Home", icon: <IconHome />, active: pathname === "/" },
     {
       href: "/transactions",
       label: "Expenses",
-      icon: <ArrowLeftRight />,
+      icon: <IconExpenses />,
       active: pathname.startsWith("/transactions"),
     },
-    { href: "/wallet", label: "Wallet", icon: <Wallet />, active: pathname.startsWith("/wallet") },
-    { href: "/settings", label: "Settings", icon: <Settings />, active: pathname.startsWith("/settings") },
-    ...(isManager
-      ? [{ href: "/admin/users", label: "Admin", icon: <Shield />, active: pathname.startsWith("/admin") }]
+    { href: "/wallet", label: "Wallet", icon: <IconWallet />, active: pathname.startsWith("/wallet") },
+    { href: "/settings", label: "Settings", icon: <IconSettings />, active: pathname.startsWith("/settings") },
+    ...(owner
+      ? [{ href: "/admin/users", label: "Admin", icon: <IconAdmin />, active: pathname.startsWith("/admin") }]
       : []),
   ];
   return <FloatingDock items={items} />;

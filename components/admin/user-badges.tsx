@@ -1,5 +1,6 @@
 import { SpBadge, type SpBadgeProps } from "@/components/spine-ui";
-import { ROLE_LABEL, type Role, type UserStatus } from "@/lib/auth-types";
+import type { Role, UserStatus } from "@/lib/auth-types";
+import { roleLabel } from "@/lib/roles";
 
 const STATUS: Record<UserStatus, { label: string; tone: SpBadgeProps["tone"] }> = {
   ACTIVE: { label: "Active", tone: "success" },
@@ -7,9 +8,9 @@ const STATUS: Record<UserStatus, { label: string; tone: SpBadgeProps["tone"] }> 
   DISABLED: { label: "Disabled", tone: "neutral" },
 };
 
-/** Owner / Admin in purple, Employee in gray. */
+/** Owner in purple, Member in gray. */
 export function RoleBadge({ role }: { role: Role }) {
-  return <SpBadge tone={role === "EMPLOYEE" ? "neutral" : "accent"}>{ROLE_LABEL[role] ?? role}</SpBadge>;
+  return <SpBadge tone={role === "OWNER" ? "accent" : "neutral"}>{roleLabel(role)}</SpBadge>;
 }
 
 export function StatusBadge({ status }: { status: UserStatus }) {

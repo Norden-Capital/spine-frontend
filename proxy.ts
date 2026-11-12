@@ -8,20 +8,25 @@ function matches(pathname: string, paths: string[]) {
   return paths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
-/** Ask the backend if the session cookie is still valid. */
-async function sessionStatus(request: NextRequest): Promise<"valid" | "expired" | "unknown"> {
-  if (!BACKEND_URL) return "unknown";
+type Session = { status: "valid" | "expired" | "unknown"; role?: string };
+
+/** Ask the backend if the session cookie is still valid (and whose it is). */
+async function session(request: NextRequest): Promise<Session> {
+  if (!BACKEND_URL) return { status: "unknown" };
   try {
     const res = await fetch(`${BACKEND_URL}/api/auth/me`, {
       headers: { cookie: request.headers.get("cookie") ?? "", accept: "application/json" },
       cache: "no-store",
     });
-    if (res.ok) return "valid";
-    if (res.status === 401) return "expired";
+    if (res.ok) {
+      const me = (await res.json().catch(() => null)) as { role?: string } | null;
+      return { status: "valid", role: me?.role };
+    }
+    if (res.status === 401) return { status: "expired" };
   } catch {
     // Backend down: let the page decide.
   }
-  return "unknown";
+  return { status: "unknown" };
 }
 
 // Two kinds of pages:
@@ -39,7 +44,7 @@ export async function proxy(request: NextRequest) {
     if (!hasCookie) return NextResponse.next();
     // Only the cookie is not enough: an expired one would loop
     // /login -> / -> /login. So ask the backend.
-    const status = await sessionStatus(request);
+    const { status } = await session(request);
     if (status === "valid") {
       return NextResponse.redirect(new URL("/", request.url));
     }
@@ -60,10 +65,18 @@ export async function proxy(request: NextRequest) {
 
   // Cookie there but the session may be over: check now, so the redirect
   // happens before anything renders (no empty page on a link click).
-  if ((await sessionStatus(request)) === "expired") {
+  const me = await session(request);
+  if (me.status === "expired") {
     const response = toLogin();
     response.cookies.delete(SESSION_COOKIE_NAME);
     return response;
+  }
+
+  // The Admin area is the owner's only. For anyone else answer a real 404
+  // before any admin page renders (no admin title or text in the response).
+  // The server layouts check again, and the backend refuses (403) anyway.
+  if (matches(pathname, ["/admin"]) && me.status === "valid" && me.role !== "OWNER") {
+    return NextResponse.rewrite(new URL("/__not-found", request.url), { status: 404 });
   }
 
   // Pass the wanted path on, so the server layout can send the user back

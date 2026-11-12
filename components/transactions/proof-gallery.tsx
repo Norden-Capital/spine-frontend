@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
+import { IconClose } from "@/components/spine-ui";
 import { formatSize, type FileRef } from "@/lib/transactions-types";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ProofTiles } from "@/components/spine-ui";
@@ -43,7 +43,7 @@ export function ProofGallery({ files }: { files: FileRef[] }) {
               aria-label="Close"
               className="flex size-11 items-center justify-center rounded-full outline-none hover:bg-white/10 focus-visible:ring-3 focus-visible:ring-white/50"
             >
-              <X className="size-6" aria-hidden />
+              <IconClose className="size-6" aria-hidden />
             </button>
           </div>
           {open && (

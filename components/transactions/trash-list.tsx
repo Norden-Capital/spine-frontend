@@ -1,8 +1,9 @@
 "use client";
 
+import { PageEmpty } from "@/components/nav/page-empty";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CloudOff, RotateCcw, Trash2 } from "lucide-react";
+import { IconDelete, IconOffline, IconRestore } from "@/components/spine-ui";
 import { api, errorMessage } from "@/lib/api";
 import { formatDay, type DateSettings } from "@/lib/prefs";
 import { formatMoney, type Transaction } from "@/lib/transactions-types";
@@ -10,9 +11,11 @@ import { TxLogo } from "@/components/expenses/tx-logo";
 import { ConfirmSheet } from "@/components/admin/confirm-sheet";
 import { NoticeBox, type Notice } from "@/components/admin/notice";
 import { EmptyState, IconButton, RowGroup, RowIcon, SpRow } from "@/components/spine-ui";
+import { UserAvatar } from "@/components/nav/user-avatar";
+import { seedOf } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
 
-/** Deleted transactions; a manager can restore them (asks first). */
+/** Deleted transactions; the owner can restore them (asks first). */
 export function TrashList({ items, dates }: { items: Transaction[] | null; dates: DateSettings }) {
   const router = useRouter();
   const [chosen, setChosen] = useState<Transaction | null>(null);
@@ -25,7 +28,7 @@ export function TrashList({ items, dates }: { items: Transaction[] | null; dates
       <EmptyState
         framed
         tone="danger"
-        icon={<CloudOff />}
+        icon={<IconOffline />}
         title="The trash could not be loaded"
         text="Please try again later."
       />
@@ -51,7 +54,7 @@ export function TrashList({ items, dates }: { items: Transaction[] | null; dates
     <div className="flex flex-col gap-[16px]">
       {notice && <NoticeBox notice={notice} />}
       {items.length === 0 ? (
-        <EmptyState framed icon={<Trash2 />} title="The trash is empty" />
+        <PageEmpty icon={<IconDelete />} title="The trash is empty" />
       ) : (
         <>
           <RowGroup
@@ -75,7 +78,13 @@ export function TrashList({ items, dates }: { items: Transaction[] | null; dates
                         </RowIcon>
                       }
                       title={name}
-                      subtitle={`${formatDay(tx.date, dates)} · ${tx.createdBy.name}`}
+                      subtitle={
+                        <span className="inline-flex max-w-full items-center gap-[5px] align-middle">
+                          <span className="shrink-0">{formatDay(tx.date, dates)} ·</span>
+                          <UserAvatar seed={seedOf(tx.createdBy)} size={16} className="ring-0" />
+                          <span className="truncate">{tx.createdBy.name}</span>
+                        </span>
+                      }
                       trailing={
                         <span className="flex shrink-0 items-center gap-[2px]">
                           <span
@@ -84,11 +93,11 @@ export function TrashList({ items, dates }: { items: Transaction[] | null; dates
                               income ? "text-(--sp-income)" : "text-(--sp-text)"
                             )}
                           >
-                            {formatMoney(tx.amount, tx.currency, income ? "+" : "-")}
+                            {formatMoney(tx.amount, income ? "+" : "-")}
                           </span>
                           <IconButton
                             label={`Restore ${name}`}
-                            icon={<RotateCcw />}
+                            icon={<IconRestore />}
                             variant="ghost"
                             onClick={() => {
                               setChosen(tx);

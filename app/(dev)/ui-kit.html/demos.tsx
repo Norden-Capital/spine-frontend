@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ScanFace, SlidersHorizontal } from "lucide-react";
+import { LUCIDE_TO_SP } from "@/components/spine-ui/icons";
 import {
   BottomSheet,
   BottomSheetClose,
@@ -11,6 +11,9 @@ import {
   PinPad,
   SpButton,
 } from "@/components/spine-ui";
+
+// New icon set (iconsax Bulk), same names as the old Lucide imports.
+const { Check, ScanFace, SlidersHorizontal } = LUCIDE_TO_SP;
 
 // Interactive parts for the /ui-kit.html preview (client only).
 

@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { IconDelete } from "@/components/spine-ui";
 import { api, errorMessage } from "@/lib/api";
 import { BottomSheet, SpButton } from "@/components/spine-ui";
 
-/** "Delete" = move to trash (a manager can restore it). Asks first. */
+/** "Delete" = move to trash (the owner can restore it). Asks first. */
 export function DeleteTransaction({ id, month }: { id: string; month: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -29,7 +29,7 @@ export function DeleteTransaction({ id, month }: { id: string; month: string }) 
 
   return (
     <>
-      <SpButton size="md" variant="danger" icon={<Trash2 />} onClick={() => setOpen(true)}>
+      <SpButton size="md" variant="danger" icon={<IconDelete />} onClick={() => setOpen(true)}>
         Delete
       </SpButton>
       {error && (
@@ -41,7 +41,7 @@ export function DeleteTransaction({ id, month }: { id: string; month: string }) 
         open={open}
         onOpenChange={(next) => !next && !pending && setOpen(false)}
         title="Move to trash?"
-        description="It leaves the list and the totals. A manager can bring it back from the trash."
+        description="It leaves the list and the totals. The owner can bring it back from the trash."
         footer={
           <div className="grid grid-cols-2 gap-[8px]">
             <SpButton variant="secondary" onClick={() => setOpen(false)} disabled={pending}>

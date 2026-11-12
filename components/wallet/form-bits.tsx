@@ -2,9 +2,18 @@
 
 // Small form pieces shared by the wallet managers (budgets, goals, recurring).
 import { groupByParent, type Category } from "@/lib/catalog-types";
-import { CURRENCIES, type Currency } from "@/lib/transactions-types";
-import { ChevronDown } from "lucide-react";
+import { IconChevronDown } from "@/components/spine-ui";
 import { Segmented as KitSegmented } from "@/components/spine-ui";
+
+/** Label text + " (optional)" in the faint color (same look as SpField `optional`). */
+export function OptionalLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span>
+      {children}
+      <span className="font-normal text-(--sp-text-faint)"> (optional)</span>
+    </span>
+  );
+}
 
 /** Kit Segmented (black active pill) with a typed value. */
 export function Segmented<T extends string>({
@@ -19,10 +28,6 @@ export function Segmented<T extends string>({
   options: { value: T; label: string }[];
 }) {
   return <KitSegmented label={label} value={value} onValueChange={(v) => onChange(v as T)} items={options} />;
-}
-
-export function CurrencyChoice({ value, onChange }: { value: Currency; onChange: (c: Currency) => void }) {
-  return <Segmented label="Currency" value={value} onChange={onChange} options={CURRENCIES.map((c) => ({ value: c, label: c }))} />;
 }
 
 /** Category select; subcategories are shown under their main category. */
@@ -55,7 +60,7 @@ export function CategorySelect({
           </option>
         ))}
       </select>
-      <ChevronDown
+      <IconChevronDown
         aria-hidden
         className="pointer-events-none absolute top-1/2 right-[16px] size-[18px] -translate-y-1/2 text-(--sp-text-faint)"
       />

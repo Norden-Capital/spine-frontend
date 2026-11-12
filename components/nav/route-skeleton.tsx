@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { createContext, use, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { CardSkeleton, ListItemSkeleton, PageHeader, SectionSkeleton, SpSkeleton } from "@/components/spine-ui";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,12 @@ import { cn } from "@/lib/utils";
  */
 export type SkeletonScope = "app" | "settings" | "admin";
 
+/**
+ * true = the owner. Members have no Admin area, so they never get an Admin
+ * skeleton (set by NavPending in the app layout).
+ */
+export const OwnerContext = createContext(false);
+
 const S = SpSkeleton;
 
 function Panel({ className, children }: { className?: string; children?: ReactNode }) {
@@ -36,16 +42,6 @@ function Panel({ className, children }: { className?: string; children?: ReactNo
 }
 
 /* ---------------------------------------------------------------- parts */
-
-/** GreetingHeader: title 29, subtitle 10.5. */
-function GreetingSk() {
-  return (
-    <div aria-hidden>
-      <S className="h-[29px] w-[170px]" />
-      <S className="mt-[9.6px] h-[10.5px] w-[150px]" />
-    </div>
-  );
-}
 
 /** PageHeader: optional back button, title + subtitle, optional action button. */
 function PageHeadSk({ back, action }: { back?: boolean; action?: boolean }) {
@@ -87,10 +83,10 @@ function TabsSk({ n }: { n: number }) {
   );
 }
 
-/** Peek card + balance card (CardStack), as on Home and Wallet. */
-function CardStackSk() {
+/** Two stacked cards (SwapStack: back strip 51 + front card 180), as on Home and Wallet. */
+function SwapStackSk() {
   return (
-    <div aria-hidden className="mt-[16.3px]">
+    <div aria-hidden>
       <CardSkeleton className="h-[80px]" />
       <Panel className="relative -mt-[29px] h-[180px] px-[17px] pt-[20px]">
         <S className="h-[10px] w-[64px]" />
@@ -106,7 +102,7 @@ function CardStackSk() {
 /** QuickActionsPanel: 4 round buttons with a label. */
 function QuickActionsSk() {
   return (
-    <Panel className="mt-[25.4px] grid h-[112px] grid-cols-4 px-[2px]">
+    <Panel className="grid h-[112px] grid-cols-4 px-[2px]">
       {Array.from({ length: 4 }, (_, i) => (
         <div key={i} className="flex flex-col items-center pt-[19.5px]">
           <S className="size-[48px]" />
@@ -229,13 +225,14 @@ function LinesSk({ n }: { n: number }) {
 
 /* ---------------------------------------------------------------- pages */
 
+/** Company home: header + search, two cards, quick actions, recent. */
 function HomeSk() {
   return (
-    <div className="flex flex-col">
-      <GreetingSk />
-      <CardStackSk />
+    <div className="flex flex-col gap-[16px]">
+      <PageHeadSk action />
+      <SwapStackSk />
       <QuickActionsSk />
-      <SectionSkeleton rows={5} className="mt-[17.2px]" />
+      <SectionSkeleton rows={5} />
     </div>
   );
 }
@@ -313,20 +310,15 @@ function AlertsSk() {
   );
 }
 
+/** Wallet: header + lock, two cards, quick actions, budgets, recent. */
 function WalletHomeSk() {
   return (
-    <div className="flex flex-col">
-      <GreetingSk />
-      <CardStackSk />
+    <div className="flex flex-col gap-[16px]">
+      <PageHeadSk action />
+      <SwapStackSk />
       <QuickActionsSk />
-      <div className="mt-[17.2px] flex flex-col gap-[17.2px]">
-        <Panel className="flex items-center justify-between px-[14px] py-[16px]">
-          <S className="h-[10px] w-[150px]" />
-          <S className="h-[16px] w-[80px]" />
-        </Panel>
-        <SectionSkeleton rows={2} />
-        <SectionSkeleton rows={3} />
-      </div>
+      <SectionSkeleton rows={3} />
+      <SectionSkeleton rows={3} />
     </div>
   );
 }
@@ -346,7 +338,7 @@ function CatalogSk({ wallet }: { wallet?: boolean }) {
   return (
     <div className="flex flex-col gap-4">
       {wallet ? <WalletHeadSk /> : null}
-      <TabsSk n={2} />
+      <S className="h-[52px] w-full" />
       <RowsSk rows={6} />
     </div>
   );
@@ -452,6 +444,51 @@ function AdminUserSk() {
   );
 }
 
+/** Company repeat expenses: header, add button, rows with their buttons. */
+function RecurringSk() {
+  return (
+    <div className="flex flex-col gap-[16px]">
+      <PageHeadSk />
+      <S className="h-[52px] w-full" />
+      {[0, 1, 2].map((i) => (
+        <Panel key={i} className="flex flex-col gap-[12px] p-[14px]">
+          <div className="flex items-start gap-[10.8px]">
+            <S className="size-[40px] shrink-0" />
+            <div className="min-w-0 flex-1 space-y-[7px] pt-[4px]">
+              <S className="h-[11px] w-[130px]" />
+              <S className="h-[9px] w-[160px]" />
+            </div>
+            <S className="h-[14px] w-[64px]" />
+          </div>
+          <div className="grid grid-cols-3 gap-[8px]">
+            <S className="h-[44px]" />
+            <S className="h-[44px]" />
+            <S className="h-[44px]" />
+          </div>
+        </Panel>
+      ))}
+    </div>
+  );
+}
+
+/** One reminder: header with back, hero, details, two buttons. */
+function DueReminderSk() {
+  return (
+    <div className="flex flex-col gap-[16px]">
+      <PageHeadSk back />
+      <Panel className="flex flex-col items-center gap-[12px] px-[16px] py-[22px]">
+        <S className="size-[48px]" />
+        <S className="h-[11px] w-[140px]" />
+        <S className="h-[28px] w-[120px]" />
+        <S className="h-[22px] w-[60px]" />
+      </Panel>
+      <InfoListSk rows={3} />
+      <S className="h-[52px] w-full" />
+      <S className="h-[52px] w-full" />
+    </div>
+  );
+}
+
 /** Used when no page matches (a new page without its own skeleton yet). */
 function GenericSk() {
   return (
@@ -469,7 +506,7 @@ function GenericSk() {
 /* ---------------------------------------------------------------- routing */
 
 /** The skeleton for a path, or null if this path has none. */
-function skeletonFor(pathname: string, scope: SkeletonScope): ReactNode {
+function skeletonFor(pathname: string, scope: SkeletonScope, owner: boolean): ReactNode {
   const p = pathname.replace(/\/+$/, "") || "/";
   let m: RegExpMatchArray | null;
 
@@ -485,6 +522,9 @@ function skeletonFor(pathname: string, scope: SkeletonScope): ReactNode {
   if (/^\/wallet\/(budgets|goals|recurring)$/.test(p)) return <WalletManagerSk />;
   if (p === "/wallet/categories") return <CatalogSk wallet />;
 
+  if (p === "/recurring") return <RecurringSk />;
+  if (/^\/recurring\/due\/[^/]+$/.test(p)) return <DueReminderSk />;
+
   // Settings v2: the layout has no title or tabs; each page draws its own header.
   if (p === "/settings") return <SettingsHubSk />;
   if ((m = p.match(/^\/settings\/(account|security|preferences)$/))) {
@@ -496,6 +536,8 @@ function skeletonFor(pathname: string, scope: SkeletonScope): ReactNode {
     );
   }
 
+  // Admin area: the owner only.
+  if (!owner) return null;
   if (/^\/admin\/users\/[^/]+$/.test(p)) return <AdminUserSk />;
   if ((m = p.match(/^\/admin\/(users|categories|trash)$/))) {
     const tab = <AdminTabSk tab={m[1]} />;
@@ -512,8 +554,8 @@ function skeletonFor(pathname: string, scope: SkeletonScope): ReactNode {
 }
 
 /** True if this path has its own skeleton (AppMain only shows those on a tap). */
-export function hasSkeleton(pathname: string): boolean {
-  return skeletonFor(pathname, "app") !== null;
+export function hasSkeleton(pathname: string, owner: boolean): boolean {
+  return skeletonFor(pathname, "app", owner) !== null;
 }
 
 /**
@@ -522,7 +564,8 @@ export function hasSkeleton(pathname: string): boolean {
  */
 export function RouteSkeleton({ scope = "app", path }: { scope?: SkeletonScope; path?: string }) {
   const pathname = usePathname();
-  const body = skeletonFor(path ?? pathname, scope) ?? <GenericSk />;
+  const owner = use(OwnerContext);
+  const body = skeletonFor(path ?? pathname, scope, owner) ?? <GenericSk />;
   // Settings / admin content sits in their layout's flex column (gap 16):
   // keep that gap between the skeleton's parts too.
   const inLayout = scope !== "app";

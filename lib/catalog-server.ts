@@ -1,8 +1,8 @@
-// Server-only: load categories and tags from the backend (with the
+// Server-only: load categories from the backend (with the
 // browser's session cookie). null = could not load.
 import { unstable_rethrow } from "next/navigation";
 import { backendGet } from "./auth";
-import { byName, type Category, type Tag } from "./catalog-types";
+import type { Category } from "./catalog-types";
 
 async function getList<T>(path: string): Promise<T[] | null> {
   try {
@@ -27,14 +27,9 @@ export async function getActiveCategories(): Promise<Category[] | null> {
   return getList<Category>("/categories");
 }
 
-/** All categories, archived too (managers only). */
+/** All categories, archived too (the owner only). Manage-page order: keep it. */
 export async function getAllCategories(): Promise<Category[] | null> {
   return getList<Category>("/admin/categories");
-}
-
-/** All tags, archived too (managers only). */
-export async function getAllTags(): Promise<Tag[] | null> {
-  return (await getList<Tag>("/admin/tags"))?.sort(byName) ?? null;
 }
 
 /** Icon names a category may use (falls back to an empty list). */

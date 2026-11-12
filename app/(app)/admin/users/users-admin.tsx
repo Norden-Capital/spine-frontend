@@ -1,22 +1,25 @@
 "use client";
 
+import { PageEmpty } from "@/components/nav/page-empty";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CloudOff, Search, SearchX, UserPlus, Users } from "lucide-react";
+import { IconNoResults, IconOffline, IconSearch, IconUserAdd, IconUsers } from "@/components/spine-ui";
 import { api, errorMessage } from "@/lib/api";
-import { displayName, initials, invitableRoles, ROLE_LABEL, type AdminUser, type Role } from "@/lib/auth-types";
+import { displayName, type AdminUser } from "@/lib/auth-types";
 import { NoticeBox, type Notice } from "@/components/admin/notice";
 import { RoleBadge, StatusBadge } from "@/components/admin/user-badges";
-import { BottomSheet, EmptyState, RowGroup, Segmented, SpButton, SpField, SpInput, SpRow } from "@/components/spine-ui";
+import { BottomSheet, EmptyState, RowGroup, SpButton, SpField, SpInput, SpRow } from "@/components/spine-ui";
+import { UserAvatar } from "@/components/nav/user-avatar";
+import { seedOf } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
 
 /**
- * Users list for owners and admins. The backend already filters who I can
- * see, and says per user if I may act on them (canManage). The list comes
+ * Users list for the owner: every member (never the owner). The backend
+ * says per user if I may act on them (canManage). The list comes
  * from the server; after a change, router.refresh() loads it again.
  * Actions on a user are on their page (tap the row).
  */
-export function UsersAdmin({ users, myRole }: { users: AdminUser[] | null; myRole: Role }) {
+export function UsersAdmin({ users }: { users: AdminUser[] | null }) {
   const [query, setQuery] = useState("");
   const [notice, setNotice] = useState<Notice | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -25,7 +28,6 @@ export function UsersAdmin({ users, myRole }: { users: AdminUser[] | null; myRol
   const shown = (users ?? []).filter(
     (u) => !q || u.email.toLowerCase().includes(q) || displayName(u).toLowerCase().includes(q)
   );
-  const roles = invitableRoles(myRole);
 
   return (
     <div className="flex flex-col gap-[16px]">
@@ -33,18 +35,16 @@ export function UsersAdmin({ users, myRole }: { users: AdminUser[] | null; myRol
         <div className="min-w-0 flex-1">
           <SpInput
             type="search"
-            icon={<Search />}
+            icon={<IconSearch />}
             aria-label="Search users by name or email"
             placeholder="Search users"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
-        {roles.length > 0 && (
-          <SpButton icon={<UserPlus />} className="shrink-0 px-[18px]" onClick={() => setInviteOpen(true)}>
-            Invite
-          </SpButton>
-        )}
+        <SpButton icon={<IconUserAdd />} className="shrink-0 px-[18px]" onClick={() => setInviteOpen(true)}>
+          Invite
+        </SpButton>
       </div>
 
       {notice && <NoticeBox notice={notice} />}
@@ -53,15 +53,14 @@ export function UsersAdmin({ users, myRole }: { users: AdminUser[] | null; myRol
         <EmptyState
           framed
           tone="danger"
-          icon={<CloudOff />}
+          icon={<IconOffline />}
           title="Users could not be loaded"
           text="Please try again later."
         />
       ) : shown.length === 0 ? (
-        <EmptyState
-          framed
-          icon={q ? <SearchX /> : <Users />}
-          title={q ? "No user matches your search" : "No users yet"}
+        <PageEmpty
+          icon={q ? <IconNoResults /> : <IconUsers />}
+          title={q ? "No user matches your search" : "No members yet"}
         />
       ) : (
         <RowGroup>
@@ -78,7 +77,6 @@ export function UsersAdmin({ users, myRole }: { users: AdminUser[] | null; myRol
       <InviteSheet
         open={inviteOpen}
         onOpenChange={setInviteOpen}
-        roles={roles}
         onInvited={(email) => setNotice({ kind: "ok", text: `Invite sent to ${email}.` })}
       />
     </div>
@@ -92,15 +90,7 @@ function UserRow({ user }: { user: AdminUser }) {
     <SpRow
       href={`/admin/users/${encodeURIComponent(user.id)}`}
       leading={
-        <span
-          aria-hidden
-          className={cn(
-            "flex size-[33px] shrink-0 items-center justify-center rounded-full text-[0.6875rem] font-medium",
-            disabled ? "bg-(--sp-soft) text-(--sp-text-muted)" : "bg-(--sp-chip-active) text-(--sp-chip-active-text)"
-          )}
-        >
-          {initials(user)}
-        </span>
+        <UserAvatar seed={seedOf(user)} size={33} className={cn(disabled && "opacity-50")} />
       }
       title={name}
       subtitle={name !== user.email ? user.email : undefined}
@@ -115,19 +105,17 @@ function UserRow({ user }: { user: AdminUser }) {
   );
 }
 
+/** Invite by email only: a new user is always a Member (no role to pick). */
 function InviteSheet({
   open,
   onOpenChange,
-  roles,
   onInvited,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  roles: Role[];
   onInvited: (email: string) => void;
 }) {
   const router = useRouter();
-  const [role, setRole] = useState<Role>(roles.at(-1) ?? "EMPLOYEE");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -137,7 +125,7 @@ function InviteSheet({
     setPending(true);
     setError(null);
     try {
-      await api("/admin/users", { method: "POST", body: { email, role } });
+      await api("/admin/users", { method: "POST", body: { email } });
       onOpenChange(false);
       onInvited(email);
       router.refresh();
@@ -157,7 +145,7 @@ function InviteSheet({
         if (!next) setError(null);
       }}
       title="Invite a user"
-      description="We'll email them a link to set their password."
+      description="We'll email them a link to set their password. They join as a Member."
       footer={
         <SpButton type="submit" form="invite-form" className="w-full" disabled={pending}>
           {pending ? "Sending…" : "Send invite"}
@@ -178,22 +166,6 @@ function InviteSheet({
             surface="panel"
           />
         </SpField>
-        <div className="space-y-[8px]">
-          <p id="invite-role-label" className="px-[4px] text-[0.8125rem] leading-tight font-medium text-(--sp-text)">
-            Role
-          </p>
-          {roles.length > 1 ? (
-            <Segmented
-              label="Role"
-              surface="panel"
-              value={role}
-              onValueChange={(v) => setRole(v as Role)}
-              items={roles.map((r) => ({ value: r, label: ROLE_LABEL[r] }))}
-            />
-          ) : (
-            <p className="px-[4px] text-[0.8125rem] text-(--sp-text-muted)">{ROLE_LABEL[roles[0] ?? "EMPLOYEE"]}</p>
-          )}
-        </div>
       </form>
     </BottomSheet>
   );

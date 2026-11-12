@@ -3,6 +3,9 @@ import { cn } from "@/lib/utils";
 
 // Small parts shared by the login / password pages (not routes).
 
+/** Pass to the kit AuthHeader: logo, title and subtitle in the middle of the page. */
+export const AUTH_HEADER_CENTER = "flex flex-col items-center text-center";
+
 /** Same look as SpButton (size lg), for a <Link>: the kit button is a <button> only. */
 const LINK_BUTTON =
   "inline-flex h-[52px] items-center justify-center gap-[8px] rounded-full px-[24px] text-[14px] leading-none font-medium whitespace-nowrap transition outline-none select-none " +

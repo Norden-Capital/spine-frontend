@@ -1,17 +1,17 @@
 // Transactions (module 4): types and money formatting. Server and client.
 
-export type Currency = "USD" | "MAD";
+// The whole app is USD only: money is always shown with "$".
 export type TxType = "EXPENSE" | "INCOME";
 
 export type FileRef = { id: string; name: string; contentType: string; size: number };
-export type PersonRef = { id: string; name: string };
+/** A small user object. avatarSeed = seed of their drawn face. */
+export type PersonRef = { id: string; name: string; avatarSeed?: string };
 
 export type Transaction = {
   id: string;
   type: TxType;
   /** Decimal as text, e.g. "123.45" (no rounding errors). */
   amount: string;
-  currency: Currency;
   /** Calendar day "YYYY-MM-DD". */
   date: string;
   description: string;
@@ -19,17 +19,22 @@ export type Transaction = {
   website?: string | null;
   /** The picture to show (own site, else category, else parent category): "/api/logos/…", or null = category icon. */
   logoUrl?: string | null;
-  category: { id: string; name: string; icon: string; archived: boolean };
-  tags: { id: string; name: string }[];
+  category: { id: string; name: string; icon: string; archived: boolean; kind?: TxType };
   files: FileRef[];
   createdBy: PersonRef;
   createdAt: string;
   updatedBy: PersonRef | null;
   updatedAt: string | null;
+  /** Only in the trash. */
+  deletedBy?: PersonRef | null;
+  /** From the backend: true = I may change it and its proof (I added it, or I am the owner). */
+  canEdit: boolean;
+  /** Same rule as canEdit, for "Delete" (to the trash). */
   canDelete: boolean;
 };
 
-export type Totals = Partial<Record<Currency, { in: string; out: string; net: string }>>;
+/** Money in, money out and in − out (USD). */
+export type Totals = { in: string; out: string; net: string };
 
 export type MonthData = { items: Transaction[]; totals: Totals };
 
@@ -40,24 +45,22 @@ export type HistoryEntry = {
   changes: { field: string; from: unknown; to: unknown }[];
 };
 
-export const CURRENCIES: Currency[] = ["USD", "MAD"];
-
 // ---- money -----------------------------------------------------------------
 
 const NUMBER = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-/** "$1,234.50" / "1,234.50 MAD". `sign`: "+" / "−" in front (for in/out). */
-export function formatMoney(amount: string | number, currency: Currency, sign?: "+" | "-"): string {
+/** "$1,234.50". `sign`: "+" / "−" in front (for in/out). */
+export function formatMoney(amount: string | number, sign?: "+" | "-"): string {
   const value = Math.abs(Number(amount));
   const text = NUMBER.format(Number.isFinite(value) ? value : 0);
   const prefix = sign === "+" ? "+" : sign === "-" ? "−" : "";
-  return currency === "USD" ? `${prefix}$${text}` : `${prefix}${text} MAD`;
+  return `${prefix}$${text}`;
 }
 
 /** Net total with its own sign: "+$400.00", "−$12.00", "$0.00". */
-export function formatNet(amount: string, currency: Currency): string {
+export function formatNet(amount: string): string {
   const n = Number(amount);
-  return formatMoney(n, currency, n > 0 ? "+" : n < 0 ? "-" : undefined);
+  return formatMoney(n, n > 0 ? "+" : n < 0 ? "-" : undefined);
 }
 
 /** Money typed by a person: "1 234,5" -> "1234.50"; null if not a valid positive amount. */

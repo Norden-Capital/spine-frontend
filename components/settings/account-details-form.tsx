@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock } from "lucide-react";
+import { IconLock } from "@/components/spine-ui";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import { SpButton, SpField, SpInput } from "@/components/spine-ui";
 import { SettingsNotice } from "./settings-notice";
@@ -58,7 +58,7 @@ export function AccountDetailsForm({
     <form onSubmit={onSubmit} className="space-y-[14px]">
       {notice && <SettingsNotice kind={notice.kind}>{notice.text}</SettingsNotice>}
       <div className="grid grid-cols-2 gap-[10px]">
-        <SpField label="First name" htmlFor="first-name" error={errorFor("firstName")} className="min-w-0">
+        <SpField label="First name" htmlFor="first-name" optional error={errorFor("firstName")} className="min-w-0">
           <SpInput
             id="first-name"
             surface="panel"
@@ -70,7 +70,7 @@ export function AccountDetailsForm({
             aria-invalid={fieldError?.field === "firstName"}
           />
         </SpField>
-        <SpField label="Last name" htmlFor="last-name" error={errorFor("lastName")} className="min-w-0">
+        <SpField label="Last name" htmlFor="last-name" optional error={errorFor("lastName")} className="min-w-0">
           <SpInput
             id="last-name"
             surface="panel"
@@ -83,8 +83,8 @@ export function AccountDetailsForm({
           />
         </SpField>
       </div>
-      <SpField label="Email" htmlFor="email" hint="Only an admin can change your email.">
-        <SpInput id="email" surface="panel" icon={<Lock />} value={email} readOnly />
+      <SpField label="Email" htmlFor="email" hint="Only the owner can change your email.">
+        <SpInput id="email" surface="panel" icon={<IconLock />} value={email} readOnly />
       </SpField>
       <SpButton type="submit" className="w-full" disabled={pending || !changed}>
         {pending ? "Saving…" : "Save"}

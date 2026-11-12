@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { IconCheckGlyph } from "./icons";
 import { cn } from "@/lib/utils";
 
 export type ThemeValue = "light" | "dark" | "auto";
@@ -85,7 +85,7 @@ export function ThemeCards({ value, onValueChange, className }: ThemeCardsProps)
               )}
               {active ? (
                 <span className="absolute right-[6px] bottom-[6px] flex size-[20px] items-center justify-center rounded-full bg-(--sp-chip-active) text-(--sp-chip-active-text) ring-2 ring-(--sp-panel)">
-                  <Check aria-hidden className="size-[12px] stroke-[2.8]" />
+                  <IconCheckGlyph className="size-[12px]" />
                 </span>
               ) : null}
             </span>

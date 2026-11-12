@@ -1,7 +1,7 @@
 // Server-only: the private wallet (module 5). Strictly the logged-in user's.
 import { unstable_rethrow } from "next/navigation";
 import { backendGet } from "./auth";
-import type { Category, Tag } from "./catalog-types";
+import type { Category } from "./catalog-types";
 import type { Budget, Dashboard, Goal, Recurring, WalletStatus, WalletTx } from "./wallet-types";
 
 export type WalletResult<T> = { ok: true; data: T } | { ok: false; status: number; code?: string };
@@ -39,6 +39,5 @@ export const getGoals = () => walletGet<Goal[]>("/goals");
 export const getRecurring = () => walletGet<Recurring[]>("/recurring");
 /** Picker list (active, usage order). */
 export const getWalletCategories = () => walletGet<Category[]>("/categories");
-/** All of mine, archived too. */
+/** All of mine, archived too. Manage-page order (each main, then its subs): keep it. */
 export const getAllWalletCategories = () => walletGet<Category[]>("/categories/all");
-export const getAllWalletTags = () => walletGet<Tag[]>("/tags/all");

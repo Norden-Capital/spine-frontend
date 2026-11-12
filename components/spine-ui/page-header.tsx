@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { IconBack } from "./icons";
 import { cn } from "@/lib/utils";
 
 export type PageHeaderProps = {
@@ -26,9 +26,9 @@ export function PageHeader({ title, subtitle, back, action, className }: PageHea
         <Link
           href={back.href}
           aria-label={back.label}
-          className="flex size-[44px] shrink-0 items-center justify-center rounded-full bg-(--sp-icon-btn) text-(--sp-icon-btn-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-95 [&_svg]:size-[20px] [&_svg]:stroke-[1.8]"
+          className="flex size-[44px] shrink-0 items-center justify-center rounded-full bg-(--sp-icon-btn) text-(--sp-icon-btn-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-95 [&_svg]:size-[24px]"
         >
-          <ChevronLeft aria-hidden />
+          <IconBack />
         </Link>
       ) : null}
       <div className="min-w-0 flex-1">

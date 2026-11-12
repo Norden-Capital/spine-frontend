@@ -222,3 +222,33 @@ main section > div > a[href] {
     animation: none;
   }
 }
+
+/* ---- Chip rows that fill the width ----
+   .chip-row: a wrapping group of FilterChips where every line is full
+   width (no half-empty last line). Each chip grows to share the free
+   space of its line (flex: 1 1 auto). A long label wraps inside the chip
+   (never cut); the chip then grows taller (36 or more, 44 tap area kept
+   by the kit's ::after). Text is centred in the wider chip.
+   .chip-rows: the same rule for chip groups inside a kit part we can't
+   edit (CategoryMultiGrid's "which ones?" row): put it on the kit part.
+   Not in a layer, so it wins over the kit's utility classes
+   (h-[36px], whitespace-nowrap, shrink-0). */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip-row > button,
+.chip-rows [role="group"].flex-wrap > button {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  min-height: 36px;
+  padding-block: 6px;
+  justify-content: center;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.2;
+}

@@ -131,6 +131,56 @@
   --sp-card-back-text: #000000;
 }
 
+/* Space colours: company = purple cards (default), wallet = yellow cards.
+   Put `sp-space-wallet` on a wallet page wrapper: every kit card that uses
+   the "front" colour (BalanceCard, TxHero company tone, progress accents…)
+   turns yellow with black text. Same components, only the colour changes. */
+.sp-space-wallet {
+  --sp-card-front: var(--sp-card-back);
+  --sp-card-front-text: var(--sp-card-back-text);
+  --sp-card-front-muted: rgb(0 0 0 / 0.6);
+}
+
+/* ---- Due dates (repeat payments): urgency colours. Text on its pill is AA (≥ 4.5).
+   Orange / amber are pale pills with brown text, never the wallet yellow. ---- */
+:root,
+.light {
+  --sp-due-overdue-bg: #c81e1e;   /* solid: the most urgent */
+  --sp-due-overdue-text: #ffffff; /* 5.7 */
+  --sp-due-today-bg: #ffe4cc;
+  --sp-due-today-text: #9a3412;   /* 6.0 */
+  --sp-due-soon-bg: #fef3c7;
+  --sp-due-soon-text: #854d0e;    /* 6.2 */
+  --sp-due-week-bg: #f1e6fb;
+  --sp-due-week-text: #6b21a8;    /* 7.3 */
+  --sp-due-paused-bg: #ececec;
+  --sp-due-paused-text: #525252;  /* 6.6 */
+}
+.dark {
+  --sp-due-overdue-bg: #b91c1c;
+  --sp-due-overdue-text: #ffffff; /* 6.5 */
+  --sp-due-today-bg: #3a2312;
+  --sp-due-today-text: #fdba74;   /* 8.7 */
+  --sp-due-soon-bg: #33290c;
+  --sp-due-soon-text: #fde68a;    /* 11.5 */
+  --sp-due-week-bg: #2b1c3d;
+  --sp-due-week-text: #d8b4fe;    /* 8.9 */
+  --sp-due-paused-bg: #2a2a2a;
+  --sp-due-paused-text: #b5b5b5;  /* 7.0 */
+}
+
+/* Card colour for one card (inside a SwapStack): purple is the default. */
+.sp-card-sun {
+  --sp-card-front: var(--sp-card-back);
+  --sp-card-front-text: var(--sp-card-back-text);
+  --sp-card-front-muted: rgb(0 0 0 / 0.6);
+}
+.sp-card-ink {
+  --sp-card-front: var(--sp-card-ink);
+  --sp-card-front-text: var(--sp-card-ink-text);
+  --sp-card-front-muted: rgb(255 255 255 / 0.65);
+}
+
 /* 3rd card in a stack (e.g. a 3rd currency): like the dock. */
 :root,
 .light {

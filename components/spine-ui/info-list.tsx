@@ -11,7 +11,7 @@ export type InfoListProps = {
 };
 
 /**
- * Facts about one thing (category, tags, created, role…): label left in
+ * Facts about one thing (category, created, role…): label left in
  * gray, value right. 44 per row, no lines (kit rule), inside a panel.
  */
 export function InfoList({ rows, title, className }: InfoListProps) {

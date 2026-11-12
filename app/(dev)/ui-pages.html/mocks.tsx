@@ -1,50 +1,28 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { CATEGORY_ICONS } from "@/components/expenses/category-icon";
+import { CATEGORY_ICON_MAP } from "@/components/spine-ui/icons";
+import { I, getIconSet, setIconSet } from "./icon-set";
 import {
-  ArrowLeftRight,
-  CalendarDays,
-  CircleCheck,
-  Clock,
-  KeyRound,
-  Lock,
-  LogIn,
-  Palette,
-  User,
-  Bell,
-  Briefcase,
-  Car,
-  ChevronDown,
-  CloudOff,
-  Copy,
-  Ellipsis,
-  FileText,
-  Fingerprint,
-  House,
-  Laptop,
-  LogOut,
-  Mail,
-  Pencil,
-  Plane,
-  Plus,
-  Receipt,
-  RotateCcw,
-  ScanFace,
-  Search,
-  SearchX,
-  Settings,
-  Shield,
-  ShoppingBasket,
-  Smartphone,
-  TextAlignStart,
-  Trash2,
-  UserPlus,
-  Utensils,
-  Wallet,
-  Wifi,
-  X,
-} from "lucide-react";
-import {
+  Calendar,
+  DateField,
+  DueBadge,
+  SwapStack,
+  ActiveFilters,
+  CategoryMultiGrid,
+  DateRangePicker,
+  PeriodBar,
+  SearchBar,
+  AddPill,
+  BalanceCard,
+  CardStack,
+  GreetingHeader,
+  PeekCard,
+  ProgressBar,
+  QuickAction,
+  QuickActions,
+  SectionCard,
   AmountField,
   DeviceCard,
   FontCards,
@@ -83,7 +61,6 @@ import {
   SpPasswordInput,
   SpRow,
   SpSkeleton,
-  TagInput,
   Timeline,
   TopBar,
   TxHero,
@@ -102,11 +79,11 @@ type Tab = "home" | "expenses" | "wallet" | "settings" | "admin";
 
 function dock(active: Tab): DockItem[] {
   const items: (DockItem & { key: Tab })[] = [
-    { key: "home", href: "#home", label: "Home", icon: <House />, activeIcon: <House fill="currentColor" /> },
-    { key: "expenses", href: "#expenses", label: "Expenses", icon: <ArrowLeftRight /> },
-    { key: "wallet", href: "#wallet", label: "Wallet", icon: <Wallet /> },
-    { key: "settings", href: "#settings", label: "Settings", icon: <Settings /> },
-    { key: "admin", href: "#admin", label: "Admin", icon: <Shield /> },
+    { key: "home", href: "#home", label: "Home", icon: <I.House />, activeIcon: <I.House fill="currentColor" /> },
+    { key: "expenses", href: "#expenses", label: "Expenses", icon: <I.ArrowLeftRight /> },
+    { key: "wallet", href: "#wallet", label: "Wallet", icon: <I.Wallet /> },
+    { key: "settings", href: "#settings", label: "Settings", icon: <I.Settings /> },
+    { key: "admin", href: "#admin", label: "Admin", icon: <I.Shield /> },
   ];
   return items.map(({ key, ...i }) => ({ ...i, active: key === active }));
 }
@@ -114,10 +91,10 @@ function dock(active: Tab): DockItem[] {
 function AppTop() {
   return (
     <TopBar
-      left={<IconButton label="Menu" icon={<TextAlignStart />} />}
+      left={<IconButton label="Menu" icon={<I.TextAlignStart />} />}
       right={
         <>
-          <IconButton label="Notifications" icon={<Bell />} dot />
+          <IconButton label="Notifications" icon={<I.Bell />} dot />
           <Avatar name="Sam Tremblay" />
         </>
       }
@@ -166,38 +143,38 @@ const RECEIPT_IMG =
   );
 
 const COMPANY_CATS: CategoryOption[] = [
-  { id: "bills", name: "Bills", icon: <Receipt /> },
-  { id: "food", name: "Food", icon: <Utensils /> },
-  { id: "office", name: "Office", icon: <Briefcase /> },
-  { id: "software", name: "Software", icon: <Laptop /> },
+  { id: "bills", name: "Bills", icon: <I.Receipt /> },
+  { id: "food", name: "Food", icon: <I.Utensils /> },
+  { id: "office", name: "Office", icon: <I.Briefcase /> },
+  { id: "software", name: "Software", icon: <I.Laptop /> },
   {
     id: "transport",
     name: "Transport",
-    icon: <Car />,
+    icon: <I.Car />,
     children: [
       { id: "taxi", name: "Taxi" },
       { id: "fuel", name: "Fuel" },
       { id: "parking", name: "Parking" },
     ],
   },
-  { id: "travel", name: "Travel", icon: <Plane /> },
-  { id: "internet", name: "Internet", icon: <Wifi /> },
-  { id: "other", name: "Other", icon: <Ellipsis /> },
+  { id: "travel", name: "Travel", icon: <I.Plane /> },
+  { id: "internet", name: "Internet", icon: <I.Wifi /> },
+  { id: "other", name: "Other", icon: <I.Ellipsis /> },
 ];
 
 const WALLET_CATS: CategoryOption[] = [
   {
     id: "food",
     name: "Food",
-    icon: <ShoppingBasket />,
+    icon: <I.ShoppingBasket />,
     children: [
       { id: "groceries", name: "Groceries" },
       { id: "restaurants", name: "Restaurants" },
     ],
   },
-  { id: "bills", name: "Bills", icon: <Receipt /> },
-  { id: "transport", name: "Transport", icon: <Car /> },
-  { id: "other", name: "Other", icon: <Ellipsis /> },
+  { id: "bills", name: "Bills", icon: <I.Receipt /> },
+  { id: "transport", name: "Transport", icon: <I.Car /> },
+  { id: "other", name: "Other", icon: <I.Ellipsis /> },
 ];
 
 function heatmapDays(seed: number): SignInDay[] {
@@ -229,31 +206,30 @@ function TxDetail() {
         back={{ href: "#expenses", label: "Back to expenses" }}
         title="Expense"
         subtitle="Company"
-        action={<IconButton label="More" icon={<Ellipsis />} variant="ghost" />}
+        action={<IconButton label="More" icon={<I.Ellipsis />} variant="ghost" />}
       />
       <TxHero
-        icon={<Receipt />}
+        icon={<I.Receipt />}
         tag="Company"
         title="Hotel Rabat"
         meta="Bills · Hotels · Thu 12 Nov 2026"
         amount="-$120.00"
-        kind="Expense · USD"
+        kind="Expense"
       />
       <div className="grid grid-cols-3 gap-[8px]">
-        <SpButton size="md" icon={<Pencil />}>
+        <SpButton size="md" icon={<I.Pencil />}>
           Edit
         </SpButton>
-        <SpButton size="md" variant="secondary" icon={<Copy />}>
+        <SpButton size="md" variant="secondary" icon={<I.Copy />}>
           Copy
         </SpButton>
-        <SpButton size="md" variant="danger" icon={<Trash2 />}>
+        <SpButton size="md" variant="danger" icon={<I.Trash2 />}>
           Delete
         </SpButton>
       </div>
       <InfoList
         rows={[
           { label: "Category", value: "Bills › Hotels" },
-          { label: "Tags", value: "#travel  #rabat" },
           { label: "Created", value: "Sam Tremblay · 12 Nov, 02:44" },
           { label: "Edited", value: "Adam Admin · 12 Nov, 09:10" },
         ]}
@@ -283,7 +259,7 @@ function TxDetail() {
               id: "3",
               title: "Edited by Adam Admin",
               meta: "12 Nov 2026, 09:10",
-              changes: ["Category: Bills → Bills › Hotels", "Tags: added #rabat"],
+              changes: ["Category: Bills → Bills › Hotels", "Website: added hotelrabat.ma"],
               current: true,
             },
             { id: "2", title: "Proof added by Sam Tremblay", meta: "12 Nov 2026, 02:46", changes: ["invoice-1123.pdf"] },
@@ -302,32 +278,31 @@ function WalletTxDetail() {
         back={{ href: "#wallet", label: "Back to wallet" }}
         title="Wallet expense"
         subtitle="Only you can see this"
-        action={<IconButton label="More" icon={<Ellipsis />} variant="ghost" />}
+        action={<IconButton label="More" icon={<I.Ellipsis />} variant="ghost" />}
       />
       <TxHero
         tone="wallet"
-        icon={<ShoppingBasket />}
+        icon={<I.ShoppingBasket />}
         tag="Personal wallet"
         title="Groceries"
         meta="Food · Groceries · Wed 11 Nov 2026"
         amount="-$50.00"
-        kind="Expense · USD"
+        kind="Expense"
       />
       <div className="grid grid-cols-3 gap-[8px]">
-        <SpButton size="md" icon={<Pencil />}>
+        <SpButton size="md" icon={<I.Pencil />}>
           Edit
         </SpButton>
-        <SpButton size="md" variant="secondary" icon={<Copy />}>
+        <SpButton size="md" variant="secondary" icon={<I.Copy />}>
           Copy
         </SpButton>
-        <SpButton size="md" variant="danger" icon={<Trash2 />}>
+        <SpButton size="md" variant="danger" icon={<I.Trash2 />}>
           Delete
         </SpButton>
       </div>
       <InfoList
         rows={[
           { label: "Category", value: "Food › Groceries" },
-          { label: "Tags", value: "—" },
           { label: "Added", value: "11 Nov 2026, 18:20" },
         ]}
       />
@@ -347,7 +322,7 @@ function TxForm({ wallet, filled }: { wallet?: boolean; filled?: boolean }) {
       <PageHeader
         title={wallet ? (filled ? "Edit wallet expense" : "Add to wallet") : filled ? "Edit expense" : "New expense"}
         subtitle={wallet ? "Personal wallet · only you" : "Company"}
-        action={<IconButton label="Close" icon={<X />} />}
+        action={<IconButton label="Close" icon={<I.X />} />}
       />
       <Segmented
         label="Type"
@@ -357,14 +332,7 @@ function TxForm({ wallet, filled }: { wallet?: boolean; filled?: boolean }) {
           { value: "income", label: "Income" },
         ]}
       />
-      <AmountField
-        id="amount"
-        symbol="$"
-        currencies={["USD", "MAD"]}
-        currency="USD"
-        placeholder="0.00"
-        defaultValue={filled ? (wallet ? "50.00" : "120.00") : "120"}
-      />
+      <AmountDemo initial={filled ? (wallet ? "50.00" : "120.00") : "120"} />
       <SpField label="Date" htmlFor="date">
         <SpInput id="date" type="date" defaultValue={wallet ? "2026-11-11" : "2026-11-12"} />
       </SpField>
@@ -380,25 +348,6 @@ function TxForm({ wallet, filled }: { wallet?: boolean; filled?: boolean }) {
       ) : (
         <CategoryGrid options={COMPANY_CATS} value="transport" subValue="taxi" />
       )}
-      <SpField label="Tags" htmlFor="tags" optional={wallet}>
-        <TagInput
-          tags={wallet ? [] : [{ id: "travel", name: "travel" }]}
-          onRemove={() => {}}
-          suggestions={
-            wallet
-              ? [
-                  { id: "home", name: "home" },
-                  { id: "weekly", name: "weekly" },
-                ]
-              : [
-                  { id: "client", name: "client" },
-                  { id: "rabat", name: "rabat" },
-                  { id: "q4", name: "q4" },
-                ]
-          }
-          inputProps={{ id: "tags" }}
-        />
-      </SpField>
       <SpField
         label="Proof"
         optional={wallet}
@@ -455,7 +404,7 @@ function TxDuplicate() {
         }
       >
         <div className="-mx-[14px]">
-          <ListItem icon={<Receipt />} title="Hotel Rabat" meta="Sam Tremblay • 12 Nov 2026, 02:44" amount="$120.00" href="#tx" />
+          <ListItem icon={<I.Receipt />} title="Hotel Rabat" meta="Sam Tremblay • 12 Nov 2026, 02:44" amount="$120.00" href="#tx" />
         </div>
       </OpenSheet>
     </>
@@ -494,7 +443,7 @@ function SettingsAccount() {
             </SpField>
           </div>
           <SpField label="Email" htmlFor="em" hint="Only an admin can change your email.">
-            <SpInput id="em" surface="panel" icon={<Mail />} readOnly defaultValue="sam.tremblay@nordencapital.ca" />
+            <SpInput id="em" surface="panel" icon={<I.Mail />} readOnly defaultValue="sam.tremblay@nordencapital.ca" />
           </SpField>
           <SpButton className="w-full" disabled>
             Save
@@ -511,7 +460,7 @@ function SettingsAccount() {
         ]}
       />
       <SignInHeatmap days={heatmapDays(7)} months={MONTHS} summary="98 days · 3 failed tries" />
-      <SpButton className="w-full" variant="danger" icon={<LogOut />}>
+      <SpButton className="w-full" variant="danger" icon={<I.LogOut />}>
         Log out
       </SpButton>
     </AppPage>
@@ -542,19 +491,19 @@ function SettingsSecurity() {
           Log in without your password on these devices.
         </p>
         <SpRow
-          leading={<RowIcon><Smartphone /></RowIcon>}
+          leading={<RowIcon><I.Smartphone /></RowIcon>}
           title="iPhone 15"
           subtitle="Added 2 Nov · Used today"
-          trailing={<IconButton label="Options for iPhone 15" icon={<Ellipsis />} variant="ghost" />}
+          trailing={<IconButton label="Options for iPhone 15" icon={<I.Ellipsis />} variant="ghost" />}
         />
         <SpRow
-          leading={<RowIcon><Laptop /></RowIcon>}
+          leading={<RowIcon><I.Laptop /></RowIcon>}
           title="MacBook Air"
           subtitle="Added 14 Oct · Used 3 days ago"
-          trailing={<IconButton label="Options for MacBook Air" icon={<Ellipsis />} variant="ghost" />}
+          trailing={<IconButton label="Options for MacBook Air" icon={<I.Ellipsis />} variant="ghost" />}
         />
         <SpRow
-          leading={<RowIcon tone="ink"><Plus /></RowIcon>}
+          leading={<RowIcon tone="ink"><I.Plus /></RowIcon>}
           title="Add Face ID / fingerprint"
           subtitle="Give it a name, then confirm with your face or finger."
           onClick={() => {}}
@@ -647,7 +596,7 @@ function LogoutSheet() {
         description="You will need to log in again on this phone."
         footer={
           <div className="space-y-[8px]">
-            <SpButton className="w-full" variant="danger" icon={<LogOut />}>
+            <SpButton className="w-full" variant="danger" icon={<I.LogOut />}>
               Log out
             </SpButton>
             <SpButton className="w-full" variant="secondary">
@@ -697,9 +646,9 @@ function AdminUsers() {
       <AdminTabs value="users" />
       <div className="flex gap-[8px]">
         <div className="min-w-0 flex-1">
-          <SpInput icon={<Search />} placeholder="Search users" aria-label="Search users by name or email" />
+          <SpInput icon={<I.Search />} placeholder="Search users" aria-label="Search users by name or email" />
         </div>
-        <SpButton icon={<UserPlus />} className="px-[18px]">
+        <SpButton icon={<I.UserPlus />} className="px-[18px]">
           Invite
         </SpButton>
       </div>
@@ -751,7 +700,7 @@ function AdminUserDetail() {
         back={{ href: "#users", label: "Back to users" }}
         title="Emma Employee"
         subtitle="emma@nordencapital.ca"
-        action={<IconButton label="More" icon={<Ellipsis />} variant="ghost" />}
+        action={<IconButton label="More" icon={<I.Ellipsis />} variant="ghost" />}
       />
       <div className="flex gap-[6px] px-[2px]">
         <SpBadge>Employee</SpBadge>
@@ -767,12 +716,12 @@ function AdminUserDetail() {
       />
       <SignInHeatmap days={Array.from({ length: 26 * 7 }, () => "none" as const)} months={MONTHS} summary="0 days · 0 failed tries" />
       <RowGroup title="Manage">
-        <SpRow leading={<RowIcon><Mail /></RowIcon>} title="Send the invite again" subtitle="Emma has not logged in yet." onClick={() => {}} trailing={<span />} />
-        <SpRow leading={<RowIcon><LogOut /></RowIcon>} title="Log out on all devices" onClick={() => {}} trailing={<span />} />
+        <SpRow leading={<RowIcon><I.Mail /></RowIcon>} title="Send the invite again" subtitle="Emma has not logged in yet." onClick={() => {}} trailing={<span />} />
+        <SpRow leading={<RowIcon><I.LogOut /></RowIcon>} title="Log out on all devices" onClick={() => {}} trailing={<span />} />
         <SpRow
           leading={
             <span className="flex size-[33px] shrink-0 items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--sp-danger)_14%,var(--sp-panel))] text-(--sp-danger) [&_svg]:size-[15px] [&_svg]:stroke-[1.7]">
-              <X />
+              <I.X />
             </span>
           }
           title={<span className="text-(--sp-danger)">Disable this user</span>}
@@ -787,9 +736,9 @@ function AdminUserDetail() {
 
 function AdminTrash() {
   const items = [
-    { title: "Lunch meeting", sub: "Deleted by Adam Admin · 12 Nov", amount: "-$18.50", icon: <Utensils /> },
-    { title: "Taxi to the airport", sub: "Deleted by Sam Tremblay · 10 Nov", amount: "-$54.20", icon: <Car /> },
-    { title: "Printer paper", sub: "Deleted by Emma Employee · 3 Nov", amount: "-$12.00", icon: <FileText /> },
+    { title: "Lunch meeting", sub: "Deleted by Adam Admin · 12 Nov", amount: "-$18.50", icon: <I.Utensils /> },
+    { title: "Taxi to the airport", sub: "Deleted by Sam Tremblay · 10 Nov", amount: "-$54.20", icon: <I.Car /> },
+    { title: "Printer paper", sub: "Deleted by Emma Employee · 3 Nov", amount: "-$12.00", icon: <I.FileText /> },
   ];
   return (
     <AppPage tab="admin">
@@ -805,7 +754,7 @@ function AdminTrash() {
             trailing={
               <span className="flex shrink-0 items-center gap-[2px]">
                 <span className="text-[0.8125rem] font-semibold text-(--sp-text) tabular-nums">{t.amount}</span>
-                <IconButton label={`Restore ${t.title}`} icon={<RotateCcw />} variant="ghost" />
+                <IconButton label={`Restore ${t.title}`} icon={<I.RotateCcw />} variant="ghost" />
               </span>
             }
           />
@@ -819,43 +768,35 @@ function AdminTrash() {
 }
 
 function AdminCategories() {
-  const more = (n: string) => <IconButton label={`Options for ${n}`} icon={<Ellipsis />} variant="ghost" />;
+  const more = (n: string) => <IconButton label={`Options for ${n}`} icon={<I.Ellipsis />} variant="ghost" />;
   return (
     <AppPage tab="admin">
       <PageHeader title="Admin" />
       <AdminTabs value="categories" />
-      <Segmented
-        label="Categories or tags"
-        value="categories"
-        items={[
-          { value: "categories", label: "Categories" },
-          { value: "tags", label: "Tags" },
-        ]}
-      />
-      <SpButton className="w-full" icon={<Plus />}>
+      <SpButton className="w-full" icon={<I.Plus />}>
         Add category
       </SpButton>
       <RowGroup>
-        <SpRow leading={<RowIcon><Receipt /></RowIcon>} title="Bills" subtitle="1 subcategory" trailing={more("Bills")} />
-        <SpRow indent leading={<RowIcon><Receipt /></RowIcon>} title="Hotels" trailing={more("Hotels")} />
-        <SpRow leading={<RowIcon><Utensils /></RowIcon>} title="Food" trailing={more("Food")} />
-        <SpRow leading={<RowIcon><Briefcase /></RowIcon>} title="Office" trailing={more("Office")} />
-        <SpRow leading={<RowIcon><Laptop /></RowIcon>} title="Software" trailing={more("Software")} />
-        <SpRow leading={<RowIcon><Car /></RowIcon>} title="Transport" subtitle="3 subcategories" trailing={more("Transport")} />
-        <SpRow indent leading={<RowIcon><Car /></RowIcon>} title="Taxi" trailing={more("Taxi")} />
-        <SpRow indent leading={<RowIcon><Car /></RowIcon>} title="Fuel" trailing={more("Fuel")} />
-        <SpRow indent leading={<RowIcon><Car /></RowIcon>} title="Parking" trailing={more("Parking")} />
-        <SpRow leading={<RowIcon><Plane /></RowIcon>} title="Travel" trailing={more("Travel")} />
-        <SpRow leading={<RowIcon><Ellipsis /></RowIcon>} title="Other" trailing={more("Other")} />
+        <SpRow leading={<RowIcon><I.Receipt /></RowIcon>} title="Bills" subtitle="1 subcategory" trailing={more("Bills")} />
+        <SpRow indent leading={<RowIcon><I.Receipt /></RowIcon>} title="Hotels" trailing={more("Hotels")} />
+        <SpRow leading={<RowIcon><I.Utensils /></RowIcon>} title="Food" trailing={more("Food")} />
+        <SpRow leading={<RowIcon><I.Briefcase /></RowIcon>} title="Office" trailing={more("Office")} />
+        <SpRow leading={<RowIcon><I.Laptop /></RowIcon>} title="Software" trailing={more("Software")} />
+        <SpRow leading={<RowIcon><I.Car /></RowIcon>} title="Transport" subtitle="3 subcategories" trailing={more("Transport")} />
+        <SpRow indent leading={<RowIcon><I.Car /></RowIcon>} title="Taxi" trailing={more("Taxi")} />
+        <SpRow indent leading={<RowIcon><I.Car /></RowIcon>} title="Fuel" trailing={more("Fuel")} />
+        <SpRow indent leading={<RowIcon><I.Car /></RowIcon>} title="Parking" trailing={more("Parking")} />
+        <SpRow leading={<RowIcon><I.Plane /></RowIcon>} title="Travel" trailing={more("Travel")} />
+        <SpRow leading={<RowIcon><I.Ellipsis /></RowIcon>} title="Other" trailing={more("Other")} />
       </RowGroup>
       <RowGroup>
         <SpRow
           onClick={() => {}}
-          leading={<RowIcon><Wifi /></RowIcon>}
+          leading={<RowIcon><I.Wifi /></RowIcon>}
           title="Archived"
           subtitle="1 category · Internet"
           muted
-          trailing={<ChevronDown aria-hidden className="mr-[12px] size-[18px] stroke-[1.8] text-(--sp-text-faint)" />}
+          trailing={<I.ChevronDown aria-hidden className="mr-[12px] size-[18px] stroke-[1.8] text-(--sp-text-faint)" />}
         />
       </RowGroup>
     </AppPage>
@@ -870,7 +811,7 @@ function Login() {
       <AuthHeader title="Welcome back" subtitle="Log in with the email your admin invited." />
       <div className="mt-[32px] space-y-[16px]">
         <SpField label="Email" htmlFor="le">
-          <SpInput id="le" type="email" placeholder="name@nordencapital.ca" autoComplete="email" icon={<Mail />} />
+          <SpInput id="le" type="email" placeholder="name@nordencapital.ca" autoComplete="email" icon={<I.Mail />} />
         </SpField>
         <SpField
           label="Password"
@@ -885,7 +826,7 @@ function Login() {
         </SpField>
         <SpButton className="mt-[8px] w-full">Log in</SpButton>
         <OrDivider />
-        <SpButton className="w-full" variant="secondary" icon={<ScanFace />}>
+        <SpButton className="w-full" variant="secondary" icon={<I.ScanFace />}>
           Log in with Face ID
         </SpButton>
       </div>
@@ -902,7 +843,7 @@ function ForgotPassword() {
       <AuthHeader title="Forgot password?" subtitle="We email you a link to choose a new password." />
       <div className="mt-[32px] space-y-[16px]">
         <SpField label="Email" htmlFor="fe">
-          <SpInput id="fe" type="email" placeholder="name@nordencapital.ca" autoComplete="email" icon={<Mail />} />
+          <SpInput id="fe" type="email" placeholder="name@nordencapital.ca" autoComplete="email" icon={<I.Mail />} />
         </SpField>
         <SpButton className="mt-[8px] w-full">Send link</SpButton>
         <SpButton className="w-full" variant="secondary">
@@ -938,7 +879,7 @@ function LinkExpired() {
         className="mt-[24px]"
         framed
         tone="danger"
-        icon={<Mail />}
+        icon={<I.Mail />}
         title="Ask for a new link"
         text="Ask your admin for a new invite, or request a new reset link."
         action={<SpButton>Get a new reset link</SpButton>}
@@ -956,7 +897,7 @@ function StateEmpty() {
   return (
     <AppPage tab="expenses">
       <PageHeader title="Expenses" subtitle="Company · November 2026" />
-      <SpInput icon={<Search />} placeholder="Search expenses" aria-label="Search expenses" />
+      <SpInput icon={<I.Search />} placeholder="Search expenses" aria-label="Search expenses" />
       <FilterChips label="Filter expenses">
         <FilterChip label="All" count={0} active />
         <FilterChip label="This month" />
@@ -965,13 +906,13 @@ function StateEmpty() {
       </FilterChips>
       <EmptyState
         framed
-        icon={<Receipt />}
+        icon={<I.Receipt />}
         title="No expenses yet"
         text="Add your first expense. Take a photo of the receipt and you are done."
-        action={<SpButton icon={<Plus />}>Add expense</SpButton>}
+        action={<SpButton icon={<I.Plus />}>Add expense</SpButton>}
       />
       <EmptyState
-        icon={<SearchX />}
+        icon={<I.SearchX />}
         title="No results for “hotel”"
         text="Check the spelling or clear the filters."
         action={
@@ -1014,12 +955,12 @@ function StateError() {
       <EmptyState
         className="pt-[64px]"
         tone="danger"
-        icon={<CloudOff />}
+        icon={<I.CloudOff />}
         title="Something went wrong"
         text="We could not load this page. Check your connection and try again."
         action={
           <>
-            <SpButton icon={<RotateCcw />}>Try again</SpButton>
+            <SpButton icon={<I.RotateCcw />}>Try again</SpButton>
             <SpButton variant="secondary">Go home</SpButton>
           </>
         }
@@ -1038,7 +979,7 @@ function StateNotFound() {
         text="This page does not exist, or the expense was deleted."
         action={
           <>
-            <SpButton icon={<House />}>Go home</SpButton>
+            <SpButton icon={<I.House />}>Go home</SpButton>
             <SpButton variant="secondary">See expenses</SpButton>
           </>
         }
@@ -1055,9 +996,9 @@ function Stats() {
   return (
     <StatTiles
       items={[
-        { icon: <LogIn />, tone: "violet", value: "18", label: "Sign-ins this month" },
-        { icon: <Clock />, tone: "sun", value: "Today", label: "Last login, 08:12" },
-        { icon: <ScanFace />, tone: "ink", value: "2", label: "Face ID devices" },
+        { icon: <I.LogIn />, tone: "violet", value: "18", label: "Sign-ins this month" },
+        { icon: <I.Clock />, tone: "sun", value: "Today", label: "Last login, 08:12" },
+        { icon: <I.ScanFace />, tone: "ink", value: "2", label: "Face ID devices" },
       ]}
     />
   );
@@ -1072,24 +1013,24 @@ function SettingsHub() {
       <RowGroup>
         <SpRow
           href="#account"
-          leading={<IconTile tone="violet" size={44}><User /></IconTile>}
+          leading={<IconTile tone="violet" size={44}><I.User /></IconTile>}
           title="My account"
           subtitle="Name, email, role, sign-ins"
         />
         <SpRow
           href="#security"
-          leading={<IconTile tone="ink" size={44}><Lock /></IconTile>}
+          leading={<IconTile tone="ink" size={44}><I.Lock /></IconTile>}
           title="Security"
           subtitle="Password, Face ID / fingerprint"
         />
         <SpRow
           href="#preferences"
-          leading={<IconTile tone="sun" size={44}><Palette /></IconTile>}
+          leading={<IconTile tone="sun" size={44}><I.Palette /></IconTile>}
           title="Preferences"
           subtitle="Theme, text size, font, dates"
         />
       </RowGroup>
-      <SpButton className="w-full" variant="danger" icon={<LogOut />}>
+      <SpButton className="w-full" variant="danger" icon={<I.LogOut />}>
         Log out
       </SpButton>
     </AppPage>
@@ -1113,7 +1054,7 @@ function SettingsAccountV2() {
             </SpField>
           </div>
           <SpField label="Email" htmlFor="em2" hint="Only an admin can change your email.">
-            <SpInput id="em2" surface="panel" icon={<Lock />} readOnly defaultValue={PROFILE.email} />
+            <SpInput id="em2" surface="panel" icon={<I.Lock />} readOnly defaultValue={PROFILE.email} />
           </SpField>
           <SpButton className="w-full" disabled>
             Save
@@ -1122,25 +1063,25 @@ function SettingsAccountV2() {
       </SpPanel>
       <RowGroup title="Account">
         <SpRow
-          leading={<IconTile tone="violet"><Shield /></IconTile>}
+          leading={<IconTile tone="violet"><I.Shield /></IconTile>}
           title="Role"
           trailing={<SpBadge tone="accent">Admin</SpBadge>}
           className="pr-[14px]"
         />
         <SpRow
-          leading={<IconTile tone="green"><CircleCheck /></IconTile>}
+          leading={<IconTile tone="green"><I.CircleCheck /></IconTile>}
           title="Status"
           trailing={<SpBadge tone="success">Active</SpBadge>}
           className="pr-[14px]"
         />
         <SpRow
-          leading={<IconTile tone="sun"><CalendarDays /></IconTile>}
+          leading={<IconTile tone="sun"><I.CalendarDays /></IconTile>}
           title="Created"
           trailing={<span className="text-[0.75rem] font-medium text-(--sp-text)">2 Sep 2026</span>}
           className="pr-[14px]"
         />
         <SpRow
-          leading={<IconTile tone="ink"><Clock /></IconTile>}
+          leading={<IconTile tone="ink"><I.Clock /></IconTile>}
           title="Last login"
           trailing={<span className="text-[0.75rem] font-medium text-(--sp-text)">Today, 08:12</span>}
           className="pr-[14px]"
@@ -1158,7 +1099,7 @@ function SettingsSecurityV2() {
       <section className="rounded-(--sp-radius) bg-(--sp-panel) px-[14px] pt-[16px] pb-[16px]">
         <div className="flex items-start gap-[12px]">
           <IconTile tone="violet" size={52}>
-            <KeyRound />
+            <I.KeyRound />
           </IconTile>
           <div className="min-w-0 flex-1 pt-[4px] leading-tight">
             <h2 className="text-[0.9375rem] font-medium text-(--sp-text)">Password</h2>
@@ -1167,14 +1108,14 @@ function SettingsSecurityV2() {
             </p>
           </div>
         </div>
-        <SpButton className="mt-[16px] w-full" variant="secondary" icon={<KeyRound />}>
+        <SpButton className="mt-[16px] w-full" variant="secondary" icon={<I.KeyRound />}>
           Change password
         </SpButton>
       </section>
       <section className="rounded-(--sp-radius) bg-(--sp-panel) px-[14px] pt-[16px] pb-[16px]">
         <div className="flex items-start gap-[12px]">
           <IconTile tone="ink" size={52}>
-            <ScanFace />
+            <I.ScanFace />
           </IconTile>
           <div className="min-w-0 flex-1 pt-[4px] leading-tight">
             <h2 className="text-[0.9375rem] font-medium text-(--sp-text)">Face ID &amp; fingerprint</h2>
@@ -1185,24 +1126,24 @@ function SettingsSecurityV2() {
         </div>
         <div className="mt-[16px] space-y-[10px]">
           <DeviceCard
-            icon={<Smartphone />}
+            icon={<I.Smartphone />}
             tone="violet"
             name="iPhone 15"
             added="2 Nov 2026"
             lastUsed="Today, 08:12"
             current
-            action={<IconButton label="Options for iPhone 15" icon={<Ellipsis />} variant="ghost" />}
+            action={<IconButton label="Options for iPhone 15" icon={<I.Ellipsis />} variant="ghost" />}
           />
           <DeviceCard
-            icon={<Laptop />}
+            icon={<I.Laptop />}
             tone="sun"
             name="MacBook Air"
             added="14 Oct 2026"
             lastUsed="3 days ago"
-            action={<IconButton label="Options for MacBook Air" icon={<Ellipsis />} variant="ghost" />}
+            action={<IconButton label="Options for MacBook Air" icon={<I.Ellipsis />} variant="ghost" />}
           />
         </div>
-        <SpButton className="mt-[14px] w-full" icon={<Fingerprint />}>
+        <SpButton className="mt-[14px] w-full" icon={<I.Fingerprint />}>
           Add Face ID / fingerprint
         </SpButton>
         <p className="mt-[10px] text-center text-[0.625rem] leading-snug text-(--sp-text-faint)">
@@ -1287,7 +1228,7 @@ function SettingsPreferencesV2() {
               className="bg-(--sp-soft) pl-[12px]"
               leading={
                 <IconTile tone="sun">
-                  <Clock />
+                  <I.Clock />
                 </IconTile>
               }
               title="Follow my phone"
@@ -1301,9 +1242,914 @@ function SettingsPreferencesV2() {
   );
 }
 
+/* ---------- home + wallet (icon before/after) ---------- */
+
+function HomeMock() {
+  return (
+    <AppPage tab="home">
+      <GreetingHeader title="Hello Sam!" subtitle="Let's track your spending." />
+      <CardStack
+        back={<PeekCard label="Personal wallet" trailing={<I.Lock />} />}
+        front={
+          <BalanceCard
+            tag="Company"
+            amountLabel="This month"
+            amount="$3,922.40"
+            detail={{ label: "Expenses", value: "24" }}
+            footer={{ label: "Name", value: "Sam Tremblay" }}
+            action={<AddPill label="Expense" icon={<I.Plus className="size-[16px]" />} />}
+          />
+        }
+      />
+      <QuickActions>
+        <QuickAction label="Add" icon={<I.Plus />} />
+        <QuickAction label="Scan" icon={<I.ScanLine />} />
+        <QuickAction label="Search" icon={<I.Search />} />
+        <QuickAction label="More" icon={<I.Ellipsis />} />
+      </QuickActions>
+      <SectionCard title="Recent Expenses" action={{ label: "View All", href: "#expenses" }}>
+        <ListItem icon={<I.Utensils />} title="Client Lunch" meta="12:40 pm • 12 November, 2026" amount="$186.40" href="#tx" />
+        <ListItem icon={<I.Wifi />} title="Internet Bill" meta="09:00 am • 11 November, 2026" amount="$55.00" href="#tx" />
+        <ListItem icon={<I.TrainFront />} title="Train to Montréal" meta="07:15 am • 10 November, 2026" amount="$84.00" href="#tx" />
+        <ListItem icon={<I.Hotel />} title="Hotel Rabat" meta="02:44 am • 9 November, 2026" amount="$120.00" href="#tx" />
+      </SectionCard>
+    </AppPage>
+  );
+}
+
+function WalletMock() {
+  return (
+    <AppPage tab="wallet">
+      <PageHeader title="Wallet" subtitle="Personal · only you" action={<IconButton label="Lock wallet" icon={<I.Lock />} />} />
+      <CardStack
+        back={[
+          <PeekCard key="savings" tone="ink" label="Savings · $1,850.00" />,
+        ]}
+        front={
+          <BalanceCard
+            tag="Personal wallet"
+            amountLabel="Wallet balance"
+            amount="$2,486.15"
+            detail={{ label: "This month", value: "-$612" }}
+            footer={{ label: "Name", value: "Sam Tremblay" }}
+            action={<AddPill label="Expense" icon={<I.Plus className="size-[16px]" />} />}
+          />
+        }
+      />
+      <QuickActions>
+        <QuickAction label="Budgets" icon={<I.PiggyBank />} />
+        <QuickAction label="Goals" icon={<I.Target />} />
+        <QuickAction label="Recurring" icon={<I.Repeat />} />
+        <QuickAction label="Categories" icon={<I.Shapes />} />
+      </QuickActions>
+      <SpPanel title="Budgets" aside={<span className="text-[0.625rem] text-(--sp-text-faint)">November</span>}>
+        <div className="space-y-[16px]">
+          <ProgressBar label="Food" valueText="$420 of $600" value={0.7} />
+          <ProgressBar label="Transport" valueText="$95 of $200" value={0.475} tone="ink" />
+        </div>
+      </SpPanel>
+      <SectionCard title="Recent" action={{ label: "View All", href: "#wallet" }}>
+        <ListItem icon={<I.ShoppingCart />} title="Groceries" meta="18:20 pm • 11 November, 2026" amount="$50.00" href="#tx" />
+        <ListItem icon={<I.Coffee />} title="Coffee" meta="08:05 am • 11 November, 2026" amount="$4.75" href="#tx" />
+        <ListItem icon={<I.Dumbbell />} title="Gym" meta="07:00 am • 10 November, 2026" amount="$39.00" href="#tx" />
+        <ListItem icon={<I.Banknote />} title="Salary" meta="09:00 am • 1 November, 2026" amount="+$3,200.00" tone="income" href="#tx" />
+      </SectionCard>
+    </AppPage>
+  );
+}
+
+
+/** All 50 category icons (DB keys), in the CategoryGrid circle style. */
+function CategoryIconsMock() {
+  const keys = Object.keys(CATEGORY_ICONS);
+  const old = getIconSet() === "lucide";
+  return (
+    <AppPage tab="admin">
+      <PageHeader title="Category icons" subtitle={`${keys.length} icons · DB keys unchanged`} />
+      <div className="grid grid-cols-5 gap-x-[4px] gap-y-[14px] rounded-(--sp-radius) bg-(--sp-panel) px-[6px] py-[16px]">
+        {keys.map((k, i) => {
+          const Icon = old ? CATEGORY_ICONS[k] : CATEGORY_ICON_MAP[k];
+          const on = i === 4;
+          return (
+            <span key={k} className="flex min-w-0 flex-col items-center gap-[6px] leading-none">
+              <span
+                className={
+                  "flex size-[48px] items-center justify-center rounded-full [&_svg]:size-[20px] " +
+                  (on ? "bg-(--sp-chip-active) text-(--sp-chip-active-text)" : "bg-(--sp-soft) text-(--sp-text)")
+                }
+              >
+                <Icon className="size-[20px] stroke-[1.8]" />
+              </span>
+              <span className="w-full truncate text-center text-[0.5625rem] text-(--sp-text-muted)">{k}</span>
+            </span>
+          );
+        })}
+      </div>
+    </AppPage>
+  );
+}
+
+
+/** Amount with − / + (hold to repeat): steps whole units, keeps the cents, never below 0. */
+function AmountDemo({ initial }: { initial: string }) {
+  const [value, setValue] = useState(initial);
+  const num = Number.parseFloat(value.replace(",", ".")) || 0;
+  return (
+    <AmountField
+      id="amount"
+      symbol="$"
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onStep={(d) =>
+        setValue((v) => {
+          const n = Number.parseFloat(v.replace(",", ".")) || 0;
+          const cents = v.includes(".") || v.includes(",") ? 2 : 0;
+          return Math.max(0, n + d).toFixed(cents);
+        })
+      }
+      canDecrement={num >= 1}
+    />
+  );
+}
+
+/* ---------- search + filters (redesign) ---------- */
+
+const TODAY = "2026-11-12";
+
+function ListRows({ rows }: { rows: { icon: ReactNode; title: string; meta: string; amount: string; income?: boolean }[] }) {
+  return (
+    <>
+      {rows.map((r) => (
+        <ListItem key={r.title + r.meta} icon={r.icon} title={r.title} meta={r.meta} amount={r.amount} tone={r.income ? "income" : "expense"} href="#tx" />
+      ))}
+    </>
+  );
+}
+
+function TxListMock() {
+  return (
+    <AppPage tab="expenses">
+      <PageHeader title="Expenses" subtitle="Company" action={<IconButton label="Add expense" icon={<I.Plus />} variant="ink" />} />
+      <PeriodBar label="November 2026" summary="24 expenses · −$3,922.40" onPrev={() => {}} onNext={() => {}} canNext={false} onLabelClick={() => {}} />
+      <SearchBar placeholder="Description, comment, website" value="" onChange={() => {}} onFilterClick={() => {}} />
+      <SectionCard title="Thu 12 Nov">
+        <ListRows
+          rows={[
+            { icon: <I.Hotel />, title: "Hotel Rabat", meta: "Sam Tremblay • 02:44 am", amount: "$120.00" },
+            { icon: <I.Utensils />, title: "Client Lunch", meta: "Adam Admin • 12:40 pm", amount: "$186.40" },
+          ]}
+        />
+      </SectionCard>
+      <SectionCard title="Wed 11 Nov">
+        <ListRows
+          rows={[
+            { icon: <I.Wifi />, title: "Internet Bill", meta: "Sam Tremblay • 09:00 am", amount: "$55.00" },
+            { icon: <I.Car />, title: "Taxi to the airport", meta: "Emma Employee • 07:15 am", amount: "$54.20" },
+          ]}
+        />
+      </SectionCard>
+    </AppPage>
+  );
+}
+
+function TxListFilteredMock() {
+  return (
+    <AppPage tab="expenses">
+      <PageHeader title="Expenses" subtitle="Company" action={<IconButton label="Add expense" icon={<I.Plus />} variant="ink" />} />
+      <PeriodBar range label="12 Oct – 11 Nov 2026" summary="7 results · −$1,184.60" onClearRange={() => {}} onLabelClick={() => {}} />
+      <SearchBar
+        placeholder="Description, comment, website"
+        value="hotel"
+        onChange={() => {}}
+        onClear={() => {}}
+        onFilterClick={() => {}}
+        filterCount={4}
+      />
+      <ActiveFilters
+        onClearAll={() => {}}
+        items={[
+          { key: "type", label: "Expense", onRemove: () => {} },
+          { key: "travel", label: "Travel", icon: <I.Plane />, onRemove: () => {} },
+          { key: "taxi", label: "Transport › Taxi", icon: <I.Car />, onRemove: () => {} },
+          { key: "amount", label: "$50 – $500", onRemove: () => {} },
+        ]}
+      />
+      <SectionCard title="Thu 12 Nov">
+        <ListRows rows={[{ icon: <I.Hotel />, title: "Hotel Rabat", meta: "Travel › Hotels • Sam Tremblay", amount: "$120.00" }]} />
+      </SectionCard>
+      <SectionCard title="Mon 2 Nov">
+        <ListRows
+          rows={[
+            { icon: <I.Plane />, title: "Hotel + flight Toronto", meta: "Travel • Adam Admin", amount: "$412.00" },
+            { icon: <I.Car />, title: "Taxi to the hotel", meta: "Transport › Taxi • Sam Tremblay", amount: "$64.80" },
+          ]}
+        />
+      </SectionCard>
+    </AppPage>
+  );
+}
+
+const FILTER_CATS: CategoryOption[] = [
+  { id: "bills", name: "Bills", icon: <I.Receipt /> },
+  { id: "food", name: "Food", icon: <I.Utensils /> },
+  { id: "office", name: "Office", icon: <I.Briefcase /> },
+  { id: "software", name: "Software", icon: <I.Laptop /> },
+  {
+    id: "transport",
+    name: "Transport",
+    icon: <I.Car />,
+    children: [
+      { id: "taxi", name: "Taxi" },
+      { id: "fuel", name: "Fuel" },
+      { id: "parking", name: "Parking" },
+    ],
+  },
+  { id: "travel", name: "Travel", icon: <I.Plane /> },
+  { id: "other", name: "Other", icon: <I.Ellipsis /> },
+];
+
+function SheetSection({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+  return (
+    <section className="border-t border-[color-mix(in_oklab,var(--sp-text)_8%,transparent)] pt-[16px] pb-[18px] first:border-t-0 first:pt-[4px]">
+      <div className="mb-[12px] flex items-baseline justify-between gap-3 leading-none">
+        <h3 className="text-[0.8125rem] font-medium text-(--sp-text)">{title}</h3>
+        {hint ? <span className="text-[0.625rem] text-(--sp-text-faint)">{hint}</span> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function FilterSheetBody({ wallet }: { wallet?: boolean }) {
+  const [cats, setCats] = useState<string[]>(["travel", "taxi"]);
+  return (
+    <>
+      <SheetSection title="Date">
+        <div role="group" aria-label="Date presets" className="flex flex-wrap gap-[8px]">
+          <FilterChip surface="panel" label="This month" />
+          <FilterChip surface="panel" label="Last month" />
+          <FilterChip surface="panel" label="Last 3 months" />
+          <FilterChip surface="panel" label="This year" />
+          <FilterChip surface="panel" label="Custom…" active icon={<I.CalendarDays />} />
+        </div>
+        <button
+          type="button"
+          className="mt-[10px] flex h-[52px] w-full items-center gap-[10px] rounded-[16px] bg-(--sp-soft) px-[14px] text-left outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
+        >
+          <span className="text-(--sp-card-front) [&_svg]:size-[20px]">
+            <I.CalendarDays />
+          </span>
+          <span className="min-w-0 flex-1 text-[0.8125rem] font-medium text-(--sp-text)">12 Oct – 11 Nov 2026</span>
+          <span className="text-[0.6875rem] font-medium text-(--sp-card-front)">Change</span>
+        </button>
+      </SheetSection>
+      <SheetSection title="Type">
+        <Segmented
+          label="Type"
+          surface="panel"
+          value="expense"
+          items={[
+            { value: "all", label: "All" },
+            { value: "expense", label: "Expense" },
+            { value: "income", label: "Income" },
+          ]}
+        />
+      </SheetSection>
+      <SheetSection title="Categories" hint={cats.length ? `${cats.length} chosen` : "All"}>
+        <CategoryMultiGrid options={FILTER_CATS} value={cats} onValueChange={setCats} />
+      </SheetSection>
+      <SheetSection title="Amount" hint="USD">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-[8px]">
+          <SpInput surface="panel" inputMode="decimal" placeholder="Min" defaultValue="50" aria-label="Minimum amount" />
+          <span className="text-(--sp-text-faint)">–</span>
+          <SpInput surface="panel" inputMode="decimal" placeholder="Max" defaultValue="500" aria-label="Maximum amount" />
+        </div>
+      </SheetSection>
+      {wallet ? null : (
+        <SheetSection title="Created by" hint="Admins only">
+          <div role="group" aria-label="Created by" className="flex flex-wrap gap-[8px]">
+            <FilterChip surface="panel" label="Anyone" active />
+            <FilterChip surface="panel" label="Sam Tremblay" />
+            <FilterChip surface="panel" label="Adam Admin" />
+            <FilterChip surface="panel" label="Emma Employee" />
+          </div>
+        </SheetSection>
+      )}
+    </>
+  );
+}
+
+function FilterSheetMock() {
+  return (
+    <>
+      <TxListFilteredMock />
+      <OpenSheet
+        title="Filters"
+        footer={
+          <div className="grid grid-cols-[1fr_2fr] gap-[8px]">
+            <SpButton variant="secondary">Reset</SpButton>
+            <SpButton>Show 7 results</SpButton>
+          </div>
+        }
+      >
+        <FilterSheetBody />
+      </OpenSheet>
+    </>
+  );
+}
+
+function FilterDateMock() {
+  const [range, setRange] = useState<{ from?: string; to?: string }>({ from: "2026-10-12", to: "2026-11-11" });
+  return (
+    <>
+      <TxListFilteredMock />
+      <OpenSheet
+        title="Dates"
+        description="Tap the first day, then the last day."
+        footer={
+          <div className="grid grid-cols-[1fr_2fr] gap-[8px]">
+            <SpButton variant="secondary">Cancel</SpButton>
+            <SpButton>Use 12 Oct – 11 Nov</SpButton>
+          </div>
+        }
+      >
+        <div role="group" aria-label="Date presets" className="flex flex-wrap gap-[8px]">
+          <FilterChip surface="panel" label="This month" />
+          <FilterChip surface="panel" label="Last month" />
+          <FilterChip surface="panel" label="Last 3 months" />
+          <FilterChip surface="panel" label="This year" />
+        </div>
+        <DateRangePicker className="mt-[14px]" today={TODAY} initialMonth="2026-11" from={range.from} to={range.to} onChange={setRange} />
+      </OpenSheet>
+    </>
+  );
+}
+
+function WalletListFilteredMock() {
+  return (
+    <AppPage tab="wallet">
+      <PageHeader title="Wallet" subtitle="Personal · only you" action={<IconButton label="Add to wallet" icon={<I.Plus />} variant="ink" />} />
+      <PeriodBar range label="Last 3 months" summary="12 Aug – 11 Nov · 9 results · −$486.30" onClearRange={() => {}} onLabelClick={() => {}} />
+      <SearchBar placeholder="Description, comment, website" value="" onChange={() => {}} onFilterClick={() => {}} filterCount={1} />
+      <ActiveFilters
+        onClearAll={() => {}}
+        items={[
+          { key: "food", label: "Food", icon: <I.ShoppingCart />, onRemove: () => {} },
+        ]}
+      />
+      <SectionCard title="November">
+        <ListRows
+          rows={[
+            { icon: <I.ShoppingCart />, title: "Groceries", meta: "Food › Groceries • Wed 11 Nov", amount: "$48.00" },
+            { icon: <I.Coffee />, title: "Coffee", meta: "Food › Restaurants • Tue 10 Nov", amount: "$2.80" },
+          ]}
+        />
+      </SectionCard>
+      <SectionCard title="October">
+        <ListRows
+          rows={[
+            { icon: <I.ShoppingCart />, title: "Market", meta: "Food › Groceries • Sat 24 Oct", amount: "$31.25" },
+            { icon: <I.Utensils />, title: "Dinner with family", meta: "Food › Restaurants • Fri 9 Oct", amount: "$64.00" },
+          ]}
+        />
+      </SectionCard>
+    </AppPage>
+  );
+}
+
+/* ---------- one structure for Company and Wallet ---------- */
+
+type Space = "company" | "wallet";
+
+const SPACE = {
+  company: {
+    name: "Company",
+    sub: "Norden Capital · your team's expenses",
+    tab: "expenses" as Tab,
+    listTitle: "Expenses",
+  },
+  wallet: {
+    name: "Wallet",
+    sub: "Personal · only you",
+    tab: "wallet" as Tab,
+    listTitle: "Wallet",
+  },
+};
+
+/** Wrapper: wallet pages get the yellow card colour, nothing else changes. */
+function SpaceWrap({ space, children }: { space: Space; children: ReactNode }) {
+  return (
+    <div className={(space === "wallet" ? "sp-space-wallet " : "") + "contents space-y-[16px]"}>{children}</div>
+  );
+}
+
+function SpaceHeader({ space, back, title }: { space: Space; back?: string; title?: string }) {
+  const s = SPACE[space];
+  return (
+    <PageHeader
+      back={back ? { href: back, label: `Back to ${s.name}` } : undefined}
+      title={title ?? s.name}
+      subtitle={s.sub}
+      action={
+        space === "wallet" ? (
+          <IconButton label="Lock wallet" icon={<I.Lock />} />
+        ) : (
+          <IconButton label="Search" icon={<I.Search />} />
+        )
+      }
+    />
+  );
+}
+
+/** Company home: Company card (purple) in front, Personal wallet (yellow, locked) behind. */
+function CompanyStack({ front = 0 }: { front?: 0 | 1 }) {
+  return (
+    <SwapStack
+      defaultFront={front}
+      labels={["Company", "Personal wallet"]}
+      cards={[
+        <BalanceCard
+          key="company"
+          tag="Company"
+          amountLabel="Out this month"
+          amount="$3,922.40"
+          detail={{ label: "In", value: "+$500.00" }}
+          footer={{ label: "Net", value: "−$3,422.40" }}
+          action={<AddPill label="Expense" />}
+        />,
+        <div key="wallet" className="sp-card-sun">
+          <BalanceCard
+            tag={
+              <span className="flex items-center gap-[5px]">
+                Personal wallet <I.Lock className="size-[14px]" />
+              </span>
+            }
+            amountLabel="Balance"
+            amount="••••••"
+            detail={{ label: "Status", value: "Locked" }}
+            footer={{ label: "Only you", value: "PIN to open" }}
+            action={<AddPill label="Unlock" icon={<I.Lock className="size-[18px]" />} />}
+          />
+        </div>,
+      ]}
+    />
+  );
+}
+
+/** Wallet: Wallet card (yellow) in front; behind it Savings (option A, favourite) or Budget (option B). */
+function WalletStack({ front = 0, back = "savings" }: { front?: 0 | 1; back?: "savings" | "budget" }) {
+  return (
+    <SwapStack
+      defaultFront={front}
+      labels={["Personal wallet", back === "savings" ? "Savings" : "Budget"]}
+      cards={[
+        <div key="wallet" className="sp-card-sun">
+          <BalanceCard
+            tag="Personal wallet"
+            amountLabel="Balance"
+            amount="$2,486.15"
+            detail={{ label: "This month", value: "−$612.00" }}
+            footer={{ label: "Out this month", value: "$812.00" }}
+            action={<AddPill label="Expense" />}
+          />
+        </div>,
+        back === "savings" ? (
+          <div key="savings" className="sp-card-ink">
+            <BalanceCard
+              tag="Savings · 3 goals"
+              amountLabel="Saved in goals"
+              amount="$1,850.00"
+              detail={{ label: "Target", value: "$5,000" }}
+              footer={{ label: "Progress", value: "37% · Laptop next" }}
+              action={<AddPill label="Goals" icon={<I.Target className="size-[18px]" />} />}
+            />
+          </div>
+        ) : (
+          <div key="budget" className="sp-card-ink">
+            <BalanceCard
+              tag="Budget · November"
+              amountLabel="Spent of your budgets"
+              amount="$645.00"
+              detail={{ label: "Budgets", value: "$920" }}
+              footer={{ label: "Left", value: "$275 · 18 days" }}
+              action={<AddPill label="Budgets" icon={<I.PiggyBank className="size-[18px]" />} />}
+            />
+          </div>
+        ),
+      ]}
+    />
+  );
+}
+
+
+/** "Set a goal" opens this sheet directly (real fields: name, target, deadline; USD only). */
+function GoalSheet() {
+  return (
+    <div className="sp-space-wallet contents">
+      <OpenSheet
+        title="Set a goal"
+        description="Save for something. Add money to it when you can."
+        footer={<SpButton className="w-full">Create goal</SpButton>}
+      >
+        <div className="space-y-[14px]">
+          <SpField label="Name" htmlFor="gname">
+            <SpInput id="gname" surface="panel" placeholder="e.g. Summer trip" defaultValue="New laptop" />
+          </SpField>
+          <div className="grid grid-cols-2 gap-[10px]">
+            <SpField label="Target" htmlFor="gtarget">
+              <SpInput id="gtarget" surface="panel" inputMode="decimal" placeholder="0.00" defaultValue="2,400.00" icon={<span className="text-[0.9375rem] font-medium">$</span>} />
+            </SpField>
+            <SpField label="Deadline" htmlFor="gdate" optional>
+              <SpInput id="gdate" surface="panel" type="date" defaultValue="2027-03-31" />
+            </SpField>
+          </div>
+        </div>
+      </OpenSheet>
+    </div>
+  );
+}
+
+/** "Set a budget" opens this sheet directly (real fields: category, monthly limit; USD only). */
+function BudgetSheet() {
+  return (
+    <div className="sp-space-wallet contents">
+      <OpenSheet
+        title="Set a budget"
+        description="A monthly limit for one category. You see how much is left."
+        footer={<SpButton className="w-full">Create budget</SpButton>}
+      >
+        <div className="space-y-[14px]">
+          <CategoryGrid
+            options={WALLET_CATS.map((c) => ({ ...c, children: undefined }))}
+            value="food"
+            className="bg-(--sp-soft) [&_[role=radio]>span:first-child]:bg-(--sp-panel)"
+          />
+          <SpField label="Monthly limit" htmlFor="blimit">
+            <SpInput id="blimit" surface="panel" inputMode="decimal" placeholder="0.00" defaultValue="600.00" icon={<span className="text-[0.9375rem] font-medium">$</span>} />
+          </SpField>
+        </div>
+      </OpenSheet>
+    </div>
+  );
+}
+
+/** Dashboard: same order for both spaces. */
+function SpaceDashboard({
+  space,
+  front = 0,
+  back = "savings",
+  sheet,
+}: {
+  space: Space;
+  front?: 0 | 1;
+  back?: "savings" | "budget";
+  sheet?: "goal" | "budget";
+}) {
+  const company = space === "company";
+  return (
+    <>
+    <AppPage tab={company ? "home" : "wallet"}>
+      <SpaceWrap space={space}>
+        <SpaceHeader space={space} />
+        {/* 1. two cards: tap the back card (or swipe) to bring it to the front */}
+        {company ? <CompanyStack front={front} /> : <WalletStack front={front} back={back} />}
+        {/* 2. quick actions (no "Add": the card's "+ Expense" pill does it).
+             Same frame: slot 1 = repeat items, slot 4 = Search; slots 2–3 = the space's own. */}
+        <QuickActions>
+          {company ? (
+            <>
+              <QuickAction label="Repeat" icon={<I.Repeat />} />
+              <QuickAction label="All" icon={<I.ArrowLeftRight />} />
+              <QuickAction label="Alerts" icon={<I.Bell />} />
+              <QuickAction label="Search" icon={<I.Search />} />
+            </>
+          ) : (
+            <>
+              <QuickAction label="Recurring" icon={<I.Repeat />} />
+              <QuickAction label="Set a goal" icon={<I.Target />} />
+              <QuickAction label="Set a budget" icon={<I.PiggyBank />} />
+              <QuickAction label="Search" icon={<I.Search />} />
+            </>
+          )}
+        </QuickActions>
+        {/* 3. due soon (repeat items) */}
+        <SectionCard title="Due soon" action={{ label: "View All", href: "#repeat" }}>
+          {company ? (
+            <>
+              <ListItem icon={<I.Wifi />} title="Internet Bill" meta="Repeats monthly • in 3 days, 15 Nov" amount="$55.00" href="#r" />
+              <ListItem icon={<I.Building2 />} title="Office rent" meta="Repeats monthly • in 18 days, 30 Nov" amount="$1,800.00" href="#r" />
+            </>
+          ) : (
+            <>
+              <ListItem icon={<I.Dumbbell />} title="Gym" meta="Repeats monthly • tomorrow, 13 Nov" amount="$39.00" href="#r" />
+              <ListItem icon={<I.Film />} title="Streaming" meta="Repeats monthly • in 6 days, 18 Nov" amount="$12.99" href="#r" />
+            </>
+          )}
+        </SectionCard>
+        {/* 4. the space's own section (wallet only; the company has none) */}
+        {company ? null : (
+          <SpPanel title="Budgets this month" aside={<span className="text-[0.625rem] text-(--sp-text-faint)">2 of 3 on track</span>}>
+            <div className="space-y-[16px]">
+              <ProgressBar label="Food" valueText="$420 of $600" value={0.7} />
+              <ProgressBar label="Transport" valueText="$95 of $200" value={0.475} tone="ink" />
+              <ProgressBar label="Fun" valueText="$130 of $120" value={1.08} />
+            </div>
+          </SpPanel>
+        )}
+        {/* 5. recent */}
+        <SectionCard title="Recent" action={{ label: "View All", href: "#list" }}>
+          {company ? (
+            <>
+              <ListItem icon={<I.Hotel />} title="Hotel Rabat" meta="Travel › Hotels • Thu 12 Nov" amount="$120.00" href="#tx" />
+              <ListItem icon={<I.Utensils />} title="Client Lunch" meta="Food • Thu 12 Nov" amount="$186.40" href="#tx" />
+              <ListItem icon={<I.Car />} title="Taxi to client" meta="Transport › Taxi • Wed 11 Nov" amount="$45.00" href="#tx" />
+            </>
+          ) : (
+            <>
+              <ListItem icon={<I.ShoppingCart />} title="Groceries" meta="Food › Groceries • Wed 11 Nov" amount="$50.00" href="#tx" />
+              <ListItem icon={<I.Coffee />} title="Coffee" meta="Food • Wed 11 Nov" amount="$4.75" href="#tx" />
+              <ListItem icon={<I.Banknote />} title="Salary" meta="Income • Sun 1 Nov" amount="+$3,200.00" tone="income" href="#tx" />
+            </>
+          )}
+        </SectionCard>
+      </SpaceWrap>
+    </AppPage>
+    {sheet === "goal" ? <GoalSheet /> : sheet === "budget" ? <BudgetSheet /> : null}
+    </>
+  );
+}
+
+/** List: identical for both (period bar, search + filters, days). */
+function SpaceList({ space }: { space: Space }) {
+  const company = space === "company";
+  const s = SPACE[space];
+  return (
+    <AppPage tab={s.tab}>
+      <SpaceWrap space={space}>
+        <PageHeader
+          title={s.listTitle}
+          subtitle={s.sub}
+          action={<IconButton label="Add expense" icon={<I.Plus />} variant="ink" />}
+        />
+        <PeriodBar
+          label="November 2026"
+          summary={company ? "24 expenses · −$3,922.40" : "18 entries · −$612.00"}
+          onPrev={() => {}}
+          onNext={() => {}}
+          canNext={false}
+          onLabelClick={() => {}}
+        />
+        <SearchBar placeholder="Description, comment, website" value="" onChange={() => {}} onFilterClick={() => {}} />
+        <SectionCard title="Thu 12 Nov">
+          {company ? (
+            <>
+              <ListItem icon={<I.Hotel />} title="Hotel Rabat" meta="Travel › Hotels • Sam Tremblay" amount="$120.00" href="#tx" />
+              <ListItem icon={<I.Utensils />} title="Client Lunch" meta="Food • Adam Admin" amount="$186.40" href="#tx" />
+            </>
+          ) : (
+            <>
+              <ListItem icon={<I.ShoppingCart />} title="Groceries" meta="Food › Groceries" amount="$50.00" href="#tx" />
+              <ListItem icon={<I.Coffee />} title="Coffee" meta="Food" amount="$4.75" href="#tx" />
+            </>
+          )}
+        </SectionCard>
+        <SectionCard title="Wed 11 Nov">
+          {company ? (
+            <>
+              <ListItem icon={<I.Wifi />} title="Internet Bill" meta="Bills • Sam Tremblay" amount="$55.00" href="#tx" />
+              <ListItem icon={<I.Car />} title="Taxi to client" meta="Transport › Taxi • Emma Employee" amount="$45.00" href="#tx" />
+            </>
+          ) : (
+            <>
+              <ListItem icon={<I.Dumbbell />} title="Gym" meta="Health • repeat" amount="$39.00" href="#tx" />
+              <ListItem icon={<I.Banknote />} title="Refund" meta="Income" amount="+$20.00" tone="income" href="#tx" />
+            </>
+          )}
+        </SectionCard>
+      </SpaceWrap>
+    </AppPage>
+  );
+}
+
+/** Detail: identical (hero card, actions, facts, proof, [comments: company], history). */
+function SpaceDetail({ space }: { space: Space }) {
+  const company = space === "company";
+  return (
+    <AppPage tab={SPACE[space].tab}>
+      <SpaceWrap space={space}>
+        <SpaceHeader space={space} back="#list" title="Expense" />
+        <TxHero
+          tone={company ? "company" : "wallet"}
+          icon={company ? <I.Hotel /> : <I.ShoppingCart />}
+          tag={company ? "Company" : "Wallet"}
+          title={company ? "Hotel Rabat" : "Groceries"}
+          meta={company ? "Travel › Hotels · Thu 12 Nov 2026" : "Food › Groceries · Wed 11 Nov 2026"}
+          amount={company ? "−$120.00" : "−$50.00"}
+          kind="Expense"
+        />
+        <div className="grid grid-cols-3 gap-[8px]">
+          <SpButton size="md" icon={<I.Pencil />}>
+            Edit
+          </SpButton>
+          <SpButton size="md" variant="secondary" icon={<I.Copy />}>
+            Copy
+          </SpButton>
+          <SpButton size="md" variant="danger" icon={<I.Trash2 />}>
+            Delete
+          </SpButton>
+        </div>
+        <InfoList
+          rows={[
+            { label: "Category", value: company ? "Travel › Hotels" : "Food › Groceries" },
+            { label: "Added", value: company ? "Sam Tremblay · 12 Nov, 02:44" : "11 Nov, 18:20" },
+            { label: "Website", value: company ? "hotelrabat.ma" : "—" },
+          ]}
+        />
+        <SpPanel title="Proof" aside={<span className="text-[0.625rem] text-(--sp-text-faint)">{company ? "1 file" : "Optional"}</span>}>
+          <ProofTiles files={[{ id: "1", name: company ? "receipt.png" : "ticket.jpg", size: "122 KB", url: RECEIPT_IMG }]} />
+        </SpPanel>
+        {company ? (
+          <SpPanel title="Comments">
+            <CommentThread
+              comments={[{ id: "1", author: "Adam Admin", time: "12 Nov, 09:12", text: "For the client visit on Friday?" }]}
+              composer={{}}
+            />
+          </SpPanel>
+        ) : null}
+        <SpPanel title="History">
+          <Timeline entries={[{ id: "1", title: company ? "Added by Sam Tremblay" : "Added", meta: "12 Nov 2026, 02:44", current: true }]} />
+        </SpPanel>
+      </SpaceWrap>
+    </AppPage>
+  );
+}
+
+/** Form: identical order (type, amount, date, description, category, website, proof). */
+function SpaceForm({ space }: { space: Space }) {
+  const company = space === "company";
+  return (
+    <FormPage bar={<SpButton className="w-full">Save expense</SpButton>}>
+      <SpaceWrap space={space}>
+        <PageHeader title="New expense" subtitle={SPACE[space].sub} action={<IconButton label="Close" icon={<I.X />} />} />
+        <Segmented
+          label="Type"
+          value="expense"
+          items={[
+            { value: "expense", label: "Expense" },
+            { value: "income", label: "Income" },
+          ]}
+        />
+        <AmountDemo initial="120" />
+        <SpField label="Date" htmlFor="sdate">
+          <SpInput id="sdate" type="date" defaultValue="2026-11-12" />
+        </SpField>
+        <SpField label="Description" htmlFor="sdesc">
+          <SpInput id="sdesc" placeholder="e.g. Taxi to the client" defaultValue={company ? "Hotel Rabat" : "Groceries"} />
+        </SpField>
+        {company ? (
+          <CategoryGrid options={COMPANY_CATS} value="transport" subValue="taxi" />
+        ) : (
+          <CategoryGrid options={WALLET_CATS} value="food" subValue="groceries" />
+        )}
+        <SpField label="Website" htmlFor="sweb" optional>
+          <SpInput id="sweb" inputMode="url" placeholder="e.g. hotelrabat.ma" icon={<I.Globe />} />
+        </SpField>
+        <SpField label="Proof" optional={!company} hint="A photo of the receipt, or a PDF.">
+          <ProofTiles surface="page" onAdd={() => {}} files={[]} />
+        </SpField>
+      </SpaceWrap>
+    </FormPage>
+  );
+}
+
+
+/** Repeat payments with due badges (urgency colours), every state. */
+function DueBadgesMock() {
+  const rows: { icon: ReactNode; title: string; every: string; amount: string; state: "overdue" | "today" | "soon" | "week" | "later" | "paused"; label: string }[] = [
+    { icon: <I.Wifi />, title: "Internet Bill", every: "Monthly", amount: "$55.00", state: "overdue", label: "Overdue · 2 days" },
+    { icon: <I.Dumbbell />, title: "Gym", every: "Monthly", amount: "$39.00", state: "today", label: "Today" },
+    { icon: <I.Film />, title: "Streaming", every: "Monthly", amount: "$12.99", state: "soon", label: "In 2 days" },
+    { icon: <I.Smartphone />, title: "Phone plan", every: "Monthly", amount: "$45.00", state: "week", label: "In 5 days" },
+    { icon: <I.Building2 />, title: "Office rent", every: "Monthly", amount: "$1,800.00", state: "later", label: "Fri 27 Nov" },
+    { icon: <I.Laptop />, title: "Software licence", every: "Yearly", amount: "$240.00", state: "paused", label: "Paused" },
+  ];
+  return (
+    <AppPage tab="wallet">
+      <PageHeader title="Repeat payments" subtitle="Next date first" action={<IconButton label="Add repeat payment" icon={<I.Plus />} variant="ink" />} />
+      <RowGroup title="Coming up">
+        {rows.map((r) => (
+          <SpRow
+            key={r.title}
+            href="#r"
+            leading={<RowIcon>{r.icon}</RowIcon>}
+            title={r.title}
+            subtitle={
+              <span className="flex items-center gap-[8px] pt-[3px]">
+                <DueBadge state={r.state} label={r.label} />
+                <span className="text-(--sp-text-faint)">{r.every}</span>
+              </span>
+            }
+            trailing={<span className="pr-[4px] text-[0.8125rem] font-semibold text-(--sp-text) tabular-nums">{r.amount}</span>}
+          />
+        ))}
+      </RowGroup>
+      <SpPanel title="All states">
+        <div className="flex flex-wrap gap-[8px]">
+          <DueBadge state="overdue" label="Overdue · 2 days" />
+          <DueBadge state="today" label="Today" />
+          <DueBadge state="soon" label="In 2 days" />
+          <DueBadge state="week" label="In 5 days" />
+          <DueBadge state="paused" label="Paused" />
+          <span className="flex h-[22px] items-center">
+            <DueBadge state="later" label="Fri 27 Nov" />
+          </span>
+        </div>
+      </SpPanel>
+    </AppPage>
+  );
+}
+
+
+const D_TODAY = "2026-11-12";
+const D_TOMORROW = "2026-11-13";
+
+/** Every date input as the kit DateField (the 5 rules from Frontend). */
+function DateFieldsMock() {
+  const [box, setBox] = useState<HTMLElement | null>(null);
+  const [txDate, setTxDate] = useState<string | null>(D_TODAY);
+  const [deadline, setDeadline] = useState<string | null>(null);
+  const [start, setStart] = useState<string | null>(D_TODAY);
+  const [end, setEnd] = useState<string | null>(null);
+  const [pause, setPause] = useState<string | null>(null);
+  return (
+    <AppPage tab="wallet">
+      <div ref={setBox} />
+      <PageHeader title="Dates" subtitle="Every date uses the kit calendar" />
+      <SpPanel title="Expense">
+        <DateField label="Date" value={txDate} onChange={setTxDate} max={D_TODAY} today={D_TODAY} surface="panel" container={box} hint="No dates in the future." />
+      </SpPanel>
+      <SpPanel title="Goal">
+        <DateField label="Deadline" value={deadline} onChange={setDeadline} min={D_TOMORROW} today={D_TODAY} optional surface="panel" container={box} placeholder="No deadline" />
+      </SpPanel>
+      <SpPanel title="Repeat payment">
+        <div className="space-y-[14px]">
+          <DateField label="Starts" value={start} onChange={setStart} today={D_TODAY} surface="panel" container={box} />
+          <DateField label="Ends" value={end} onChange={setEnd} min={start ?? undefined} today={D_TODAY} optional surface="panel" container={box} placeholder="Never" />
+          <DateField label="Pause until" value={pause} onChange={setPause} min={D_TOMORROW} today={D_TODAY} optional surface="panel" container={box} placeholder="Not paused" />
+        </div>
+      </SpPanel>
+      <SpPanel title="With an error">
+        <DateField label="Date" value={null} onChange={() => {}} today={D_TODAY} surface="panel" container={box} error="Choose a date." />
+      </SpPanel>
+    </AppPage>
+  );
+}
+
+/** The single-date sheet open (what DateField shows on tap). */
+function DateSheetMock() {
+  const [day, setDay] = useState<string>("2026-11-10");
+  return (
+    <>
+      <DateFieldsMock />
+      <OpenSheet
+        title="Date"
+        description="Tue 10 Nov 2026"
+        footer={<SpButton className="w-full">Done</SpButton>}
+      >
+        <Calendar mode="single" today={D_TODAY} max={D_TODAY} value={day} onSelect={setDay} />
+      </OpenSheet>
+    </>
+  );
+}
+
 /* ---------- registry ---------- */
 
 const MOCKS: Record<string, () => ReactNode> = {
+  home: () => <HomeMock />,
+  "date-fields": () => <DateFieldsMock />,
+  "date-sheet": () => <DateSheetMock />,
+  "due-badges": () => <DueBadgesMock />,
+  "space-dash-company": () => <SpaceDashboard space="company" />,
+  "space-dash-wallet": () => <SpaceDashboard space="wallet" />,
+  "space-dash-company-swapped": () => <SpaceDashboard space="company" front={1} />,
+  "space-dash-wallet-swapped": () => <SpaceDashboard space="wallet" front={1} />,
+  "space-dash-wallet-budget": () => <SpaceDashboard space="wallet" back="budget" />,
+  "space-dash-wallet-budget-swapped": () => <SpaceDashboard space="wallet" back="budget" front={1} />,
+  "space-dash-wallet-goal-sheet": () => <SpaceDashboard space="wallet" sheet="goal" />,
+  "space-dash-wallet-budget-sheet": () => <SpaceDashboard space="wallet" sheet="budget" />,
+  "space-list-company": () => <SpaceList space="company" />,
+  "space-list-wallet": () => <SpaceList space="wallet" />,
+  "space-detail-company": () => <SpaceDetail space="company" />,
+  "space-detail-wallet": () => <SpaceDetail space="wallet" />,
+  "space-form-company": () => <SpaceForm space="company" />,
+  "space-form-wallet": () => <SpaceForm space="wallet" />,
+  "tx-list": () => <TxListMock />,
+  "tx-list-filtered": () => <TxListFilteredMock />,
+  "filter-sheet": () => <FilterSheetMock />,
+  "filter-date": () => <FilterDateMock />,
+  "wallet-list-filtered": () => <WalletListFilteredMock />,
+  "category-icons": () => <CategoryIconsMock />,
+  wallet: () => <WalletMock />,
   "tx-detail": () => <TxDetail />,
   "wallet-tx-detail": () => <WalletTxDetail />,
   "tx-new": () => <TxNew />,
@@ -1333,7 +2179,8 @@ const MOCKS: Record<string, () => ReactNode> = {
 };
 
 /** Renders one mock by name (client: the mocks use click handlers). */
-export function MockView({ name }: { name: string }) {
+export function MockView({ name, icons = "sp" }: { name: string; icons?: "sp" | "lucide" }) {
+  setIconSet(icons);
   const render = MOCKS[name];
   return render ? <>{render()}</> : <p>Unknown mock: {name}</p>;
 }

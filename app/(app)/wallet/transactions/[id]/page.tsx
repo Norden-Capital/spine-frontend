@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Copy, Pencil, Repeat } from "lucide-react";
+import { IconCopy, IconEdit, IconRepeat } from "@/components/spine-ui";
 import { formatDateTime, formatDay } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
 import { formatMoney, monthOf } from "@/lib/transactions-types";
@@ -42,18 +42,18 @@ export default async function WalletTxPage({ params }: PageProps<"/wallet/transa
         tag="Personal wallet"
         title={tx.description || tx.category.name}
         meta={`${tx.category.name} · ${formatDay(tx.date, dates)}`}
-        amount={formatMoney(tx.amount, tx.currency, tx.type === "INCOME" ? "+" : "-")}
-        kind={`${kind} · ${tx.currency}`}
+        amount={formatMoney(tx.amount, tx.type === "INCOME" ? "+" : "-")}
+        kind={kind}
       />
 
       <div className="grid grid-cols-3 gap-[8px]">
-        <SpLinkButton href={`/wallet/transactions/${encodeURIComponent(tx.id)}/edit`} icon={<Pencil aria-hidden />}>
+        <SpLinkButton href={`/wallet/transactions/${encodeURIComponent(tx.id)}/edit`} icon={<IconEdit aria-hidden />}>
           Edit
         </SpLinkButton>
         <SpLinkButton
           href={`/wallet/transactions/new?copy=${encodeURIComponent(tx.id)}`}
           variant="secondary"
-          icon={<Copy aria-hidden />}
+          icon={<IconCopy aria-hidden />}
         >
           Copy
         </SpLinkButton>
@@ -63,7 +63,6 @@ export default async function WalletTxPage({ params }: PageProps<"/wallet/transa
       <InfoList
         rows={[
           { label: "Category", value: tx.category.name + (tx.category.archived ? " (archived)" : "") },
-          { label: "Tags", value: tx.tags.length ? tx.tags.map((t) => `#${t.name}`).join("  ") : "—" },
           ...(tx.website ? [{ label: "Website", value: <WebsiteLink domain={tx.website} /> }] : []),
           { label: "Added", value: formatDateTime(tx.createdAt, dates) },
           ...(tx.updatedAt ? [{ label: "Edited", value: formatDateTime(tx.updatedAt, dates) }] : []),
@@ -76,7 +75,7 @@ export default async function WalletTxPage({ params }: PageProps<"/wallet/transa
                       href="/wallet/recurring"
                       className="inline-flex min-h-[44px] items-center gap-[6px] underline underline-offset-2 [&_svg]:size-[14px]"
                     >
-                      <Repeat aria-hidden />
+                      <IconRepeat aria-hidden />
                       See recurring
                     </Link>
                   ),

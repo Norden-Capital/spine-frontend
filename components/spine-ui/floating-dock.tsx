@@ -34,7 +34,7 @@ const PAD = 5; // dock padding
 const GAP = 3; // between items
 const ITEM_PX = 3; // tap area around the visible 38 shape
 const ROUND = 38; // inactive circle
-const ACTIVE_FIXED = 12 + 16 + 10 + 17; // pl + icon + gap + pr (label width is measured)
+const ACTIVE_FIXED = 12 + 18 + 10 + 17; // pl + icon + gap + pr (label width is measured)
 
 const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
@@ -144,17 +144,19 @@ export function FloatingDock({ items, pendingHref, position = "fixed", className
                 "transition-[padding,transform,background-color,color] duration-(--sp-dur) ease-(--sp-ease) motion-reduce:transition-none",
                 "group-active:scale-95 motion-reduce:group-active:scale-100",
                 "group-focus-visible:ring-3 group-focus-visible:ring-(--sp-ring)",
-                "[&_svg]:size-[16px] [&_svg]:shrink-0",
+                "[&_svg]:size-[18px] [&_svg]:shrink-0",
                 on
                   ? cn(
                       "pr-[17px] pl-[12px] text-(--sp-dock-active-text) [&_svg]:stroke-2",
                       // Before the pill is placed, this item draws the white shape itself.
                       ready ? "bg-transparent" : "bg-(--sp-dock-active)"
                     )
-                  : "bg-(--sp-dock-item) px-[11px] text-(--sp-dock-item-text) group-hover:brightness-125 [&_svg]:stroke-[1.6]"
+                  : "bg-(--sp-dock-item) px-[10px] text-(--sp-dock-item-text) group-hover:brightness-125 [&_svg]:stroke-[1.6]"
               )}
             >
-              <span className="relative z-[2] flex items-center">{on ? (item.activeIcon ?? item.icon) : item.icon}</span>
+              <span className={cn("relative z-[2] flex items-center transition-colors duration-(--sp-dur)", on && "text-(--sp-card-front)")}>
+                {on ? (item.activeIcon ?? item.icon) : item.icon}
+              </span>
               <span
                 ref={(el) => {
                   labels.current[i] = el;

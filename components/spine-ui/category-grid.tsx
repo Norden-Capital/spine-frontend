@@ -60,7 +60,7 @@ export function CategoryGrid({
                 className={cn(
                   "flex size-[48px] items-center justify-center rounded-full transition group-active:scale-95 [&_svg]:size-[18px] [&_svg]:stroke-[1.8]",
                   active
-                    ? "bg-(--sp-chip-active) text-(--sp-chip-active-text)"
+                    ? "bg-(--sp-chip-active) text-(--sp-card-front)"
                     : "bg-(--sp-soft) text-(--sp-text) group-hover:bg-(--sp-soft-hover)"
                 )}
               >

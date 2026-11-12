@@ -36,6 +36,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     role: user.role,
     firstName: user.firstName ?? null,
     lastName: user.lastName ?? null,
+    // The chosen face (or the default one); the top bar and menu draw it.
+    avatarSeed: user.avatarSeed,
   };
 });
 

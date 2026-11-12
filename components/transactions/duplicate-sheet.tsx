@@ -1,22 +1,23 @@
 "use client";
 
-import { Receipt } from "lucide-react";
+import { IconReceipt } from "@/components/spine-ui";
 import { useDates } from "@/components/prefs/prefs-provider";
 import { BottomSheet, ListItem, SpButton } from "@/components/spine-ui";
-import { formatMoney, type Currency, type TxType } from "@/lib/transactions-types";
+import { formatMoney, type PersonRef, type TxType } from "@/lib/transactions-types";
+import { UserAvatar } from "@/components/nav/user-avatar";
+import { seedOf } from "@/lib/avatar";
 
-export type DuplicateMatch = { id: string; description: string; createdBy: { id: string; name: string }; createdAt: string };
+export type DuplicateMatch = { id: string; description: string; createdBy: PersonRef; createdAt: string };
 
 /**
- * 409 possible_duplicate: a transaction with the same type, amount, currency
- * and date already exists. Show the matches; "Save anyway" or "Cancel".
+ * 409 possible_duplicate: a transaction with the same type, amount and date
+ * already exists. Show the matches; "Save anyway" or "Cancel".
  */
 export function DuplicateSheet({
   matches,
   pending,
   type,
   amount,
-  currency,
   wallet = false,
   onCancel,
   onSaveAnyway,
@@ -27,7 +28,6 @@ export function DuplicateSheet({
   /** The amount being saved (the matches have the same one). */
   type: TxType;
   amount: string | null;
-  currency: Currency;
   wallet?: boolean;
   onCancel: () => void;
   onSaveAnyway: () => void;
@@ -35,13 +35,13 @@ export function DuplicateSheet({
   const dates = useDates();
   const one = matches?.length === 1;
   const word = type === "INCOME" ? "income" : "expense";
-  const shown = amount ? formatMoney(amount, currency, type === "INCOME" ? "+" : undefined) : "";
+  const shown = amount ? formatMoney(amount, type === "INCOME" ? "+" : undefined) : "";
   return (
     <BottomSheet
       open={matches !== null}
       onOpenChange={(open) => !open && !pending && onCancel()}
       title="Already saved?"
-      description={`${one ? `An ${word} with` : `${word[0].toUpperCase()}${word.slice(1)}s with`} the same type, amount, currency and date already ${one ? "exists" : "exist"}${wallet ? " in your wallet" : ""}.`}
+      description={`${one ? `An ${word} with` : `${word[0].toUpperCase()}${word.slice(1)}s with`} the same type, amount and date already ${one ? "exists" : "exist"}${wallet ? " in your wallet" : ""}.`}
       footer={
         <div className="grid grid-cols-2 gap-[8px]">
           <SpButton variant="secondary" onClick={onCancel} disabled={pending}>
@@ -57,7 +57,7 @@ export function DuplicateSheet({
         {(matches ?? []).map((m) => (
           <li key={m.id}>
             <ListItem
-              icon={<Receipt />}
+              icon={wallet ? <IconReceipt /> : <UserAvatar seed={seedOf(m.createdBy)} size={33} />}
               title={m.description || "No description"}
               meta={wallet ? dates.dateTime(m.createdAt) : `${m.createdBy.name} • ${dates.dateTime(m.createdAt)}`}
               amount={shown}

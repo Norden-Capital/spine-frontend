@@ -2,7 +2,7 @@
 // The chart streams in; the page shows first with a skeleton in its place.
 import { Suspense } from "react";
 import { unstable_rethrow } from "next/navigation";
-import { CloudOff } from "lucide-react";
+import { IconOffline } from "@/components/spine-ui";
 import { backendGet } from "@/lib/auth";
 import { addDays, WEEKS, type SignInDay } from "@/lib/sign-ins";
 import { EmptyState, SignInHeatmap, SpSkeleton, type SignInDay as Cell } from "@/components/spine-ui";
@@ -47,7 +47,7 @@ async function SignIns({ path, today }: { path: string; today: string }) {
       <EmptyState
         framed
         tone="danger"
-        icon={<CloudOff />}
+        icon={<IconOffline />}
         title="Sign-ins could not be loaded"
         text="Please try again later."
       />

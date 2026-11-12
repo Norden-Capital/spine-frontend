@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft, ChevronRight, Plus, Receipt } from "lucide-react";
+import { IconAdd, IconCalendarRepeat, IconNoResults, IconReceipt, PageHeader } from "@/components/spine-ui";
 import { backendGet, requireUser } from "@/lib/auth";
-import { canSeeUsers, displayName, type AdminUser } from "@/lib/auth-types";
+import { displayName, type AdminUser, type CurrentUser } from "@/lib/auth-types";
+import { isOwner } from "@/lib/roles";
 import { getActiveCategories } from "@/lib/catalog-server";
 import { filtersToQuery, hasFilters, parseFilters } from "@/lib/filters";
 import { todayIn } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
 import { getList } from "@/lib/list-server";
-import { addMonths, monthLabel, monthOf } from "@/lib/transactions-types";
+import { monthLabel, monthOf } from "@/lib/transactions-types";
 import { FilterBar, type PersonOption } from "@/components/filters/filter-bar";
 import { TxList } from "@/components/transactions/tx-list";
-import { cn } from "@/lib/utils";
+import { PageEmpty } from "@/components/nav/page-empty";
 
 export const metadata: Metadata = { title: "Expenses" };
 
@@ -23,12 +24,22 @@ export const instant = false;
 export default async function TransactionsPage({ searchParams }: PageProps<"/transactions">) {
   const params = await searchParams;
   const [user, dates] = await Promise.all([requireUser("/transactions"), getDateSettings()]);
-  const current = monthOf(todayIn(dates.zone));
+  const today = todayIn(dates.zone);
+  const current = monthOf(today);
   const filters = parseFilters(params);
+  // "Created by" is the owner's filter only (the backend says 403 to members).
+  if (!isOwner(user) && filters.createdBy) {
+    // Keep the address clean too: the same page without ?createdBy=.
+    const clean = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (k === "createdBy" || v === undefined) continue;
+      for (const one of Array.isArray(v) ? v : [v]) clean.append(k, one);
+    }
+    redirect(`/transactions${clean.size ? `?${clean}` : ""}`);
+  }
   const range = Boolean(filters.from || filters.to);
   if (!range) filters.month = filters.month ?? current;
   if (filters.month && filters.month > current) redirect("/transactions");
-  const tagLabels = typeof params.tagLabels === "string" ? params.tagLabels.split(",") : [];
   const query = filtersToQuery(filters);
 
   const [list, categories, people] = await Promise.all([
@@ -37,23 +48,34 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/tra
     peopleFor(user),
   ]);
 
-  const keep = (m: string) => {
-    const q = new URLSearchParams(filtersToQuery({ ...filters, month: m === current ? undefined : m }));
-    if (tagLabels.length) q.set("tagLabels", tagLabels.join(","));
-    return `/transactions${q.size ? `?${q}` : ""}`;
-  };
-
   return (
     <div className="flex flex-col gap-4">
-      {!range && <MonthSwitcher month={filters.month!} current={current} href={keep} />}
-      {range && <h1 className="text-[22px] font-medium text-(--sp-text)">Expenses</h1>}
+      <PageHeader
+        title="Expenses"
+        subtitle="Company"
+        action={
+          // Repeat expenses (/recurring): round 44 link, same look as the kit's back button.
+          <Link
+            href="/recurring"
+            aria-label="Repeat expenses"
+            title="Repeat expenses"
+            data-testid="repeat-expenses-link"
+            className="flex size-[44px] shrink-0 items-center justify-center rounded-full bg-(--sp-icon-btn) text-(--sp-icon-btn-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-95 [&_svg]:size-[20px] [&_svg]:stroke-[1.6]"
+          >
+            <IconCalendarRepeat aria-hidden />
+          </Link>
+        }
+      />
 
       <FilterBar
         filters={filters}
-        tagLabels={tagLabels}
+        today={today}
         categories={categories ?? []}
         people={people}
-        tagsPath="/tags"
+        apiPath="/transactions"
+        placeholder="Description, comment, website"
+        totalItems={list?.totalItems}
+        net={list?.totals?.net}
         autoFocusSearch={params.search === "1"}
       />
 
@@ -64,11 +86,10 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/tra
           query={query}
           apiPath="/transactions"
           hrefBase="/transactions"
+          showTotals={false}
           empty={
             hasFilters(filters) ? (
-              <p className="rounded-(--sp-radius) bg-(--sp-panel) px-4 py-8 text-center text-sm text-(--sp-text-muted)">
-                Nothing matches these filters.
-              </p>
+              <PageEmpty icon={<IconNoResults />} title="Nothing matches these filters" />
             ) : (
               <Empty month={filters.month} />
             )
@@ -85,16 +106,16 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/tra
         aria-label="Add transaction"
         className="fixed right-[max(1rem,calc(env(safe-area-inset-right)+1rem))] bottom-[calc(var(--sp-dock-h)+var(--sp-dock-gap)+1rem+env(safe-area-inset-bottom))] z-20 flex size-14 items-center justify-center rounded-full bg-(--sp-pill) text-(--sp-pill-text) shadow-lg outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
       >
-        <Plus className="size-7" aria-hidden />
+        <IconAdd className="size-7" aria-hidden />
       </Link>
     </div>
   );
 }
 
-/** "Added by" choices: managers see everyone they can see; others only "Me". */
-async function peopleFor(user: { id: string; role: string; email: string; firstName: string | null; lastName: string | null }): Promise<PersonOption[]> {
+/** "Created by" choices: the owner only (Me + every member); members get none (field hidden). */
+async function peopleFor(user: CurrentUser): Promise<PersonOption[]> {
+  if (!isOwner(user)) return [];
   const me: PersonOption = { id: user.id, name: "Me" };
-  if (!canSeeUsers(user.role as "OWNER" | "ADMIN" | "EMPLOYEE")) return [me];
   try {
     const res = await backendGet("/admin/users");
     if (!res.ok) return [me];
@@ -105,45 +126,22 @@ async function peopleFor(user: { id: string; role: string; email: string; firstN
   }
 }
 
-function MonthSwitcher({ month, current, href }: { month: string; current: string; href: (m: string) => string }) {
-  const prev = addMonths(month, -1);
-  const next = addMonths(month, 1);
-  const arrow =
-    "flex size-11 items-center justify-center rounded-full bg-(--sp-icon-btn) text-(--sp-icon-btn-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)";
-  return (
-    <div className="flex items-center justify-between">
-      <Link href={href(prev)} aria-label="Previous month" className={arrow}>
-        <ChevronLeft className="size-5" aria-hidden />
-      </Link>
-      <h1 className="text-[22px] font-medium text-(--sp-text)">{monthLabel(month)}</h1>
-      {next <= current ? (
-        <Link href={href(next)} aria-label="Next month" className={arrow}>
-          <ChevronRight className="size-5" aria-hidden />
-        </Link>
-      ) : (
-        <span className={cn(arrow, "pointer-events-none opacity-30")} aria-hidden>
-          <ChevronRight className="size-5" />
-        </span>
-      )}
-    </div>
-  );
-}
-
+/** No transactions this month (no filters): fills the page down to the dock. */
 function Empty({ month }: { month?: string }) {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-(--sp-radius) bg-(--sp-panel) px-4 py-10 text-center">
-      <Receipt className="size-10 text-(--sp-text-faint)" aria-hidden />
-      <div>
-        <p className="font-medium text-(--sp-text)">No transactions{month ? ` in ${monthLabel(month)}` : ""}</p>
-        <p className="mt-1 text-sm text-(--sp-text-muted)">Add an expense or an income with its proof.</p>
-      </div>
-      <Link
-        href="/transactions/new"
-        className="inline-flex h-11 items-center gap-2 rounded-full bg-(--sp-pill) px-5 text-sm font-medium text-(--sp-pill-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
-      >
-        <Plus className="size-4" aria-hidden />
-        Add your first transaction
-      </Link>
-    </div>
+    <PageEmpty
+      icon={<IconReceipt />}
+      title={`No transactions${month ? ` in ${monthLabel(month)}` : ""}`}
+      text="Add an expense or an income with its proof."
+      action={
+        <Link
+          href="/transactions/new"
+          className="inline-flex h-11 items-center gap-2 rounded-full bg-(--sp-pill) px-5 text-sm font-medium text-(--sp-pill-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
+        >
+          <IconAdd className="size-4" aria-hidden />
+          Add your first transaction
+        </Link>
+      }
+    />
   );
 }

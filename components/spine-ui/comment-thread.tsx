@@ -1,5 +1,5 @@
 import type { ComponentProps } from "react";
-import { ArrowUp } from "lucide-react";
+import { IconSend } from "./icons";
 import { cn } from "@/lib/utils";
 
 export type CommentItem = {
@@ -86,7 +86,7 @@ export function CommentThread({ comments, onDelete, composer, emptyText = "No co
             onClick={onSend}
             className="flex size-[44px] shrink-0 items-center justify-center rounded-full bg-(--sp-chip-active) text-(--sp-chip-active-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-95 [&_svg]:size-[18px] [&_svg]:stroke-2"
           >
-            <ArrowUp aria-hidden />
+            <IconSend />
           </button>
         </div>
       ) : null}

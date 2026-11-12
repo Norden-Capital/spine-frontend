@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { IconBack } from "@/components/spine-ui";
 
 /** "‹ Wallet" back link + title, for the wallet sub-pages. */
 export function WalletPageHead({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="flex flex-col gap-1">
       <Link href="/wallet" className="-ml-2 flex h-11 w-fit items-center gap-1 rounded-md px-2 text-sm text-(--sp-text-muted)">
-        <ChevronLeft className="size-4" aria-hidden />
+        <IconBack className="size-4" aria-hidden />
         Wallet
       </Link>
       <h1 className="text-[22px] font-medium text-(--sp-text)">{title}</h1>

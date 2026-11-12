@@ -41,7 +41,6 @@ export { SignInHeatmap, type SignInDay, type SignInHeatmapProps } from "./sign-i
 export { SpBadge, type SpBadgeProps } from "./sp-badge";
 export { RowGroup, RowIcon, SpRow, type SpRowProps } from "./sp-row";
 export { CardSkeleton, ListItemSkeleton, SectionSkeleton, SpSkeleton } from "./sp-skeleton";
-export { TagChip, TagInput, type TagInputProps } from "./tag-input";
 export { Timeline, type TimelineEntry } from "./timeline";
 export { TxHero, type TxHeroProps } from "./tx-hero";
 export { SpPanel, type SpPanelProps } from "./sp-panel";
@@ -54,3 +53,14 @@ export { SignInActivity, type SignInActivityProps } from "./sign-in-activity";
 export { StatTiles, type StatTile } from "./stat-tiles";
 export { TextSizeControl, type TextSizeControlProps, type TextSizeValue } from "./text-size-control";
 export { ThemeCards, type ThemeCardsProps, type ThemeValue } from "./theme-cards";
+// Icons (iconsax Bulk, MasterDB style): IconHome…, CATEGORY_ICON_MAP, CategoryIconSp, LUCIDE_TO_SP.
+export * from "./icons";
+// Search + filters (module 6 redesign).
+export { ActiveFilters, type ActiveFilter } from "./active-filters";
+export { CategoryMultiGrid, type CategoryMultiGridProps } from "./category-multi-grid";
+export { Calendar, DateRangePicker, type DateRangePickerProps, type IsoDay } from "./date-range-picker";
+export { DateField, todayIso, type DateFieldProps } from "./date-field";
+export { PeriodBar, type PeriodBarProps } from "./period-bar";
+export { SearchBar, type SearchBarProps } from "./search-bar";
+export { SwapStack, type SwapStackProps } from "./swap-stack";
+export { DueBadge, type DueBadgeProps, type DueState } from "./due-badge";

@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, FileText, X } from "lucide-react";
+import { IconCamera, IconCloseGlyph, IconFile } from "./icons";
 import { cn } from "@/lib/utils";
 
 export type ProofFile = {
@@ -53,7 +53,7 @@ export function ProofTiles({
             )}
           >
             <span className="flex size-[40px] items-center justify-center rounded-full bg-(--sp-chip-active) text-(--sp-chip-active-text) [&_svg]:size-[18px] [&_svg]:stroke-[1.8]">
-              <Camera aria-hidden />
+              <IconCamera />
             </span>
             <span className="text-[0.6875rem] leading-none font-medium">{addLabel}</span>
           </button>
@@ -75,7 +75,7 @@ export function ProofTiles({
               <img src={f.url} alt="" className="size-full object-cover" />
             ) : (
               <span className="flex size-full flex-col items-center justify-center gap-[6px] text-(--sp-text-muted) [&_svg]:size-[26px] [&_svg]:stroke-[1.5]">
-                <FileText aria-hidden />
+                <IconFile />
                 <span className="text-[0.625rem] leading-none font-semibold tracking-wide">PDF</span>
               </span>
             )}
@@ -87,7 +87,7 @@ export function ProofTiles({
               onClick={() => onRemove(f.id)}
               className="absolute top-[6px] right-[6px] flex size-[26px] items-center justify-center rounded-full bg-black/60 text-white outline-none after:absolute after:-inset-[9px] after:content-[''] focus-visible:ring-2 focus-visible:ring-white [&_svg]:size-[14px] [&_svg]:stroke-[2.2]"
             >
-              <X aria-hidden />
+              <IconCloseGlyph />
             </button>
           ) : null}
           <p className="mt-[6px] truncate px-[2px] text-[0.6875rem] leading-tight text-(--sp-text)">{f.name}</p>

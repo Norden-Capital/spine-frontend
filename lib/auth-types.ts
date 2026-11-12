@@ -1,18 +1,6 @@
-export type Role = "OWNER" | "ADMIN" | "EMPLOYEE";
+/** Only two roles. Checks and labels: lib/roles.ts. */
+export type Role = "OWNER" | "MEMBER";
 
-/** OWNER > ADMIN > EMPLOYEE. Owners and admins manage users; employees never see admin things. */
-export function canSeeUsers(role: Role): boolean {
-  return role === "OWNER" || role === "ADMIN";
-}
-
-/** Roles this user may invite: owner -> Admin or Employee; admin -> Employee only. */
-export function invitableRoles(role: Role): Role[] {
-  if (role === "OWNER") return ["ADMIN", "EMPLOYEE"];
-  if (role === "ADMIN") return ["EMPLOYEE"];
-  return [];
-}
-
-export const ROLE_LABEL: Record<Role, string> = { OWNER: "Owner", ADMIN: "Admin", EMPLOYEE: "Employee" };
 export type UserStatus = "INVITED" | "ACTIVE" | "DISABLED";
 
 export type CurrentUser = {
@@ -21,6 +9,8 @@ export type CurrentUser = {
   role: Role;
   firstName: string | null;
   lastName: string | null;
+  /** Seed of the drawn face (default = a stable value from the id). Older backends leave it out. */
+  avatarSeed?: string;
 };
 
 /** GET /api/me: the user's own account. */
@@ -30,6 +20,8 @@ export type MyAccount = CurrentUser & {
   lastLoginAt: string | null;
   /** The login before this session's one (null = none). Older backends leave it out. */
   previousLoginAt?: string | null;
+  /** true = no chosen picture: avatarSeed is the default one. */
+  avatarIsDefault?: boolean;
 };
 
 /** "Anna Smith", or the email if no name is set. */
@@ -53,8 +45,10 @@ export type AdminUser = {
   status: UserStatus;
   createdAt: string;
   lastLoginAt: string | null;
-  /** The backend says if I may act on this user (disable, reset, ...). */
+  /** The backend says if I may act on this user (disable, reset, ...). Always true for the owner. */
   canManage: boolean;
+  /** Seed of the drawn face. */
+  avatarSeed?: string;
 };
 
 // Name of the HttpOnly session cookie the backend sets on login. Proxy only

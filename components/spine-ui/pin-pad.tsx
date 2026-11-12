@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Delete } from "lucide-react";
+import { IconBackspace } from "./icons";
 import { cn } from "@/lib/utils";
 
 export type PinPadProps = {
@@ -66,7 +66,7 @@ export function PinPad({ onDigit, onDelete, extraKey, disabled, className }: Pin
         onClick={onDelete}
         className={cn(KEY, "text-(--sp-text) [&_svg]:size-[24px] [&_svg]:stroke-[1.6]")}
       >
-        <Delete aria-hidden />
+        <IconBackspace />
       </button>
     </div>
   );

@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { UserX } from "lucide-react";
+import { IconUserRemove } from "@/components/spine-ui";
 import { EmptyState } from "@/components/spine-ui";
+import { PLAIN_STATE_ICON } from "@/components/nav/state-icon";
 
 // Height of the space between the top bar and the dock (see app/(app)/layout.tsx),
 // so the state sits in its middle.
@@ -17,8 +18,9 @@ export default function UserNotFound() {
   return (
     <div style={AREA} className="flex flex-col items-center justify-center">
       <EmptyState
+        className={PLAIN_STATE_ICON}
         tone="accent"
-        icon={<UserX />}
+        icon={<IconUserRemove />}
         title="User not found"
         text="This user does not exist, or you can't see them."
         action={

@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Mail } from "lucide-react";
+import { IconMail } from "@/components/spine-ui";
 import { api, errorMessage } from "@/lib/api";
 import { AuthHeader, SpButton, SpField, SpInput } from "@/components/spine-ui";
-import { linkButton, Notice } from "../auth-ui";
+import { AUTH_HEADER_CENTER, linkButton, Notice } from "../auth-ui";
 
 export function ForgotPasswordForm() {
   const [sent, setSent] = useState(false);
@@ -40,7 +40,7 @@ export function ForgotPasswordForm() {
 
   return (
     <div>
-      <AuthHeader title="Forgot password?" subtitle="We email you a link to choose a new password." />
+      <AuthHeader className={AUTH_HEADER_CENTER} title="Forgot password?" subtitle="We email you a link to choose a new password." />
       {sent ? (
         <div className="mt-[32px] space-y-[16px]">
           <Notice tone="success">If this email has an account, we sent a link to it. Check your inbox.</Notice>
@@ -58,7 +58,7 @@ export function ForgotPasswordForm() {
               inputMode="email"
               placeholder="name@nordencapital.ca"
               required
-              icon={<Mail />}
+              icon={<IconMail />}
             />
           </SpField>
           <SpButton type="submit" className="mt-[8px] w-full" disabled={pending}>

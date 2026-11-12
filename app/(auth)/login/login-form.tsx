@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Mail, ScanFace } from "lucide-react";
+import { IconFaceId, IconMail } from "@/components/spine-ui";
 import { api, errorMessage } from "@/lib/api";
 import { DEFAULT_PREFERENCES, rememberPrefs, type Preferences } from "@/lib/prefs";
 import { AuthHeader, OrDivider, SpButton, SpField, SpInput, SpPasswordInput } from "@/components/spine-ui";
 import { usePasskeyLogin } from "@/components/auth/use-passkey-login";
-import { Notice } from "../auth-ui";
+import { AUTH_HEADER_CENTER, Notice } from "../auth-ui";
 
 export function LoginForm({ next, passwordSet }: { next: string; passwordSet: boolean }) {
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +50,7 @@ export function LoginForm({ next, passwordSet }: { next: string; passwordSet: bo
 
   return (
     <div>
-      <AuthHeader title="Welcome back" subtitle="Log in with the email your admin invited." />
+      <AuthHeader className={AUTH_HEADER_CENTER} title="Welcome back" subtitle="Log in with the email the owner invited." />
       <form onSubmit={onSubmit} className="mt-[32px] space-y-[16px]">
         {passwordSet && !error && <Notice tone="success">Your password is set. You can log in now.</Notice>}
         {error && <Notice tone="danger">{error}</Notice>}
@@ -64,7 +64,7 @@ export function LoginForm({ next, passwordSet }: { next: string; passwordSet: bo
             inputMode="email"
             placeholder="name@nordencapital.ca"
             required
-            icon={<Mail />}
+            icon={<IconMail />}
           />
         </SpField>
         <SpField
@@ -97,7 +97,7 @@ export function LoginForm({ next, passwordSet }: { next: string; passwordSet: bo
             <SpButton
               className="w-full"
               variant="secondary"
-              icon={<ScanFace aria-hidden />}
+              icon={<IconFaceId aria-hidden />}
               onClick={() => {
                 setError(null);
                 void passkey.start();
@@ -110,7 +110,7 @@ export function LoginForm({ next, passwordSet }: { next: string; passwordSet: bo
         )}
       </form>
       <p className="mt-[32px] text-center text-[0.6875rem] leading-snug text-(--sp-text-muted)">
-        No account? Ask your admin for an invite.
+        No account? Ask the owner for an invite.
       </p>
     </div>
   );

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { X } from "lucide-react";
+import { IconClose } from "@/components/spine-ui";
 import { todayIn } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
 import { getWalletCategories, getWalletTx } from "@/lib/wallet-server";
@@ -23,7 +23,7 @@ export default async function EditWalletTxPage({ params }: PageProps<"/wallet/tr
       <PageHeader
         title={res.data.type === "INCOME" ? "Edit wallet income" : "Edit wallet expense"}
         subtitle="Personal wallet · only you"
-        action={<SpIconLink href={`/wallet/transactions/${encodeURIComponent(id)}`} label="Cancel and go back" icon={<X aria-hidden />} />}
+        action={<SpIconLink href={`/wallet/transactions/${encodeURIComponent(id)}`} label="Cancel and go back" icon={<IconClose aria-hidden />} />}
       />
       <TransactionForm
         cancelHref={`/wallet/transactions/${encodeURIComponent(id)}`}

@@ -55,8 +55,9 @@ export const viewport: Viewport = {
 };
 
 // Theme, font and text size are set on <html> by an inline script in <head>
-// that reads a cookie, so they apply before the first paint (no flash) and
-// this layout stays static. suppressHydrationWarning: the script changes
+// that reads the look saved on this device (localStorage, else cookie), on
+// every page, logged-in or not. So they apply before the first paint (no
+// flash) and this layout stays static. suppressHydrationWarning: the script changes
 // <html> attributes before React hydrates.
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

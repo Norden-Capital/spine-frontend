@@ -1,16 +1,14 @@
-import { formatMoney, type Currency, type TxType } from "@/lib/transactions-types";
+import { formatMoney, type TxType } from "@/lib/transactions-types";
 import { cn } from "@/lib/utils";
 
 /** "−$12.00" (expense, red-ish) or "+$500.00" (income, green-ish). Calm colors. */
 export function Amount({
   type,
   amount,
-  currency,
   className,
 }: {
   type: TxType;
   amount: string;
-  currency: Currency;
   className?: string;
 }) {
   const income = type === "INCOME";
@@ -22,7 +20,7 @@ export function Amount({
         className
       )}
     >
-      {formatMoney(amount, currency, income ? "+" : "-")}
+      {formatMoney(amount, income ? "+" : "-")}
     </span>
   );
 }

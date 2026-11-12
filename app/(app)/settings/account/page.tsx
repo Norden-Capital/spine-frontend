@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { CalendarDays, CircleCheck, Clock, Shield } from "lucide-react";
-import { ROLE_LABEL } from "@/lib/auth-types";
+import { IconAdmin, IconCalendar, IconClock, IconSuccess } from "@/components/spine-ui";
+import { roleLabel } from "@/lib/roles";
 import { formatDate, formatDateTime, todayIn } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
 import { IconTile, PageHeader, RowGroup, SpBadge, SpPanel, SpRow, type SpBadgeProps } from "@/components/spine-ui";
@@ -39,25 +39,25 @@ export default async function AccountPage() {
       {me ? (
         <RowGroup title="Account">
           <SpRow
-            leading={<IconTile tone="violet"><Shield /></IconTile>}
+            leading={<IconTile tone="violet"><IconAdmin /></IconTile>}
             title="Role"
-            trailing={<SpBadge tone="accent">{ROLE_LABEL[me.role] ?? me.role}</SpBadge>}
+            trailing={<SpBadge tone="accent">{roleLabel(me.role)}</SpBadge>}
             className="pr-[14px]"
           />
           <SpRow
-            leading={<IconTile tone="green"><CircleCheck /></IconTile>}
+            leading={<IconTile tone="green"><IconSuccess /></IconTile>}
             title="Status"
             trailing={<SpBadge tone={STATUS_TONE[me.status] ?? "neutral"}>{STATUS[me.status] ?? me.status}</SpBadge>}
             className="pr-[14px]"
           />
           <SpRow
-            leading={<IconTile tone="sun"><CalendarDays /></IconTile>}
+            leading={<IconTile tone="sun"><IconCalendar /></IconTile>}
             title="Created"
             trailing={<Value>{formatDate(me.createdAt, dates)}</Value>}
             className="pr-[14px]"
           />
           <SpRow
-            leading={<IconTile tone="ink"><Clock /></IconTile>}
+            leading={<IconTile tone="ink"><IconClock /></IconTile>}
             title="Last login"
             trailing={<Value>{me.lastLoginAt ? formatDateTime(me.lastLoginAt, dates) : "Never"}</Value>}
             className="pr-[14px]"

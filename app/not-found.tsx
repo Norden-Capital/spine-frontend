@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { FileQuestionMark } from "lucide-react";
+import { IconQuestion } from "@/components/spine-ui";
 import { EmptyState } from "@/components/spine-ui";
+import { PLAIN_STATE_ICON } from "@/components/nav/state-icon";
 
 /** Same look as SpButton primary, for a <Link>. */
 const LINK_PRIMARY =
@@ -12,8 +13,9 @@ export default function NotFound() {
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-[430px] flex-col items-center justify-center px-(--sp-gutter) text-(--sp-text)">
       <EmptyState
+        className={PLAIN_STATE_ICON}
         tone="accent"
-        icon={<FileQuestionMark />}
+        icon={<IconQuestion />}
         title="Page not found"
         text="This page does not exist."
         action={

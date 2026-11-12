@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { IconCheckGlyph } from "./icons";
 import { cn } from "@/lib/utils";
 
 export type FontOption = {
@@ -58,7 +58,7 @@ export function FontCards({ options, value, onValueChange, sample = "$3,922.40 Â
             </span>
             {active ? (
               <span className="absolute top-[10px] right-[10px] flex size-[22px] items-center justify-center rounded-full bg-(--sp-chip-active) text-(--sp-chip-active-text)">
-                <Check aria-hidden className="size-[13px] stroke-[2.6]" />
+                <IconCheckGlyph className="size-[13px]" />
               </span>
             ) : null}
           </button>
