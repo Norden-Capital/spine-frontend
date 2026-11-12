@@ -13,6 +13,10 @@ export type WalletTx = {
   currency: Currency;
   date: string;
   description: string;
+  /** The transaction's own website as a bare domain ("claude.ai"), or null. */
+  website?: string | null;
+  /** The picture to show (own site, else category, else parent category), or null = category icon. */
+  logoUrl?: string | null;
   category: CategoryRef;
   tags: { id: string; name: string }[];
   files: FileRef[];

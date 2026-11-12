@@ -50,7 +50,7 @@ export function ListItem({ icon, title, meta, amount, tone = "expense", href, cl
         href={href}
         className={cn(
           base,
-          "rounded-2xl outline-none hover:bg-(--sp-soft) focus-visible:ring-3 focus-visible:ring-(--sp-ring)",
+          "rounded-2xl transition outline-none hover:bg-(--sp-soft) focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
           className
         )}
       >

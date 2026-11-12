@@ -1,0 +1,31 @@
+// Names of the page mocks (dev only). Kept apart from mocks.tsx (client).
+export const MOCK_LIST: { name: string; title: string; kind: "app" | "auth" }[] = [
+  { name: "tx-detail", title: "Expense detail (company)", kind: "app" },
+  { name: "wallet-tx-detail", title: "Expense detail (wallet)", kind: "app" },
+  { name: "tx-new", title: "New expense (company)", kind: "app" },
+  { name: "wallet-tx-edit", title: "Edit expense (wallet)", kind: "app" },
+  { name: "tx-duplicate", title: "Duplicate sheet", kind: "app" },
+  { name: "settings-account", title: "Settings · Account", kind: "app" },
+  { name: "settings-security", title: "Settings · Security", kind: "app" },
+  { name: "settings-preferences", title: "Settings · Preferences", kind: "app" },
+  { name: "logout-sheet", title: "Log out (sheet)", kind: "app" },
+  { name: "admin-users", title: "Admin · Users", kind: "app" },
+  { name: "admin-user-detail", title: "Admin · User detail", kind: "app" },
+  { name: "admin-categories", title: "Admin · Categories & tags", kind: "app" },
+  { name: "admin-trash", title: "Admin · Trash", kind: "app" },
+  { name: "login", title: "Log in", kind: "auth" },
+  { name: "forgot-password", title: "Forgot password", kind: "auth" },
+  { name: "set-password", title: "Set password", kind: "auth" },
+  { name: "link-expired", title: "Link does not work", kind: "auth" },
+  { name: "state-empty", title: "Empty states", kind: "app" },
+  { name: "state-loading", title: "Loading", kind: "app" },
+  { name: "state-error", title: "Error", kind: "app" },
+  { name: "state-not-found", title: "Not found (404)", kind: "app" },
+  { name: "settings2-hub", title: "Settings v2 · Hub (option)", kind: "app" },
+  { name: "settings2-account", title: "Settings v2 · My account", kind: "app" },
+  { name: "settings2-security", title: "Settings v2 · Security", kind: "app" },
+  { name: "settings2-password-sheet", title: "Settings v2 · Change password sheet", kind: "app" },
+  { name: "settings2-preferences", title: "Settings v2 · Preferences", kind: "app" },
+];
+
+export const THEMES = ["light", "dark"] as const;

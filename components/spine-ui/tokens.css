@@ -180,6 +180,57 @@
   .sp-shake { animation: none; }
 }
 
+/* ---- Motion (CSS only). Everything here is OFF with prefers-reduced-motion. ---- */
+:root {
+  --sp-ease: cubic-bezier(0.32, 0.72, 0, 1); /* fast start, soft stop (same as the sheet) */
+  --sp-dur: 250ms;
+}
+
+@keyframes sp-pop {
+  0% { transform: scale(0.4); }
+  60% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+@keyframes sp-grow-x {
+  from { transform: scaleX(0); }
+}
+@keyframes sp-ring-in {
+  from { stroke-dashoffset: var(--sp-ring-c); }
+}
+@keyframes sp-fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* PIN dot filled. */
+  .sp-pop { animation: sp-pop 220ms var(--sp-ease) both; }
+  /* Progress bar fill: grows from 0 on first show. */
+  .sp-grow-x { transform-origin: left; animation: sp-grow-x 700ms var(--sp-ease) both; }
+  /* Progress ring: draws from 0 on first show (needs --sp-ring-c = circumference). */
+  .sp-ring-in { animation: sp-ring-in 800ms var(--sp-ease) both; }
+
+  /* Put on a list container: its children fade up one after the other. */
+  .sp-fade-in > * { animation: sp-fade-up 320ms var(--sp-ease) both; }
+  .sp-fade-in > :nth-child(2) { animation-delay: 30ms; }
+  .sp-fade-in > :nth-child(3) { animation-delay: 60ms; }
+  .sp-fade-in > :nth-child(4) { animation-delay: 90ms; }
+  .sp-fade-in > :nth-child(5) { animation-delay: 120ms; }
+  .sp-fade-in > :nth-child(6) { animation-delay: 150ms; }
+  .sp-fade-in > :nth-child(7) { animation-delay: 180ms; }
+  .sp-fade-in > :nth-child(n + 8) { animation-delay: 210ms; }
+}
+
+/* Pressed feedback for any tappable kit element (also usable by Frontend). */
+.sp-press {
+  transition: transform 120ms var(--sp-ease), background-color 150ms, opacity 150ms, color 150ms;
+}
+.sp-press:active {
+  transform: scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sp-press, .sp-press:active { transition: none; transform: none; }
+}
+
 /* Kit wrapper. The kit INHERITS the app font (Poppins is the app default,
    set by Frontend via the user font preference), so a user who picks Inter
    gets Inter here too. `.sp` only sets smoothing. To force Poppins in a

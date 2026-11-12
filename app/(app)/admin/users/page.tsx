@@ -18,10 +18,5 @@ export default async function UsersPage() {
   if (res.status === 403) redirect("/");
   const users = res.ok ? ((await res.json()) as AdminUser[]) : null;
 
-  return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Users</h1>
-      <UsersAdmin users={users} myRole={me.role} />
-    </div>
-  );
+  return <UsersAdmin users={users} myRole={me.role} />;
 }

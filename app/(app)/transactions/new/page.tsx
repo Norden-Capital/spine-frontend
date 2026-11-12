@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { X } from "lucide-react";
 import { getActiveCategories } from "@/lib/catalog-server";
 import { todayIn } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
 import { getTransaction } from "@/lib/transactions-server";
 import { TransactionForm } from "@/components/transactions/transaction-form";
+import { SpIconLink } from "@/components/transactions/sp-link";
+import { PageHeader } from "@/components/spine-ui";
 
 export const metadata: Metadata = { title: "New transaction" };
 
@@ -21,17 +22,12 @@ export default async function NewTransactionPage({ searchParams }: PageProps<"/t
     typeof copy === "string" ? getTransaction(copy) : Promise.resolve(null),
   ]);
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{source?.ok ? "Copy transaction" : "New transaction"}</h1>
-        <Link
-          href="/transactions"
-          aria-label="Cancel and go back"
-          className="-mr-2 flex size-11 items-center justify-center rounded-full outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          <X className="size-5" aria-hidden />
-        </Link>
-      </div>
+    <div className="flex flex-col gap-[16px]">
+      <PageHeader
+        title={source?.ok ? "Copy transaction" : "New transaction"}
+        subtitle="Company"
+        action={<SpIconLink href={"/transactions"} label="Cancel and go back" icon={<X aria-hidden />} />}
+      />
       <TransactionForm
         transaction={null}
         copyFrom={source?.ok ? source.data : null}

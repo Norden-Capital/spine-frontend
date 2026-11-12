@@ -46,7 +46,7 @@ export function BottomSheet({
           className={cn(
             "fixed inset-0 z-40 min-h-dvh bg-(--sp-backdrop) opacity-[calc(1-var(--drawer-swipe-progress))] transition-opacity duration-[400ms]",
             EASE,
-            "data-ending-style:opacity-0 data-starting-style:opacity-0 data-swiping:duration-0"
+            "data-ending-style:opacity-0 data-starting-style:opacity-0 data-swiping:duration-0 motion-reduce:transition-none"
           )}
         />
         <Drawer.Viewport className="fixed inset-0 z-50 flex items-end justify-center">
@@ -55,7 +55,7 @@ export function BottomSheet({
               "sp flex max-h-[85dvh] w-full max-w-[430px] flex-col rounded-t-(--sp-radius) bg-(--sp-sheet) text-(--sp-text) outline-none",
               "[transform:translateY(var(--drawer-swipe-movement-y))] transition-transform duration-[400ms]",
               EASE,
-              "data-ending-style:[transform:translateY(100%)] data-starting-style:[transform:translateY(100%)] data-swiping:select-none",
+              "data-ending-style:[transform:translateY(100%)] data-starting-style:[transform:translateY(100%)] data-swiping:select-none motion-reduce:transition-none",
               className
             )}
           >

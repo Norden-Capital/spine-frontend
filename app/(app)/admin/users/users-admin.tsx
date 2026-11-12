@@ -1,26 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, UserPlus } from "lucide-react";
+import { CloudOff, Search, SearchX, UserPlus, Users } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
-import { displayName, invitableRoles, ROLE_LABEL, type AdminUser, type Role } from "@/lib/auth-types";
-import { useDates } from "@/components/prefs/prefs-provider";
-import { UserActions, type Notice } from "@/components/admin/user-actions";
+import { displayName, initials, invitableRoles, ROLE_LABEL, type AdminUser, type Role } from "@/lib/auth-types";
+import { NoticeBox, type Notice } from "@/components/admin/notice";
 import { RoleBadge, StatusBadge } from "@/components/admin/user-badges";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { BottomSheet, EmptyState, RowGroup, Segmented, SpButton, SpField, SpInput, SpRow } from "@/components/spine-ui";
 import { cn } from "@/lib/utils";
 
 /**
  * Users list for owners and admins. The backend already filters who I can
  * see, and says per user if I may act on them (canManage). The list comes
  * from the server; after a change, router.refresh() loads it again.
+ * Actions on a user are on their page (tap the row).
  */
 export function UsersAdmin({ users, myRole }: { users: AdminUser[] | null; myRole: Role }) {
   const [query, setQuery] = useState("");
@@ -34,54 +28,54 @@ export function UsersAdmin({ users, myRole }: { users: AdminUser[] | null; myRol
   const roles = invitableRoles(myRole);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex gap-2">
-        <div className="relative min-w-0 flex-1">
-          <Search
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
-          <Input
+    <div className="flex flex-col gap-[16px]">
+      <div className="flex gap-[8px]">
+        <div className="min-w-0 flex-1">
+          <SpInput
             type="search"
-            aria-label="Search users"
-            placeholder="Search name or email"
+            icon={<Search />}
+            aria-label="Search users by name or email"
+            placeholder="Search users"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="h-11 pl-9"
           />
         </div>
         {roles.length > 0 && (
-          <Button size="lg" className="h-11 shrink-0" onClick={() => setInviteOpen(true)}>
-            <UserPlus aria-hidden />
+          <SpButton icon={<UserPlus />} className="shrink-0 px-[18px]" onClick={() => setInviteOpen(true)}>
             Invite
-          </Button>
+          </SpButton>
         )}
       </div>
 
-      {notice && (
-        <Alert variant={notice.kind === "error" ? "destructive" : "default"}>
-          <AlertDescription>{notice.text}</AlertDescription>
-        </Alert>
-      )}
+      {notice && <NoticeBox notice={notice} />}
 
       {users === null ? (
-        <p className="rounded-lg border border-dashed bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
-          Users could not be loaded. Please try again later.
-        </p>
+        <EmptyState
+          framed
+          tone="danger"
+          icon={<CloudOff />}
+          title="Users could not be loaded"
+          text="Please try again later."
+        />
+      ) : shown.length === 0 ? (
+        <EmptyState
+          framed
+          icon={q ? <SearchX /> : <Users />}
+          title={q ? "No user matches your search" : "No users yet"}
+        />
       ) : (
-        <ul className="flex flex-col gap-3">
-          {shown.map((user) => (
-            <UserCard key={user.id} user={user} onNotice={setNotice} />
-          ))}
-          {shown.length === 0 && (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              {q ? "No user matches your search." : "No users yet."}
-            </p>
-          )}
-        </ul>
+        <RowGroup>
+          <ul>
+            {shown.map((user) => (
+              <li key={user.id}>
+                <UserRow user={user} />
+              </li>
+            ))}
+          </ul>
+        </RowGroup>
       )}
 
-      <InviteDialog
+      <InviteSheet
         open={inviteOpen}
         onOpenChange={setInviteOpen}
         roles={roles}
@@ -91,37 +85,37 @@ export function UsersAdmin({ users, myRole }: { users: AdminUser[] | null; myRol
   );
 }
 
-function UserCard({ user, onNotice }: { user: AdminUser; onNotice: (n: Notice) => void }) {
-  const dates = useDates();
+function UserRow({ user }: { user: AdminUser }) {
   const name = displayName(user);
+  const disabled = user.status === "DISABLED";
   return (
-    <li>
-      <Card size="sm">
-        <CardContent className="flex items-start gap-2">
-          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <Link
-              href={`/admin/users/${encodeURIComponent(user.id)}`}
-              className="flex min-h-11 flex-col justify-center rounded-md outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
-              <span className="truncate font-medium">{name}</span>
-              {name !== user.email && <span className="truncate text-sm text-muted-foreground">{user.email}</span>}
-            </Link>
-            <div className="flex flex-wrap gap-1.5">
-              <RoleBadge role={user.role} />
-              <StatusBadge status={user.status} />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Last login {user.lastLoginAt ? dates.dateTime(user.lastLoginAt) : "never"}
-            </p>
-          </div>
-          {user.canManage && <UserActions user={user} onNotice={onNotice} />}
-        </CardContent>
-      </Card>
-    </li>
+    <SpRow
+      href={`/admin/users/${encodeURIComponent(user.id)}`}
+      leading={
+        <span
+          aria-hidden
+          className={cn(
+            "flex size-[33px] shrink-0 items-center justify-center rounded-full text-[0.6875rem] font-medium",
+            disabled ? "bg-(--sp-soft) text-(--sp-text-muted)" : "bg-(--sp-chip-active) text-(--sp-chip-active-text)"
+          )}
+        >
+          {initials(user)}
+        </span>
+      }
+      title={name}
+      subtitle={name !== user.email ? user.email : undefined}
+      muted={disabled}
+      trailing={
+        <span className="flex shrink-0 flex-col items-end gap-[4px]">
+          <RoleBadge role={user.role} />
+          {user.status !== "ACTIVE" && <StatusBadge status={user.status} />}
+        </span>
+      }
+    />
   );
 }
 
-function InviteDialog({
+function InviteSheet({
   open,
   onOpenChange,
   roles,
@@ -155,74 +149,52 @@ function InviteDialog({
   }
 
   return (
-    <Dialog
+    <BottomSheet
       open={open}
       onOpenChange={(next) => {
         if (pending) return;
         onOpenChange(next);
         if (!next) setError(null);
       }}
+      title="Invite a user"
+      description="We'll email them a link to set their password."
+      footer={
+        <SpButton type="submit" form="invite-form" className="w-full" disabled={pending}>
+          {pending ? "Sending…" : "Send invite"}
+        </SpButton>
+      }
     >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Invite a user</DialogTitle>
-          <DialogDescription>We&apos;ll email them a link to set their password.</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={onSubmit} className="flex flex-col gap-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+      <form id="invite-form" onSubmit={onSubmit} className="flex flex-col gap-[16px] pt-[4px]">
+        {error && <NoticeBox notice={{ kind: "error", text: error }} />}
+        <SpField label="Email" htmlFor="invite-email">
+          <SpInput
+            id="invite-email"
+            name="email"
+            type="email"
+            inputMode="email"
+            autoComplete="off"
+            placeholder="name@nordencapital.ca"
+            required
+            surface="panel"
+          />
+        </SpField>
+        <div className="space-y-[8px]">
+          <p id="invite-role-label" className="px-[4px] text-[0.8125rem] leading-tight font-medium text-(--sp-text)">
+            Role
+          </p>
+          {roles.length > 1 ? (
+            <Segmented
+              label="Role"
+              surface="panel"
+              value={role}
+              onValueChange={(v) => setRole(v as Role)}
+              items={roles.map((r) => ({ value: r, label: ROLE_LABEL[r] }))}
+            />
+          ) : (
+            <p className="px-[4px] text-[0.8125rem] text-(--sp-text-muted)">{ROLE_LABEL[roles[0] ?? "EMPLOYEE"]}</p>
           )}
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="invite-email">Email</FieldLabel>
-              <Input
-                id="invite-email"
-                name="email"
-                type="email"
-                inputMode="email"
-                autoComplete="off"
-                placeholder="name@nordencapital.ca"
-                required
-                className="h-11"
-              />
-            </Field>
-            <Field>
-              <FieldLabel id="invite-role-label">Role</FieldLabel>
-              {roles.length > 1 ? (
-                <div
-                  role="radiogroup"
-                  aria-labelledby="invite-role-label"
-                  className="grid gap-1 rounded-xl bg-muted p-1"
-                  style={{ gridTemplateColumns: `repeat(${roles.length}, minmax(0, 1fr))` }}
-                >
-                  {roles.map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      role="radio"
-                      aria-checked={role === r}
-                      onClick={() => setRole(r)}
-                      className={cn(
-                        "flex h-11 items-center justify-center rounded-lg text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                        role === r ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
-                      )}
-                    >
-                      {ROLE_LABEL[r]}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">{ROLE_LABEL[roles[0] ?? "EMPLOYEE"]}</p>
-              )}
-            </Field>
-          </FieldGroup>
-          <Button type="submit" size="lg" className="h-11 w-full" disabled={pending}>
-            {pending ? "Sending…" : "Send invite"}
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </form>
+    </BottomSheet>
   );
 }

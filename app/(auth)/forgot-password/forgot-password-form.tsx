@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Mail } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { AuthHeader, SpButton, SpField, SpInput } from "@/components/spine-ui";
+import { linkButton, Notice } from "../auth-ui";
 
 export function ForgotPasswordForm() {
   const [sent, setSent] = useState(false);
@@ -34,53 +32,41 @@ export function ForgotPasswordForm() {
     }
   }
 
+  const back = (
+    <Link href="/login" className={linkButton("secondary", "flex w-full")}>
+      Back to log in
+    </Link>
+  );
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Forgot password</CardTitle>
-        <CardDescription>We will email you a link to choose a new password.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-5">
-        {sent ? (
-          <Alert>
-            <AlertDescription>
-              If this email has an account, we sent a link to it. Check your inbox.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <form onSubmit={onSubmit} className="flex flex-col gap-5">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="username"
-                  inputMode="email"
-                  placeholder="name@nordencapital.ca"
-                  required
-                  className="h-11 text-base"
-                />
-              </Field>
-            </FieldGroup>
-            <Button type="submit" size="lg" className="h-11 w-full" disabled={pending}>
-              {pending ? "Sending…" : "Send link"}
-            </Button>
-          </form>
-        )}
-        <Link
-          href="/login"
-          className="text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
-        >
-          Back to log in
-        </Link>
-      </CardContent>
-    </Card>
+    <div>
+      <AuthHeader title="Forgot password?" subtitle="We email you a link to choose a new password." />
+      {sent ? (
+        <div className="mt-[32px] space-y-[16px]">
+          <Notice tone="success">If this email has an account, we sent a link to it. Check your inbox.</Notice>
+          {back}
+        </div>
+      ) : (
+        <form onSubmit={onSubmit} className="mt-[32px] space-y-[16px]">
+          {error && <Notice tone="danger">{error}</Notice>}
+          <SpField label="Email" htmlFor="email">
+            <SpInput
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="username"
+              inputMode="email"
+              placeholder="name@nordencapital.ca"
+              required
+              icon={<Mail />}
+            />
+          </SpField>
+          <SpButton type="submit" className="mt-[8px] w-full" disabled={pending}>
+            {pending ? "Sending…" : "Send link"}
+          </SpButton>
+          {back}
+        </form>
+      )}
+    </div>
   );
 }

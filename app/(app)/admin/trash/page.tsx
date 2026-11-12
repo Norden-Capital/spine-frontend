@@ -11,10 +11,5 @@ export const instant = false;
 
 export default async function TrashPage() {
   const [res, dates] = await Promise.all([getTrash(), getDateSettings()]);
-  return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Trash</h1>
-      <TrashList items={res.ok ? res.data : null} dates={dates} />
-    </div>
-  );
+  return <TrashList items={res.ok ? res.data : null} dates={dates} />;
 }

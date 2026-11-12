@@ -2,21 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, ChevronDown, MoreHorizontal, Pencil, Plus, RotateCcw, Tag as TagIcon } from "lucide-react";
+import { Archive, ChevronDown, CloudOff, Ellipsis, Pencil, Plus, RotateCcw, Tag as TagIcon } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import type { Category, Tag } from "@/lib/catalog-types";
-import { CategoryIcon } from "@/components/expenses/category-icon";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+import { TxLogo } from "@/components/expenses/tx-logo";
+import { ConfirmSheet } from "@/components/admin/confirm-sheet";
+import { NoticeBox, type Notice } from "@/components/admin/notice";
+import { EmptyState, IconButton, RowGroup, RowIcon, Segmented, SpButton, SpRow } from "@/components/spine-ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,10 +20,16 @@ import { COMPANY_CATALOG, CategoryDialog, TagDialog, type CatalogPaths } from ".
 import { groupByParent } from "@/lib/catalog-types";
 
 type TabKey = "categories" | "tags";
-type Notice = { kind: "ok" | "error"; text: string };
 
 /** Something shown as a row: a category or a tag. */
-type Item = { id: string; name: string; archived: boolean; icon?: string; parentId?: string | null };
+type Item = {
+  id: string;
+  name: string;
+  archived: boolean;
+  icon?: string;
+  parentId?: string | null;
+  logoUrl?: string | null;
+};
 
 /** Confirm before archiving / bringing back. */
 type Pending = { title: string; text: string; confirm: string; destructive?: boolean; path: string; done: string };
@@ -39,9 +37,9 @@ type Pending = { title: string; text: string; confirm: string; destructive?: boo
 const ITEM = "min-h-11 gap-3 px-3 text-base";
 
 /**
- * Manager page: two tabs (Categories | Tags), each with a list, an
- * "Archived" section and an Add button. Lists come from the server;
- * after a change, router.refresh() loads them again.
+ * Manager page (and my wallet's): two tabs (Categories | Tags), each with
+ * a list, an "Archived" section and an Add button. Lists come from the
+ * server; after a change, router.refresh() loads them again.
  */
 export function CatalogAdmin({
   initialTab,
@@ -60,7 +58,7 @@ export function CatalogAdmin({
   const router = useRouter();
   const [tab, setTab] = useState<TabKey>(initialTab);
   const [notice, setNotice] = useState<Notice | null>(null);
-  // Dialogs: null = closed; { item: null } = add; { item } = edit.
+  // Sheets: null = closed; { item: null } = add; { item } = edit.
   const [categoryEdit, setCategoryEdit] = useState<{ item: Category | null } | null>(null);
   const [tagEdit, setTagEdit] = useState<{ item: Tag | null } | null>(null);
   const [confirm, setConfirm] = useState<Pending | null>(null);
@@ -120,47 +118,36 @@ export function CatalogAdmin({
   const isCategories = tab === "categories";
 
   return (
-    <div className="flex flex-col gap-4">
-      <div role="tablist" aria-label="Categories or tags" className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
-        {(["categories", "tags"] as const).map((key) => (
-          <button
-            key={key}
-            type="button"
-            role="tab"
-            aria-selected={tab === key}
-            onClick={() => switchTab(key)}
-            className={cn(
-              "flex h-11 items-center justify-center rounded-lg text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-              tab === key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {key === "categories" ? "Categories" : "Tags"}
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-col gap-[16px]">
+      <Segmented
+        label="Categories or tags"
+        value={tab}
+        onValueChange={(v) => switchTab(v as TabKey)}
+        items={[
+          { value: "categories", label: "Categories" },
+          { value: "tags", label: "Tags" },
+        ]}
+      />
 
-      <Button
-        size="lg"
-        className="h-11 w-full"
+      <SpButton
+        className="w-full"
+        icon={<Plus />}
         onClick={() => (isCategories ? setCategoryEdit({ item: null }) : setTagEdit({ item: null }))}
       >
-        <Plus aria-hidden />
         {isCategories ? "Add category" : "Add tag"}
-      </Button>
+      </SpButton>
 
-      {notice && (
-        <Alert variant={notice.kind === "error" ? "destructive" : "default"}>
-          <AlertDescription>{notice.text}</AlertDescription>
-        </Alert>
-      )}
+      {notice && <NoticeBox notice={notice} />}
 
       {isCategories ? (
         <ItemList
           key="categories"
           items={categories}
           what="Categories"
+          one="category"
+          many="categories"
           empty="No categories yet. Add the first one."
-          renderIcon={(item) => <CategoryIcon name={item.icon ?? "tag"} />}
+          renderIcon={(item) => <TxLogo logoUrl={item.logoUrl} icon={item.icon ?? "tag"} />}
           onEdit={(item) => setCategoryEdit({ item: categories?.find((c) => c.id === item.id) ?? null })}
           onArchive={(item) => askArchive("category", item)}
         />
@@ -169,8 +156,10 @@ export function CatalogAdmin({
           key="tags"
           items={tags}
           what="Tags"
+          one="tag"
+          many="tags"
           empty="No tags yet. Add the first one."
-          renderIcon={() => <TagIcon className="size-5 shrink-0" aria-hidden />}
+          renderIcon={() => <TagIcon aria-hidden />}
           onEdit={(item) => setTagEdit({ item: tags?.find((t) => t.id === item.id) ?? null })}
           onArchive={(item) => askArchive("tag", item)}
         />
@@ -193,28 +182,16 @@ export function CatalogAdmin({
         onSaved={saved}
       />
 
-      <AlertDialog open={confirmOpen} onOpenChange={(next) => !next && !busy && setConfirmOpen(false)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="break-words">{confirm?.title}</AlertDialogTitle>
-            <AlertDialogDescription>{confirm?.text}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel size="lg" className="h-11" disabled={busy}>
-              Cancel
-            </AlertDialogCancel>
-            <Button
-              variant={confirm?.destructive ? "destructive" : "default"}
-              size="lg"
-              className="h-11"
-              onClick={runConfirm}
-              disabled={busy}
-            >
-              {busy ? "Please wait…" : confirm?.confirm}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmSheet
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={confirm?.title ?? ""}
+        text={confirm?.text ?? ""}
+        confirm={confirm?.confirm ?? ""}
+        destructive={confirm?.destructive}
+        busy={busy}
+        onConfirm={runConfirm}
+      />
     </div>
   );
 }
@@ -223,6 +200,8 @@ export function CatalogAdmin({
 function ItemList({
   items,
   what,
+  one,
+  many,
   empty,
   renderIcon,
   onEdit,
@@ -230,6 +209,8 @@ function ItemList({
 }: {
   items: Item[] | null;
   what: string;
+  one: string;
+  many: string;
   empty: string;
   renderIcon: (item: Item) => React.ReactNode;
   onEdit: (item: Item) => void;
@@ -239,9 +220,13 @@ function ItemList({
 
   if (items === null) {
     return (
-      <p className="rounded-lg border border-dashed bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
-        {what} could not be loaded. Please try again later.
-      </p>
+      <EmptyState
+        framed
+        tone="danger"
+        icon={<CloudOff />}
+        title={`${what} could not be loaded`}
+        text="Please try again later."
+      />
     );
   }
 
@@ -249,37 +234,70 @@ function ItemList({
   const archived = items.filter((i) => i.archived);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-[16px]">
       {active.length === 0 ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">{empty}</p>
+        <EmptyState framed title={empty} />
       ) : (
-        <ul className="flex flex-col divide-y overflow-hidden rounded-xl border bg-card">
-          {/* Subcategories right under their main category (one level). */}
-          {groupByParent(active).map(({ item, child }) => (
-            <Row key={item.id} item={item} child={child} icon={renderIcon(item)} onEdit={onEdit} onArchive={onArchive} />
-          ))}
-        </ul>
+        <RowGroup>
+          <ul>
+            {/* Subcategories right under their main category (one level). */}
+            {groupByParent(active).map(({ item, child }) => {
+              const kids = child ? 0 : active.filter((c) => c.parentId === item.id).length;
+              return (
+                <li key={item.id}>
+                  <Row
+                    item={item}
+                    child={child}
+                    subtitle={kids > 0 ? `${kids} ${kids === 1 ? "subcategory" : "subcategories"}` : undefined}
+                    icon={renderIcon(item)}
+                    onEdit={onEdit}
+                    onArchive={onArchive}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        </RowGroup>
       )}
 
       {archived.length > 0 && (
-        <div className="flex flex-col gap-2">
+        <RowGroup>
+          {/* Same look as SpRow; own <button> because it needs aria-expanded. */}
           <button
             type="button"
             aria-expanded={showArchived}
             onClick={() => setShowArchived((v) => !v)}
-            className="flex h-11 items-center justify-between rounded-lg px-1 text-sm font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="flex min-h-[56px] w-full items-center gap-[10.8px] rounded-2xl py-[8px] pr-[8px] pl-[14px] text-left outline-none hover:bg-(--sp-soft) focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
           >
-            Archived ({archived.length})
-            <ChevronDown className={cn("size-4 transition-transform", showArchived && "rotate-180")} aria-hidden />
+            <RowIcon>
+              <Archive />
+            </RowIcon>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[0.8125rem] leading-tight font-medium text-(--sp-text-muted)">
+                Archived
+              </span>
+              <span className="mt-[3px] block truncate text-[0.6875rem] leading-tight text-(--sp-text-muted)">
+                {archived.length} {archived.length === 1 ? one : many} · {archived.map((i) => i.name).join(", ")}
+              </span>
+            </span>
+            <ChevronDown
+              aria-hidden
+              className={cn(
+                "mr-[12px] size-[18px] shrink-0 stroke-[1.8] text-(--sp-text-faint) transition-transform",
+                showArchived && "rotate-180"
+              )}
+            />
           </button>
           {showArchived && (
-            <ul className="flex flex-col divide-y overflow-hidden rounded-xl border bg-muted/30">
+            <ul>
               {archived.map((item) => (
-                <Row key={item.id} item={item} icon={renderIcon(item)} onEdit={onEdit} onArchive={onArchive} />
+                <li key={item.id}>
+                  <Row item={item} icon={renderIcon(item)} onEdit={onEdit} onArchive={onArchive} />
+                </li>
               ))}
             </ul>
           )}
-        </div>
+        </RowGroup>
       )}
     </div>
   );
@@ -288,45 +306,49 @@ function ItemList({
 function Row({
   item,
   icon,
+  subtitle,
   child = false,
   onEdit,
   onArchive,
 }: {
   item: Item;
   icon: React.ReactNode;
+  subtitle?: string;
   child?: boolean;
   onEdit: (item: Item) => void;
   onArchive: (item: Item) => void;
 }) {
   return (
-    <li className={cn("flex min-h-14 items-center gap-3 pr-1 pl-4", child && "pl-10", item.archived && "text-muted-foreground")}>
-      {icon}
-      <span className="min-w-0 flex-1 truncate">{item.name}</span>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={<Button variant="ghost" size="icon" className="size-11 shrink-0" />}
-          aria-label={`Actions for ${item.name}`}
-        >
-          <MoreHorizontal className="size-5" aria-hidden />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 max-w-[calc(100vw-2rem)]">
-          <DropdownMenuItem className={ITEM} onClick={() => onEdit(item)}>
-            <Pencil aria-hidden />
-            {item.icon !== undefined ? "Edit" : "Rename"}
-          </DropdownMenuItem>
-          {item.archived ? (
-            <DropdownMenuItem className={ITEM} onClick={() => onArchive(item)}>
-              <RotateCcw aria-hidden />
-              Bring back
+    <SpRow
+      indent={child}
+      muted={item.archived}
+      leading={<RowIcon>{icon}</RowIcon>}
+      title={item.name}
+      subtitle={subtitle}
+      trailing={
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<IconButton label={`Actions for ${item.name}`} icon={<Ellipsis />} variant="ghost" />}
+          />
+          <DropdownMenuContent align="end" className="w-56 max-w-[calc(100vw-2rem)]">
+            <DropdownMenuItem className={ITEM} onClick={() => onEdit(item)}>
+              <Pencil aria-hidden />
+              {item.icon !== undefined ? "Edit" : "Rename"}
             </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem className={ITEM} variant="destructive" onClick={() => onArchive(item)}>
-              <Archive aria-hidden />
-              Archive
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </li>
+            {item.archived ? (
+              <DropdownMenuItem className={ITEM} onClick={() => onArchive(item)}>
+                <RotateCcw aria-hidden />
+                Bring back
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem className={ITEM} variant="destructive" onClick={() => onArchive(item)}>
+                <Archive aria-hidden />
+                Archive
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
+    />
   );
 }

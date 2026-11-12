@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, X } from "lucide-react";
+import { X } from "lucide-react";
 import { formatSize, type FileRef } from "@/lib/transactions-types";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { ProofTiles } from "@/components/spine-ui";
 
 const fileUrl = (f: FileRef) => `/api/files/${encodeURIComponent(f.id)}`;
 
@@ -13,44 +14,21 @@ export function ProofGallery({ files }: { files: FileRef[] }) {
 
   return (
     <>
-      <ul className="grid grid-cols-2 gap-2" aria-label="Proofs">
-        {files.map((f) => {
-          const isImage = f.contentType.startsWith("image/");
-          const inner = (
-            <>
-              <span className="flex aspect-[4/3] items-center justify-center bg-muted">
-                {isImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- private file behind the session
-                  <img src={fileUrl(f)} alt="" className="size-full object-cover" loading="lazy" />
-                ) : (
-                  <FileText className="size-8 text-muted-foreground" aria-hidden />
-                )}
-              </span>
-              <span className="flex min-w-0 flex-col px-2 py-1.5 text-left">
-                <span className="truncate text-xs font-medium">{f.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  {isImage ? formatSize(f.size) : `PDF · ${formatSize(f.size)}`}
-                </span>
-              </span>
-            </>
-          );
-          const cls =
-            "flex w-full flex-col overflow-hidden rounded-xl border bg-card outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
-          return (
-            <li key={f.id}>
-              {isImage ? (
-                <button type="button" className={cls} onClick={() => setOpen(f)} aria-label={`View ${f.name}`}>
-                  {inner}
-                </button>
-              ) : (
-                <a href={fileUrl(f)} target="_blank" rel="noopener" className={cls} aria-label={`Open ${f.name}`}>
-                  {inner}
-                </a>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+      {/* Kit ProofTiles (soft tiles inside the panel). */}
+      <ProofTiles
+        files={files.map((f) => ({
+          id: f.id,
+          name: f.name,
+          size: f.contentType.startsWith("image/") ? formatSize(f.size) : `PDF · ${formatSize(f.size)}`,
+          url: f.contentType.startsWith("image/") ? fileUrl(f) : undefined,
+        }))}
+        onOpen={(id) => {
+          const f = files.find((x) => x.id === id);
+          if (!f) return;
+          if (f.contentType.startsWith("image/")) setOpen(f);
+          else window.open(fileUrl(f), "_blank", "noopener");
+        }}
+      />
 
       <Dialog open={open !== null} onOpenChange={(next) => !next && setOpen(null)}>
         <DialogContent

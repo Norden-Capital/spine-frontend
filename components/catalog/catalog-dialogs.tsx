@@ -1,15 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { api, apiWithStatus, ApiError, errorMessage } from "@/lib/api";
 import type { Category, Tag } from "@/lib/catalog-types";
 import { CATEGORY_ICONS, CategoryIcon } from "@/components/expenses/category-icon";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { NoticeBox } from "@/components/admin/notice";
+import { BottomSheet, SpButton, SpField, SpInput } from "@/components/spine-ui";
 import { cn } from "@/lib/utils";
 
 const MAX_NAME = 60;
@@ -24,8 +21,27 @@ export type CatalogPaths = {
   createTag: string;
 };
 
-export const COMPANY_CATALOG: CatalogPaths = { categories: "/admin/categories", tags: "/admin/tags", createTag: "/tags" };
-export const WALLET_CATALOG: CatalogPaths = { categories: "/wallet/categories", tags: "/wallet/tags", createTag: "/wallet/tags" };
+export const COMPANY_CATALOG: CatalogPaths = {
+  categories: "/admin/categories",
+  tags: "/admin/tags",
+  createTag: "/tags",
+};
+export const WALLET_CATALOG: CatalogPaths = {
+  categories: "/wallet/categories",
+  tags: "/wallet/tags",
+  createTag: "/wallet/tags",
+};
+
+/** Main button at the bottom of a sheet form: stays in view while the form scrolls. */
+function SubmitBar({ children, disabled }: { children: React.ReactNode; disabled: boolean }) {
+  return (
+    <div className="sticky bottom-0 -mb-[12px] bg-linear-to-t from-(--sp-sheet) from-75% to-transparent pt-[16px] pb-[12px]">
+      <SpButton type="submit" className="w-full" disabled={disabled}>
+        {children}
+      </SpButton>
+    </div>
+  );
+}
 
 /** Add (category = null) or edit a category: name + icon grid. */
 export function CategoryDialog({
@@ -48,27 +64,22 @@ export function CategoryDialog({
   onSaved: (text: string) => void;
 }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90svh] flex-col gap-4">
-        <DialogHeader>
-          <DialogTitle>{category ? "Edit category" : "Add category"}</DialogTitle>
-        </DialogHeader>
-        {/* New key per open: the form starts fresh each time. */}
-        {open && (
-          <CategoryForm
-            key={category?.id ?? "new"}
-            category={category}
-            icons={icons.length > 0 ? icons : Object.keys(CATEGORY_ICONS)}
-            all={all}
-            path={paths.categories}
-            onDone={(text) => {
-              onOpenChange(false);
-              onSaved(text);
-            }}
-          />
-        )}
-      </DialogContent>
-    </Dialog>
+    <BottomSheet open={open} onOpenChange={onOpenChange} title={category ? "Edit category" : "Add category"}>
+      {/* New key per open: the form starts fresh each time. */}
+      {open && (
+        <CategoryForm
+          key={category?.id ?? "new"}
+          category={category}
+          icons={icons.length > 0 ? icons : Object.keys(CATEGORY_ICONS)}
+          all={all}
+          path={paths.categories}
+          onDone={(text) => {
+            onOpenChange(false);
+            onSaved(text);
+          }}
+        />
+      )}
+    </BottomSheet>
   );
 }
 
@@ -92,6 +103,8 @@ function CategoryForm({
   const hasChildren = Boolean(category && all.some((c) => c.parentId === category.id));
   const parents = all.filter((c) => !c.parentId && !c.archived && c.id !== category?.id);
   const [icon, setIcon] = useState<string | null>(category?.icon ?? null);
+  const [website, setWebsite] = useState(category?.website ?? "");
+  const [websiteError, setWebsiteError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -106,107 +119,133 @@ function CategoryForm({
     setTouched(true);
     setError(null);
     setNameError(null);
+    setWebsiteError(null);
     if (missingName || missingIcon) return;
+    const site = website.trim();
     setPending(true);
     try {
       if (category) {
         // parentId: null = top level, "<id>" = under it.
         await api(`${path}/${category.id}`, {
           method: "PATCH",
-          body: { name: trimmed, icon, ...(hasChildren ? {} : { parentId: parentId || null }) },
+          body: {
+            name: trimmed,
+            icon,
+            ...(hasChildren ? {} : { parentId: parentId || null }),
+            // Left out = keep; null = remove; text = set.
+            ...(site === (category.website ?? "") ? {} : { website: site || null }),
+          },
         });
         onDone(`"${trimmed}" is saved.`);
       } else {
-        await api(path, { method: "POST", body: { name: trimmed, icon, parentId: parentId || null } });
+        await api(path, {
+          method: "POST",
+          body: { name: trimmed, icon, parentId: parentId || null, website: site || null },
+        });
         onDone(`"${trimmed}" is added.`);
       }
     } catch (err) {
       if (err instanceof ApiError && err.code === "name_taken") setNameError(err.message);
+      else if (err instanceof ApiError && err.field === "website") setWebsiteError("Enter a website like example.com.");
       else setError(errorMessage(err));
       setPending(false);
     }
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex min-h-0 flex-col gap-4" noValidate>
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      <FieldGroup className="min-h-0">
-        <Field data-invalid={Boolean(nameError) || (touched && missingName)}>
-          <FieldLabel htmlFor="category-name">Name</FieldLabel>
-          <Input
-            id="category-name"
-            placeholder="e.g. Travel"
-            maxLength={MAX_NAME}
-            autoComplete="off"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            aria-invalid={Boolean(nameError) || (touched && missingName)}
-            className="h-11"
-          />
-          {nameError ? (
-            <FieldError>{nameError}</FieldError>
-          ) : (
-            touched && missingName && <FieldError>Enter a name.</FieldError>
-          )}
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="category-parent">Main category</FieldLabel>
-          <NativeSelect
+    <form onSubmit={onSubmit} className="flex flex-col gap-[16px] pt-[4px]" noValidate>
+      {error && <NoticeBox notice={{ kind: "error", text: error }} />}
+      <SpField
+        label="Name"
+        htmlFor="category-name"
+        error={nameError ?? (touched && missingName ? "Enter a name." : undefined)}
+      >
+        <SpInput
+          id="category-name"
+          surface="panel"
+          placeholder="e.g. Travel"
+          maxLength={MAX_NAME}
+          autoComplete="off"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          aria-invalid={Boolean(nameError) || (touched && missingName)}
+        />
+      </SpField>
+      <SpField
+        label="Main category"
+        htmlFor="category-parent"
+        hint={hasChildren ? "It has subcategories, so it stays a main category." : undefined}
+      >
+        <div className="relative">
+          <select
             id="category-parent"
             value={parentId}
             onChange={(e) => setParentId(e.target.value)}
             disabled={hasChildren}
-            className="h-11 w-full"
+            className="h-[52px] w-full appearance-none rounded-[16px] bg-(--sp-soft) pr-[44px] pl-[16px] text-(--sp-text) outline-none focus-visible:ring-2 focus-visible:ring-(--sp-card-front) disabled:text-(--sp-text-muted) disabled:opacity-70"
           >
-            <NativeSelectOption value="">None (this is a main category)</NativeSelectOption>
+            <option value="">None (this is a main category)</option>
             {parents.map((c) => (
-              <NativeSelectOption key={c.id} value={c.id}>
+              <option key={c.id} value={c.id}>
                 {c.name}
-              </NativeSelectOption>
+              </option>
             ))}
-          </NativeSelect>
-          {hasChildren && (
-            <p className="text-xs text-muted-foreground">It has subcategories, so it stays a main category.</p>
-          )}
-        </Field>
-        <Field data-invalid={touched && missingIcon} className="min-h-0">
-          <FieldLabel id="category-icon-label">Icon</FieldLabel>
-          {/* Scrolls inside the dialog on a small phone. */}
-          <div
-            role="radiogroup"
-            aria-labelledby="category-icon-label"
-            className="grid max-h-[40svh] grid-cols-5 gap-1.5 overflow-y-auto rounded-lg border p-1.5"
-          >
-            {icons.map((name) => {
-              const on = icon === name;
-              return (
-                <button
-                  key={name}
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  aria-label={name.replaceAll("-", " ")}
-                  onClick={() => setIcon(name)}
-                  className={cn(
-                    "flex aspect-square min-h-11 items-center justify-center rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                    on ? "bg-foreground text-background" : "hover:bg-muted"
-                  )}
-                >
-                  <CategoryIcon name={name} className="size-6" />
-                </button>
-              );
-            })}
-          </div>
-          {touched && missingIcon && <FieldError>Pick an icon.</FieldError>}
-        </Field>
-      </FieldGroup>
-      <Button type="submit" size="lg" className="h-11 w-full shrink-0" disabled={pending}>
-        {pending ? "Saving…" : category ? "Save" : "Add category"}
-      </Button>
+          </select>
+          <ChevronDown
+            aria-hidden
+            className="pointer-events-none absolute top-1/2 right-[16px] size-[18px] -translate-y-1/2 stroke-[1.8] text-(--sp-text-faint)"
+          />
+        </div>
+      </SpField>
+      <SpField
+        label="Website"
+        htmlFor="category-website"
+        hint="Optional. Its logo shows on expenses in this category that have no website."
+        error={websiteError ?? undefined}
+      >
+        <SpInput
+          id="category-website"
+          name="website"
+          surface="panel"
+          type="text"
+          inputMode="url"
+          autoComplete="off"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          placeholder="e.g. amazon.com"
+          maxLength={2048}
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+          aria-invalid={Boolean(websiteError) || undefined}
+        />
+      </SpField>
+      <SpField label="Icon" error={touched && missingIcon ? "Pick an icon." : undefined}>
+        <div role="radiogroup" aria-label="Icon" className="grid grid-cols-5 gap-[6px]">
+          {icons.map((name) => {
+            const on = icon === name;
+            return (
+              <button
+                key={name}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                aria-label={name.replaceAll("-", " ")}
+                onClick={() => setIcon(name)}
+                className={cn(
+                  "flex aspect-square min-h-[44px] items-center justify-center rounded-full outline-none transition focus-visible:ring-3 focus-visible:ring-(--sp-ring) [&_svg]:size-[20px] [&_svg]:stroke-[1.7]",
+                  on
+                    ? "bg-(--sp-chip-active) text-(--sp-chip-active-text)"
+                    : "bg-(--sp-soft) text-(--sp-text) hover:bg-(--sp-soft-hover)",
+                )}
+              >
+                <CategoryIcon name={name} />
+              </button>
+            );
+          })}
+        </div>
+      </SpField>
+      <SubmitBar disabled={pending}>{pending ? "Saving…" : category ? "Save" : "Add category"}</SubmitBar>
     </form>
   );
 }
@@ -226,24 +265,19 @@ export function TagDialog({
   onSaved: (text: string) => void;
 }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{tag ? "Rename tag" : "Add tag"}</DialogTitle>
-        </DialogHeader>
-        {open && (
-          <TagForm
-            key={tag?.id ?? "new"}
-            tag={tag}
-            paths={paths}
-            onDone={(text) => {
-              onOpenChange(false);
-              onSaved(text);
-            }}
-          />
-        )}
-      </DialogContent>
-    </Dialog>
+    <BottomSheet open={open} onOpenChange={onOpenChange} title={tag ? "Rename tag" : "Add tag"}>
+      {open && (
+        <TagForm
+          key={tag?.id ?? "new"}
+          tag={tag}
+          paths={paths}
+          onDone={(text) => {
+            onOpenChange(false);
+            onSaved(text);
+          }}
+        />
+      )}
+    </BottomSheet>
   );
 }
 
@@ -264,11 +298,17 @@ function TagForm({ tag, paths, onDone }: { tag: Tag | null; paths: CatalogPaths;
     setPending(true);
     try {
       if (tag) {
-        await api(`${paths.tags}/${tag.id}`, { method: "PATCH", body: { name: trimmed } });
+        await api(`${paths.tags}/${tag.id}`, {
+          method: "PATCH",
+          body: { name: trimmed },
+        });
         onDone(`Tag renamed to "${trimmed}".`);
       } else {
         // 200 = a tag with this name already exists (nothing new made).
-        const { status, data } = await apiWithStatus<Tag>(paths.createTag, { method: "POST", body: { name: trimmed } });
+        const { status, data } = await apiWithStatus<Tag>(paths.createTag, {
+          method: "POST",
+          body: { name: trimmed },
+        });
         onDone(status === 201 ? `Tag "${data.name}" is added.` : `Tag "${data.name}" already exists.`);
       }
     } catch (err) {
@@ -278,25 +318,20 @@ function TagForm({ tag, paths, onDone }: { tag: Tag | null; paths: CatalogPaths;
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-      <Field data-invalid={Boolean(nameError) || (touched && missing)}>
-        <FieldLabel htmlFor="tag-name">Name</FieldLabel>
-        <Input
+    <form onSubmit={onSubmit} className="flex flex-col gap-[16px] pt-[4px]" noValidate>
+      <SpField label="Name" htmlFor="tag-name" error={nameError ?? (touched && missing ? "Enter a name." : undefined)}>
+        <SpInput
           id="tag-name"
+          surface="panel"
           placeholder="e.g. Client visit"
           maxLength={MAX_NAME}
           autoComplete="off"
           value={name}
           onChange={(e) => setName(e.target.value)}
           aria-invalid={Boolean(nameError) || (touched && missing)}
-          className="h-11"
         />
-        {nameError ? <FieldError>{nameError}</FieldError> : touched && missing && <FieldError>Enter a name.</FieldError>}
-      </Field>
-      <Button type="submit" size="lg" className="h-11 w-full" disabled={pending}>
-        {pending ? "Saving…" : tag ? "Save" : "Add tag"}
-      </Button>
+      </SpField>
+      <SubmitBar disabled={pending}>{pending ? "Saving…" : tag ? "Save" : "Add tag"}</SubmitBar>
     </form>
   );
 }
-

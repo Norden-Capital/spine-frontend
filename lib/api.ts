@@ -57,8 +57,6 @@ const ERROR_MESSAGES: Record<string, string> = {
   file_not_found: "This file no longer exists.",
   possible_duplicate: "This looks like a transaction that is already saved.",
   comment_not_found: "This comment no longer exists.",
-  ai_disabled: "Suggestions are not available.",
-  ai_unavailable: "No suggestion right now. Please try again later.",
   pin_exists: "You already have a PIN.",
   no_pin: "Create your PIN first.",
   invalid_pin: "Wrong PIN. Try again.",

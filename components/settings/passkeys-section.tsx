@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Fingerprint, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { Ellipsis, Fingerprint, Laptop, Pencil, ScanFace, Smartphone, Trash2 } from "lucide-react";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import {
   credentialToJSON,
@@ -13,33 +13,46 @@ import {
   toCreationOptions,
 } from "@/lib/passkeys";
 import { useDates } from "@/components/prefs/prefs-provider";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+  BottomSheet,
+  DeviceCard,
+  IconButton,
+  IconTile,
+  SpButton,
+  SpField,
+  SpInput,
+  type IconTileTone,
+} from "@/components/spine-ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { SettingsNotice } from "./settings-notice";
 
-export type Passkey = { id: string; name: string; createdAt: string; lastUsedAt: string | null };
+export type Passkey = {
+  id: string;
+  name: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  /** True only for the passkey used to log in this session. */
+  current?: boolean;
+};
 type Notice = { kind: "ok" | "error"; text: string };
 
 const MAX_NAME = 60;
 const ITEM = "min-h-11 gap-3 px-3 text-base";
+
+/** Card colors, in turn (look only). */
+const TONES: IconTileTone[] = ["violet", "sun", "ink"];
+
+/** Icon by the name the user gave (look only). */
+function deviceIcon(name: string) {
+  if (/iphone|android|phone|pixel|galaxy/i.test(name)) return <Smartphone aria-hidden />;
+  if (/mac|laptop|windows|\bpc\b|chromebook/i.test(name)) return <Laptop aria-hidden />;
+  return <Fingerprint aria-hidden />;
+}
 
 /**
  * "Face ID & fingerprint": the user's passkeys. Hidden when the browser
@@ -88,70 +101,81 @@ export function PasskeysSection({ passkeys }: { passkeys: Passkey[] | null }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Face ID &amp; fingerprint</CardTitle>
-        <CardDescription>Log in without your password on this device.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+    <>
+      <section className="rounded-(--sp-radius) bg-(--sp-panel) px-[14px] pt-[16px] pb-[16px]">
+        <div className="flex items-start gap-[12px]">
+          <IconTile tone="ink" size={52}>
+            <ScanFace />
+          </IconTile>
+          <div className="min-w-0 flex-1 pt-[4px] leading-tight">
+            <h2 className="text-[0.9375rem] font-medium text-(--sp-text)">Face ID &amp; fingerprint</h2>
+            <p className="mt-[5px] text-[0.6875rem] leading-snug text-(--sp-text-muted)">
+              Log in without your password on these devices.
+            </p>
+          </div>
+        </div>
         {notice && (
-          <Alert variant={notice.kind === "error" ? "destructive" : "default"}>
-            <AlertDescription>{notice.text}</AlertDescription>
-          </Alert>
+          <div className="mt-[14px]">
+            <SettingsNotice kind={notice.kind}>{notice.text}</SettingsNotice>
+          </div>
         )}
 
         {passkeys === null ? (
-          <p className="rounded-lg border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
+          <p className="mt-[16px] rounded-[16px] bg-(--sp-soft) px-[14px] py-[16px] text-center text-[0.8125rem] leading-snug text-(--sp-text-muted)">
             Your passkeys could not be loaded. Please try again later.
           </p>
         ) : passkeys.length > 0 ? (
-          <ul className="flex flex-col divide-y overflow-hidden rounded-xl border">
-            {passkeys.map((p) => (
-              <li key={p.id} className="flex min-h-14 items-center gap-3 py-2 pr-1 pl-4">
-                <Fingerprint className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate font-medium">{p.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    Added {dates.date(p.createdAt)} · Last used {p.lastUsedAt ? dates.dateTime(p.lastUsedAt) : "never"}
-                  </span>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={<Button variant="ghost" size="icon" className="size-11 shrink-0" />}
-                    aria-label={`Actions for ${p.name}`}
-                  >
-                    <MoreHorizontal className="size-5" aria-hidden />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-52 max-w-[calc(100vw-2rem)]">
-                    <DropdownMenuItem className={ITEM} onClick={() => setRename(p)}>
-                      <Pencil aria-hidden />
-                      Rename
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className={ITEM}
-                      variant="destructive"
-                      onClick={() => {
-                        setRemove(p);
-                        setRemoveOpen(true);
-                      }}
-                    >
-                      <Trash2 aria-hidden />
-                      Remove
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+          <ul className="mt-[16px] space-y-[10px]">
+            {passkeys.map((p, i) => (
+              <li key={p.id}>
+                <DeviceCard
+                  icon={deviceIcon(p.name)}
+                  tone={TONES[i % TONES.length]}
+                  name={p.name}
+                  added={dates.date(p.createdAt)}
+                  lastUsed={p.lastUsedAt ? dates.dateTime(p.lastUsedAt) : "Never"}
+                  current={p.current === true}
+                  action={
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={<IconButton label={`Actions for ${p.name}`} icon={<Ellipsis />} variant="ghost" />}
+                      />
+                      <DropdownMenuContent align="end" className="w-52 max-w-[calc(100vw-2rem)]">
+                        <DropdownMenuItem className={ITEM} onClick={() => setRename(p)}>
+                          <Pencil aria-hidden />
+                          Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className={ITEM}
+                          variant="destructive"
+                          onClick={() => {
+                            setRemove(p);
+                            setRemoveOpen(true);
+                          }}
+                        >
+                          <Trash2 aria-hidden />
+                          Remove
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  }
+                />
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">No Face ID / fingerprint yet.</p>
+          <p className="mt-[16px] rounded-[16px] bg-(--sp-soft) px-[14px] py-[16px] text-center text-[0.8125rem] text-(--sp-text-muted)">
+            No Face ID / fingerprint yet.
+          </p>
         )}
 
-        <Button size="lg" variant="outline" className="h-11 w-full" onClick={() => setAddOpen(true)}>
-          <Plus aria-hidden />
+        <SpButton className="mt-[14px] w-full" icon={<Fingerprint aria-hidden />} onClick={() => setAddOpen(true)}>
           Add Face ID / fingerprint
-        </Button>
-      </CardContent>
+        </SpButton>
+        <p className="mt-[10px] text-center text-[0.625rem] leading-snug text-(--sp-text-faint)">
+          Give it a name, then confirm with your face or finger.
+        </p>
+      </section>
 
       <AddPasskeyDialog open={addOpen} onOpenChange={setAddOpen} onAdded={(name) => done(`"${name}" is added.`)} />
       <RenameDialog
@@ -160,25 +184,31 @@ export function PasskeysSection({ passkeys }: { passkeys: Passkey[] | null }) {
         onRenamed={(name) => done(`Renamed to "${name}".`)}
       />
 
-      <AlertDialog open={removeOpen} onOpenChange={(next) => !next && !busy && setRemoveOpen(false)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="break-words">Remove &quot;{remove?.name}&quot;?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You can&apos;t log in with it anymore. You can still use your password.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel size="lg" className="h-11" disabled={busy}>
-              Cancel
-            </AlertDialogCancel>
-            <Button variant="destructive" size="lg" className="h-11" onClick={confirmRemove} disabled={busy}>
+      <BottomSheet
+        open={removeOpen}
+        onOpenChange={(next) => !next && !busy && setRemoveOpen(false)}
+        title={`Remove "${remove?.name ?? ""}"?`}
+        description="You can't log in with it anymore. You can still use your password."
+        footer={
+          <div className="space-y-[8px]">
+            <SpButton
+              className="w-full"
+              variant="danger"
+              icon={<Trash2 aria-hidden />}
+              onClick={confirmRemove}
+              disabled={busy}
+            >
               {busy ? "Removing…" : "Remove"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Card>
+            </SpButton>
+            <SpButton className="w-full" variant="secondary" onClick={() => setRemoveOpen(false)} disabled={busy}>
+              Cancel
+            </SpButton>
+          </div>
+        }
+      >
+        {null}
+      </BottomSheet>
+    </>
   );
 }
 
@@ -197,22 +227,21 @@ function AddPasskeyDialog({
   onAdded: (name: string) => void;
 }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add Face ID / fingerprint</DialogTitle>
-          <DialogDescription>Give it a name, then confirm with your face or finger.</DialogDescription>
-        </DialogHeader>
-        {open && (
-          <AddPasskeyForm
-            onDone={(name) => {
-              onOpenChange(false);
-              onAdded(name);
-            }}
-          />
-        )}
-      </DialogContent>
-    </Dialog>
+    <BottomSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Add Face ID / fingerprint"
+      description="Give it a name, then confirm with your face or finger."
+    >
+      {open && (
+        <AddPasskeyForm
+          onDone={(name) => {
+            onOpenChange(false);
+            onAdded(name);
+          }}
+        />
+      )}
+    </BottomSheet>
   );
 }
 
@@ -264,30 +293,28 @@ function AddPasskeyForm({ onDone }: { onDone: (name: string) => void }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      <Field data-invalid={!trimmed}>
-        <FieldLabel htmlFor="passkey-name">Name</FieldLabel>
-        <Input
+    <form onSubmit={onSubmit} className="space-y-[14px] pt-[4px]" noValidate>
+      {error && <SettingsNotice kind="error">{error}</SettingsNotice>}
+      <SpField label="Name" htmlFor="passkey-name" error={!trimmed ? "Enter a name." : undefined}>
+        <SpInput
           id="passkey-name"
+          surface="panel"
           maxLength={MAX_NAME}
           autoComplete="off"
           placeholder="e.g. iPhone"
           value={name}
           onChange={(e) => setName(e.target.value)}
           aria-invalid={!trimmed}
-          className="h-11"
         />
-        {!trimmed && <FieldError>Enter a name.</FieldError>}
-      </Field>
-      <Button type="submit" size="lg" className="h-11 w-full" disabled={pending || !options || !trimmed}>
-        <Fingerprint aria-hidden />
+      </SpField>
+      <SpButton
+        type="submit"
+        className="w-full"
+        icon={<Fingerprint aria-hidden />}
+        disabled={pending || !options || !trimmed}
+      >
         {pending ? "Waiting for Face ID…" : options ? "Continue" : "Getting ready…"}
-      </Button>
+      </SpButton>
     </form>
   );
 }
@@ -302,23 +329,18 @@ function RenameDialog({
   onRenamed: (name: string) => void;
 }) {
   return (
-    <Dialog open={passkey !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Rename</DialogTitle>
-        </DialogHeader>
-        {passkey && (
-          <RenameForm
-            key={passkey.id}
-            passkey={passkey}
-            onDone={(name) => {
-              onClose();
-              onRenamed(name);
-            }}
-          />
-        )}
-      </DialogContent>
-    </Dialog>
+    <BottomSheet open={passkey !== null} onOpenChange={(open) => !open && onClose()} title="Rename">
+      {passkey && (
+        <RenameForm
+          key={passkey.id}
+          passkey={passkey}
+          onDone={(name) => {
+            onClose();
+            onRenamed(name);
+          }}
+        />
+      )}
+    </BottomSheet>
   );
 }
 
@@ -343,23 +365,21 @@ function RenameForm({ passkey, onDone }: { passkey: Passkey; onDone: (name: stri
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-      <Field data-invalid={Boolean(error) || !trimmed}>
-        <FieldLabel htmlFor="passkey-rename">Name</FieldLabel>
-        <Input
+    <form onSubmit={onSubmit} className="space-y-[14px] pt-[4px]" noValidate>
+      <SpField label="Name" htmlFor="passkey-rename" error={error ?? (!trimmed ? "Enter a name." : undefined)}>
+        <SpInput
           id="passkey-rename"
+          surface="panel"
           maxLength={MAX_NAME}
           autoComplete="off"
           value={name}
           onChange={(e) => setName(e.target.value)}
           aria-invalid={Boolean(error) || !trimmed}
-          className="h-11"
         />
-        {error ? <FieldError>{error}</FieldError> : !trimmed && <FieldError>Enter a name.</FieldError>}
-      </Field>
-      <Button type="submit" size="lg" className="h-11 w-full" disabled={pending || !trimmed}>
+      </SpField>
+      <SpButton type="submit" className="w-full" disabled={pending || !trimmed}>
         {pending ? "Saving…" : "Save"}
-      </Button>
+      </SpButton>
     </form>
   );
 }

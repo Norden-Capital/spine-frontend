@@ -6,7 +6,7 @@ import { getDateSettings } from "@/lib/prefs-server";
 import { formatMoney, formatNet, type Currency } from "@/lib/transactions-types";
 import { getDashboard } from "@/lib/wallet-server";
 import type { Budget, Goal } from "@/lib/wallet-types";
-import { CategoryIcon } from "@/components/expenses/category-icon";
+import { TxLogo } from "@/components/expenses/tx-logo";
 import { LinkAddPill, LinkPeekCard, LinkQuickAction, QuickActionsPanel } from "@/components/home/home-links";
 import { BalanceCard, CardStack, GreetingHeader, ListItem, SectionCard } from "@/components/spine-ui";
 import { TotalsPanel } from "@/components/transactions/tx-list";
@@ -106,7 +106,7 @@ export default async function WalletPage() {
                 <ListItem
                   key={tx.id}
                   href={`/wallet/transactions/${encodeURIComponent(tx.id)}`}
-                  icon={<CategoryIcon name={tx.category.icon} />}
+                  icon={<TxLogo logoUrl={tx.logoUrl} icon={tx.category.icon} />}
                   title={tx.description || tx.category.name}
                   meta={`${tx.category.name} • ${formatDay(tx.date, dates)}`}
                   amount={formatMoney(tx.amount, tx.currency, income ? "+" : "-")}

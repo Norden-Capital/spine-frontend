@@ -1,36 +1,26 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { PageHeader, Segmented } from "@/components/spine-ui";
 
 const TABS = [
-  { href: "/admin/users", label: "Users" },
-  { href: "/admin/categories", label: "Categories" },
-  { href: "/admin/trash", label: "Trash" },
+  { value: "/admin/users", label: "Users" },
+  { value: "/admin/categories", label: "Categories" },
+  { value: "/admin/trash", label: "Trash" },
 ];
 
-/** Segmented tabs at the top of the manager pages. */
+/**
+ * "Admin" title + page tabs (Segmented links) at the top of the manager
+ * pages. Hidden on one user's page: it has its own header with a back button.
+ */
 export function AdminTabs() {
   const pathname = usePathname();
+  if (pathname.startsWith("/admin/users/")) return null;
+  const active = TABS.find((t) => pathname === t.value || pathname.startsWith(`${t.value}/`))?.value ?? "";
   return (
-    <nav aria-label="Admin" className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
-      {TABS.map((tab) => {
-        const active = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
-        return (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            aria-current={active ? "page" : undefined}
-            className={cn(
-              "flex h-11 items-center justify-center rounded-lg px-1 text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-              active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {tab.label}
-          </Link>
-        );
-      })}
-    </nav>
+    <>
+      <PageHeader title="Admin" />
+      <Segmented label="Admin" value={active} items={TABS.map((t) => ({ ...t, href: t.value }))} />
+    </>
   );
 }

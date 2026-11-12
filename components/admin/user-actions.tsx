@@ -1,30 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Ban, CircleCheck, Eye, KeyRound, LogOut, Mail, MoreHorizontal } from "lucide-react";
+import { CircleCheck, KeyRound, LogOut, Mail, X } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { displayName, type AdminUser } from "@/lib/auth-types";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { RowGroup, RowIcon, SpRow } from "@/components/spine-ui";
+import { ConfirmSheet } from "./confirm-sheet";
+import type { Notice } from "./notice";
 
-export type Notice = { kind: "ok" | "error"; text: string };
+export type { Notice } from "./notice";
 
 type Action = {
   title: string;
@@ -78,24 +63,24 @@ function actionsFor(user: AdminUser) {
   } satisfies Record<string, Action>;
 }
 
-const ITEM = "min-h-11 gap-3 px-3 text-base";
+/** Red icon circle for the destructive row (light red fill, red icon). */
+function DangerIcon({ children }: { children: ReactNode }) {
+  return (
+    <span className="flex size-[33px] shrink-0 items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--sp-danger)_14%,var(--sp-panel))] text-(--sp-danger) [&_svg]:size-[15px] [&_svg]:stroke-[1.7]">
+      {children}
+    </span>
+  );
+}
 
 /**
- * "…" menu with what I can do to a user. Only shown when the backend says
- * canManage. Every action asks first (AlertDialog); after it, the page data
- * reloads from the server.
+ * "Manage" rows with what I can do to a user. Only shown when the backend
+ * says canManage. Every action asks first (bottom sheet); after it, the
+ * page data reloads from the server. The role is not changed here (it is
+ * picked at invite).
  */
-export function UserActions({
-  user,
-  showView = true,
-  onNotice,
-}: {
-  user: AdminUser;
-  showView?: boolean;
-  onNotice: (notice: Notice) => void;
-}) {
+export function UserActions({ user, onNotice }: { user: AdminUser; onNotice: (notice: Notice) => void }) {
   const router = useRouter();
-  // The last chosen action stays set while the dialog fades out.
+  // The last chosen action stays set while the sheet slides out.
   const [action, setAction] = useState<Action | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -121,79 +106,65 @@ export function UserActions({
     }
   }
 
+  const none = <span />;
+
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={<Button variant="ghost" size="icon" className="size-11 shrink-0" />}
-          aria-label={`Actions for ${displayName(user)}`}
-        >
-          <MoreHorizontal className="size-5" aria-hidden />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64 max-w-[calc(100vw-2rem)]">
-          {showView && (
-            <>
-              <DropdownMenuItem className={ITEM} render={<Link href={`/admin/users/${encodeURIComponent(user.id)}`} />}>
-                <Eye aria-hidden />
-                View
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-            </>
-          )}
-          {user.status === "INVITED" && (
-            <DropdownMenuItem className={ITEM} onClick={() => ask(actions.resend)}>
-              <Mail aria-hidden />
-              Resend invite
-            </DropdownMenuItem>
-          )}
-          {user.status === "ACTIVE" && (
-            <>
-              <DropdownMenuItem className={ITEM} onClick={() => ask(actions.reset)}>
-                <KeyRound aria-hidden />
-                Send reset password email
-              </DropdownMenuItem>
-              <DropdownMenuItem className={ITEM} onClick={() => ask(actions.logoutAll)}>
-                <LogOut aria-hidden />
-                Log out all sessions
-              </DropdownMenuItem>
-            </>
-          )}
-          {user.status === "DISABLED" ? (
-            <DropdownMenuItem className={ITEM} onClick={() => ask(actions.enable)}>
-              <CircleCheck aria-hidden />
-              Enable
-            </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem className={ITEM} variant="destructive" onClick={() => ask(actions.disable)}>
-              <Ban aria-hidden />
-              Disable
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <RowGroup title="Manage">
+        {user.status === "INVITED" && (
+          <SpRow
+            leading={<RowIcon><Mail /></RowIcon>}
+            title="Send the invite again"
+            subtitle="They have not set a password yet."
+            onClick={() => ask(actions.resend)}
+            trailing={none}
+          />
+        )}
+        {user.status === "ACTIVE" && (
+          <>
+            <SpRow
+              leading={<RowIcon><KeyRound /></RowIcon>}
+              title="Send reset password email"
+              onClick={() => ask(actions.reset)}
+              trailing={none}
+            />
+            <SpRow
+              leading={<RowIcon><LogOut /></RowIcon>}
+              title="Log out on all devices"
+              onClick={() => ask(actions.logoutAll)}
+              trailing={none}
+            />
+          </>
+        )}
+        {user.status === "DISABLED" ? (
+          <SpRow
+            leading={<RowIcon><CircleCheck /></RowIcon>}
+            title="Enable this user"
+            subtitle="They can log in again."
+            onClick={() => ask(actions.enable)}
+            trailing={none}
+          />
+        ) : (
+          <SpRow
+            leading={<DangerIcon><X /></DangerIcon>}
+            title={<span className="text-(--sp-danger)">Disable this user</span>}
+            subtitle="They can no longer log in. You can undo it."
+            onClick={() => ask(actions.disable)}
+            trailing={none}
+          />
+        )}
+      </RowGroup>
 
-      <AlertDialog open={isOpen} onOpenChange={(next) => !next && !pending && setIsOpen(false)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{action?.title}</AlertDialogTitle>
-            <AlertDialogDescription>{action?.text}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel size="lg" className="h-11" disabled={pending}>
-              Cancel
-            </AlertDialogCancel>
-            <Button
-              variant={action?.destructive ? "destructive" : "default"}
-              size="lg"
-              className="h-11"
-              onClick={confirm}
-              disabled={pending}
-            >
-              {pending ? "Please wait…" : action?.confirm}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmSheet
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        title={action?.title ?? ""}
+        text={action?.text ?? ""}
+        confirm={action?.confirm ?? ""}
+        destructive={action?.destructive}
+        busy={pending}
+        onConfirm={confirm}
+      />
     </>
   );
 }

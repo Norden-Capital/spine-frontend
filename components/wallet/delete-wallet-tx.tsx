@@ -4,16 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+import { BottomSheet, SpButton } from "@/components/spine-ui";
 
 /** Wallet delete is final (no trash): ask first and say so. */
 export function DeleteWalletTx({ id, month }: { id: string; month: string }) {
@@ -38,29 +29,32 @@ export function DeleteWalletTx({ id, month }: { id: string; month: string }) {
 
   return (
     <>
-      <Button variant="outline" size="lg" className="h-11 text-destructive" onClick={() => setOpen(true)}>
-        <Trash2 aria-hidden />
+      <SpButton size="md" variant="danger" icon={<Trash2 />} onClick={() => setOpen(true)}>
         Delete
-      </Button>
-      {error && <p className="col-span-2 text-sm text-destructive">{error}</p>}
-      <AlertDialog open={open} onOpenChange={(next) => !next && !pending && setOpen(false)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete for good?</AlertDialogTitle>
-            <AlertDialogDescription>
-              It is removed from your wallet with its files. This can&apos;t be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel size="lg" className="h-11" disabled={pending}>
+      </SpButton>
+      {error && (
+        <p role="alert" className="order-last col-span-full px-[4px] text-[0.6875rem] leading-snug text-(--sp-danger)">
+          {error}
+        </p>
+      )}
+      <BottomSheet
+        open={open}
+        onOpenChange={(next) => !next && !pending && setOpen(false)}
+        title="Delete for good?"
+        description="It is removed from your wallet with its files. This can't be undone."
+        footer={
+          <div className="grid grid-cols-2 gap-[8px]">
+            <SpButton variant="secondary" onClick={() => setOpen(false)} disabled={pending}>
               Cancel
-            </AlertDialogCancel>
-            <Button variant="destructive" size="lg" className="h-11" onClick={confirm} disabled={pending}>
+            </SpButton>
+            <SpButton variant="danger" onClick={confirm} disabled={pending}>
               {pending ? "Deleting…" : "Delete"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </SpButton>
+          </div>
+        }
+      >
+        {null}
+      </BottomSheet>
     </>
   );
 }

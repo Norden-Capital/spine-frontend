@@ -8,6 +8,10 @@ export type Category = {
   archived: boolean;
   /** Parent category id; null = top level (one level only). */
   parentId?: string | null;
+  /** Its website as a bare domain ("claude.ai"), or null. */
+  website?: string | null;
+  /** Its logo: "/api/logos/…", or null = show the icon. */
+  logoUrl?: string | null;
   /** How often it was used in the last 90 days (picker order). */
   usageCount?: number;
 };

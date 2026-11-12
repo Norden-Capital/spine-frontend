@@ -15,6 +15,10 @@ export type Transaction = {
   /** Calendar day "YYYY-MM-DD". */
   date: string;
   description: string;
+  /** The transaction's own website as a bare domain ("claude.ai"), or null. */
+  website?: string | null;
+  /** The picture to show (own site, else category, else parent category): "/api/logos/…", or null = category icon. */
+  logoUrl?: string | null;
   category: { id: string; name: string; icon: string; archived: boolean };
   tags: { id: string; name: string }[];
   files: FileRef[];

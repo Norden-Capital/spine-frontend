@@ -12,7 +12,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const user = await requireUser("/admin/users");
   if (!canSeeUsers(user.role)) redirect("/");
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-[16px]">
       <AdminTabs />
       {children}
     </div>

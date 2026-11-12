@@ -8,6 +8,8 @@ const VARIANT = {
   soft: "bg-(--sp-soft) text-(--sp-text) hover:bg-(--sp-soft-hover)",
   /** Black circle. Strong action. */
   ink: "bg-(--sp-pill) text-(--sp-pill-text) hover:brightness-125",
+  /** No circle until hover: "more" (…) buttons inside rows and panels. */
+  ghost: "bg-transparent text-(--sp-text) hover:bg-(--sp-soft)",
 } as const;
 
 const SIZE = {
@@ -42,7 +44,7 @@ export function IconButton({
       aria-label={label}
       className={cn(
         "relative inline-flex shrink-0 items-center justify-center rounded-full transition outline-none select-none",
-        "focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-95 disabled:pointer-events-none disabled:opacity-50",
+        "focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100 disabled:pointer-events-none disabled:opacity-50",
         "[&_svg]:shrink-0 [&_svg]:stroke-[1.6]",
         VARIANT[variant],
         SIZE[size],

@@ -1,59 +1,75 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { backendGet } from "@/lib/auth";
-import { ROLE_LABEL, type MyAccount } from "@/lib/auth-types";
+import { CalendarDays, CircleCheck, Clock, Shield } from "lucide-react";
+import { ROLE_LABEL } from "@/lib/auth-types";
 import { formatDate, formatDateTime, todayIn } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { IconTile, PageHeader, RowGroup, SpBadge, SpPanel, SpRow, type SpBadgeProps } from "@/components/spine-ui";
 import { AccountDetailsForm } from "@/components/settings/account-details-form";
-import { DetailRow, LoadError, SignInsCard } from "@/components/settings/sign-ins-card";
+import { getMe } from "@/components/settings/settings-data";
+import { SettingsProfile, STATUS } from "@/components/settings/settings-profile";
+import { LoadError, SignInsCard } from "@/components/settings/sign-ins-card";
 
-export const metadata: Metadata = { title: "Account" };
+export const metadata: Metadata = { title: "My account" };
 
 // Blocks on the server on purpose (session data), so nothing flashes.
 export const instant = false;
 
-const STATUS: Record<string, string> = { ACTIVE: "Active", INVITED: "Invited", DISABLED: "Disabled" };
+const STATUS_TONE: Record<string, SpBadgeProps["tone"]> = { ACTIVE: "success", INVITED: "warning", DISABLED: "danger" };
+
+function Value({ children }: { children: React.ReactNode }) {
+  return <span className="shrink-0 text-[0.75rem] font-medium text-(--sp-text)">{children}</span>;
+}
 
 export default async function AccountPage() {
-  const [res, dates] = await Promise.all([backendGet("/me"), getDateSettings()]);
-  if (res.status === 401) redirect("/login?next=%2Fsettings%2Faccount");
-  const me = res.ok ? ((await res.json()) as MyAccount) : null;
+  const [me, dates] = await Promise.all([getMe("/settings/account"), getDateSettings()]);
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Your details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {me ? (
-            <AccountDetailsForm email={me.email} firstName={me.firstName} lastName={me.lastName} />
-          ) : (
-            <LoadError what="Your details" />
-          )}
-        </CardContent>
-      </Card>
+      <PageHeader back={{ href: "/settings", label: "Back to settings" }} title="My account" />
+      {me ? <SettingsProfile me={me} dates={dates} /> : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Account</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {me ? (
-            <dl className="flex flex-col divide-y text-sm">
-              <DetailRow label="Role" value={ROLE_LABEL[me.role] ?? me.role} />
-              <DetailRow label="Status" value={STATUS[me.status] ?? me.status} />
-              <DetailRow label="Created" value={formatDate(me.createdAt, dates)} />
-              <DetailRow label="Last login" value={me.lastLoginAt ? formatDateTime(me.lastLoginAt, dates) : "Never"} />
-            </dl>
-          ) : (
-            <LoadError what="Your account" />
-          )}
-        </CardContent>
-      </Card>
+      <SpPanel title="Your details" description="Your name shows on your expenses and comments.">
+        {me ? (
+          <AccountDetailsForm email={me.email} firstName={me.firstName} lastName={me.lastName} />
+        ) : (
+          <LoadError what="Your details" />
+        )}
+      </SpPanel>
 
-      <SignInsCard path="/me/sign-ins" today={todayIn(dates.zone)} />
+      {me ? (
+        <RowGroup title="Account">
+          <SpRow
+            leading={<IconTile tone="violet"><Shield /></IconTile>}
+            title="Role"
+            trailing={<SpBadge tone="accent">{ROLE_LABEL[me.role] ?? me.role}</SpBadge>}
+            className="pr-[14px]"
+          />
+          <SpRow
+            leading={<IconTile tone="green"><CircleCheck /></IconTile>}
+            title="Status"
+            trailing={<SpBadge tone={STATUS_TONE[me.status] ?? "neutral"}>{STATUS[me.status] ?? me.status}</SpBadge>}
+            className="pr-[14px]"
+          />
+          <SpRow
+            leading={<IconTile tone="sun"><CalendarDays /></IconTile>}
+            title="Created"
+            trailing={<Value>{formatDate(me.createdAt, dates)}</Value>}
+            className="pr-[14px]"
+          />
+          <SpRow
+            leading={<IconTile tone="ink"><Clock /></IconTile>}
+            title="Last login"
+            trailing={<Value>{me.lastLoginAt ? formatDateTime(me.lastLoginAt, dates) : "Never"}</Value>}
+            className="pr-[14px]"
+          />
+        </RowGroup>
+      ) : (
+        <SpPanel title="Account">
+          <LoadError what="Your account" />
+        </SpPanel>
+      )}
+
+      <SignInsCard path="/me/sign-ins" today={todayIn(dates.zone)} variant="activity" />
     </>
   );
 }

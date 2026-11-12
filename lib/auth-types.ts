@@ -28,6 +28,8 @@ export type MyAccount = CurrentUser & {
   status: UserStatus;
   createdAt: string;
   lastLoginAt: string | null;
+  /** The login before this session's one (null = none). Older backends leave it out. */
+  previousLoginAt?: string | null;
 };
 
 /** "Anna Smith", or the email if no name is set. */

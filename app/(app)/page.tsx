@@ -6,7 +6,7 @@ import { formatDay, todayIn } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
 import { getMonth } from "@/lib/transactions-server";
 import { formatMoney, monthOf, type Currency, type Transaction } from "@/lib/transactions-types";
-import { CategoryIcon } from "@/components/expenses/category-icon";
+import { TxLogo } from "@/components/expenses/tx-logo";
 import { BalanceCard, CardStack, GreetingHeader, ListItem, SectionCard } from "@/components/spine-ui";
 import { LinkAddPill, LinkPeekCard, LinkQuickAction, QuickActionsPanel } from "@/components/home/home-links";
 
@@ -89,7 +89,7 @@ function RecentRow({ tx, day }: { tx: Transaction; day: string }) {
   return (
     <ListItem
       href={`/transactions/${encodeURIComponent(tx.id)}`}
-      icon={<CategoryIcon name={tx.category.icon} />}
+      icon={<TxLogo logoUrl={tx.logoUrl} icon={tx.category.icon} />}
       title={tx.description || tx.category.name}
       meta={`${tx.category.name} • ${day}`}
       amount={formatMoney(tx.amount, tx.currency, income ? "+" : undefined)}

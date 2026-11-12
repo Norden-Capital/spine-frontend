@@ -2,16 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Mail, ScanFace } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { DEFAULT_PREFERENCES, rememberPrefs, type Preferences } from "@/lib/prefs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Fingerprint } from "lucide-react";
-import { PasswordInput } from "@/components/auth/password-input";
+import { AuthHeader, OrDivider, SpButton, SpField, SpInput, SpPasswordInput } from "@/components/spine-ui";
 import { usePasskeyLogin } from "@/components/auth/use-passkey-login";
+import { Notice } from "../auth-ui";
 
 export function LoginForm({ next, passwordSet }: { next: string; passwordSet: boolean }) {
   const [error, setError] = useState<string | null>(null);
@@ -53,83 +49,69 @@ export function LoginForm({ next, passwordSet }: { next: string; passwordSet: bo
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Log in</CardTitle>
-        <CardDescription>Use the email your admin invited.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={onSubmit} className="flex flex-col gap-5">
-          {passwordSet && !error && (
-            <Alert>
-              <AlertDescription>Your password is set. You can log in now.</AlertDescription>
-            </Alert>
-          )}
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                // "webauthn": the phone can offer a passkey right here.
-                autoComplete="username webauthn"
-                inputMode="email"
-                placeholder="name@nordencapital.ca"
-                required
-                className="h-11 text-base"
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="password">Password</FieldLabel>
-              <PasswordInput
-                id="password"
-                name="password"
-                autoComplete="current-password"
-                placeholder="Your password"
-                required
-              />
-            </Field>
-          </FieldGroup>
-          <Button type="submit" size="lg" className="h-11 w-full" disabled={pending || passkey.pending}>
-            {pending ? "Logging in…" : "Log in"}
-          </Button>
-          {passkey.supported && (
-            <>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground" aria-hidden>
-                <span className="h-px flex-1 bg-border" />
-                or
-                <span className="h-px flex-1 bg-border" />
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="h-11 w-full"
-                onClick={() => {
-                  setError(null);
-                  void passkey.start();
-                }}
-                disabled={!passkey.ready || passkey.pending || pending}
-              >
-                <Fingerprint aria-hidden />
-                {passkey.pending ? "Waiting for Face ID…" : "Log in with Face ID / fingerprint"}
-              </Button>
-            </>
-          )}
-          <Link
-            href="/forgot-password"
-            className="text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
-          >
-            Forgot your password?
-          </Link>
-        </form>
-      </CardContent>
-    </Card>
+    <div>
+      <AuthHeader title="Welcome back" subtitle="Log in with the email your admin invited." />
+      <form onSubmit={onSubmit} className="mt-[32px] space-y-[16px]">
+        {passwordSet && !error && <Notice tone="success">Your password is set. You can log in now.</Notice>}
+        {error && <Notice tone="danger">{error}</Notice>}
+        <SpField label="Email" htmlFor="email">
+          <SpInput
+            id="email"
+            name="email"
+            type="email"
+            // "webauthn": the phone can offer a passkey right here.
+            autoComplete="username webauthn"
+            inputMode="email"
+            placeholder="name@nordencapital.ca"
+            required
+            icon={<Mail />}
+          />
+        </SpField>
+        <SpField
+          label="Password"
+          htmlFor="password"
+          aside={
+            // 44 tall tap area; negative margin keeps the label row small.
+            <Link
+              href="/forgot-password"
+              className="-my-[14px] -mr-[4px] inline-flex h-[44px] items-center px-[4px] text-[0.6875rem] font-medium text-(--sp-card-front) outline-none focus-visible:underline"
+            >
+              Forgot?
+            </Link>
+          }
+        >
+          <SpPasswordInput
+            id="password"
+            name="password"
+            autoComplete="current-password"
+            placeholder="Your password"
+            required
+          />
+        </SpField>
+        <SpButton type="submit" className="mt-[8px] w-full" disabled={pending || passkey.pending}>
+          {pending ? "Logging in…" : "Log in"}
+        </SpButton>
+        {passkey.supported && (
+          <>
+            <OrDivider />
+            <SpButton
+              className="w-full"
+              variant="secondary"
+              icon={<ScanFace aria-hidden />}
+              onClick={() => {
+                setError(null);
+                void passkey.start();
+              }}
+              disabled={!passkey.ready || passkey.pending || pending}
+            >
+              {passkey.pending ? "Waiting for Face ID…" : "Log in with Face ID"}
+            </SpButton>
+          </>
+        )}
+      </form>
+      <p className="mt-[32px] text-center text-[0.6875rem] leading-snug text-(--sp-text-muted)">
+        No account? Ask your admin for an invite.
+      </p>
+    </div>
   );
 }

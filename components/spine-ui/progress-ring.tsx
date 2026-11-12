@@ -68,7 +68,11 @@ export function ProgressRing({
           strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={c * (1 - pct)}
-          className={cn("transition-[stroke-dashoffset] duration-500", over ? STROKE.danger : STROKE[tone])}
+          className={cn(
+            "sp-ring-in transition-[stroke-dashoffset] duration-500 ease-(--sp-ease) motion-reduce:transition-none",
+            over ? STROKE.danger : STROKE[tone]
+          )}
+          style={{ ["--sp-ring-c" as string]: `${c}px` }}
         />
       </svg>
       {children != null ? (

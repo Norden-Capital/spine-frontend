@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { Plus, Search, X } from "lucide-react";
 import { ApiError, api, apiWithStatus, errorMessage } from "@/lib/api";
 import type { Tag } from "@/lib/catalog-types";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { TagInput } from "@/components/spine-ui";
 
 const MAX_NAME = 60;
+/** Suggestions shown as chips under the input. */
+const MAX_SUGGESTIONS = 12;
 
 /**
- * Pick any number of tags. Chosen tags show as chips (tap to remove).
+ * Pick any number of tags (kit TagInput). Chosen tags show as black chips (× removes).
  * Typing searches active tags (GET /api/tags?q=). If no tag has exactly that
  * name, "Create '<text>'" makes it (POST /api/tags: 200 = it already
  * existed, 201 = new). An archived name (409 tag_archived) shows a message.
@@ -24,6 +24,7 @@ export function TagPicker({
   id,
   basePath = "/tags",
   allowCreate = true,
+  surface,
 }: {
   value: Tag[];
   onChange: (tags: Tag[]) => void;
@@ -34,10 +35,12 @@ export function TagPicker({
   basePath?: string;
   /** false in filters: only pick existing tags. */
   allowCreate?: boolean;
+  /** "panel" inside a white sheet (soft input); default is the page look. */
+  surface?: "page" | "panel";
 }) {
   const autoId = useId();
   const inputId = id ?? `tags-${autoId}`;
-  const listId = `${inputId}-list`;
+  const statusId = `${inputId}-status`;
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [results, setResults] = useState<Tag[]>([]);
@@ -114,53 +117,59 @@ export function TagPicker({
     }
   }
 
-  // Keep focus in the input when an option is tapped (so the list stays).
-  const keepFocus = (e: React.MouseEvent) => e.preventDefault();
+  const shown = open ? options.slice(0, MAX_SUGGESTIONS) : [];
+  const status = !open
+    ? null
+    : !canCreate && options.length === 0
+      ? searching
+        ? "Searching…"
+        : isArchived
+          ? "This tag is archived."
+          : q
+            ? "Already chosen."
+            : allowCreate
+              ? "No tags yet. Type to create one."
+              : "No tags yet."
+      : searching && options.length === 0
+        ? "Searching…"
+        : null;
 
   return (
-    <div className="flex flex-col gap-2">
-      {value.length > 0 && (
-        <ul className="flex flex-wrap gap-2" aria-label="Chosen tags">
-          {value.map((tag) => (
-            <li key={tag.id}>
-              <button
-                type="button"
-                onClick={() => remove(tag)}
-                aria-label={`Remove tag ${tag.name}`}
-                className="flex h-11 max-w-full items-center gap-1.5 rounded-full border bg-muted px-3 text-sm outline-none hover:bg-muted/70 focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                <span className="truncate">{tag.name}</span>
-                <X className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <div className="relative">
-        <Search
-          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden
-        />
-        <Input
-          ref={inputRef}
-          id={inputId}
-          role="combobox"
-          aria-expanded={open}
-          aria-controls={listId}
-          aria-autocomplete="list"
-          autoComplete="off"
-          placeholder="Search or create a tag"
-          maxLength={MAX_NAME}
-          value={query}
-          onChange={(e) => {
+    <div className="flex flex-col gap-[8px]">
+      {/* Kit TagInput: chosen tags = black chips, search input, suggestions =
+          light chips. The suggestions stay after the input loses focus, so a
+          tap on a chip always lands. */}
+      <TagInput
+        tags={value}
+        onRemove={(tagId) => {
+          const tag = value.find((t) => t.id === tagId);
+          if (tag) remove(tag);
+        }}
+        suggestions={shown}
+        onAdd={(tagId) => {
+          const tag = options.find((t) => t.id === tagId);
+          if (tag) add(tag);
+        }}
+        createLabel={open && canCreate ? (creating ? "Creating…" : `Create "${q}"`) : undefined}
+        onCreate={() => {
+          if (!creating) void create();
+        }}
+        inputProps={{
+          // TagInput passes these on to SpInput, which also takes `surface`.
+          ...(surface ? ({ surface } as Record<string, string>) : {}),
+          ref: inputRef,
+          id: inputId,
+          "aria-describedby": status || message ? statusId : undefined,
+          placeholder: allowCreate ? "Search or create a tag" : "Search tags",
+          maxLength: MAX_NAME,
+          value: query,
+          onChange: (e) => {
             setQuery(e.target.value);
             setMessage(null);
             setOpen(true);
-          }}
-          onFocus={() => setOpen(true)}
-          onBlur={() => setOpen(false)}
-          onKeyDown={(e) => {
+          },
+          onFocus: () => setOpen(true),
+          onKeyDown: (e) => {
             if (e.key === "Enter") {
               // Enter picks the first option, or creates; never submits the form.
               e.preventDefault();
@@ -170,67 +179,19 @@ export function TagPicker({
             } else if (e.key === "Escape") {
               setOpen(false);
             }
-          }}
-          className="h-11 pl-9"
-        />
+          },
+        }}
+      />
+
+      <div id={statusId} aria-live="polite" className="px-[4px]">
+        {message ? (
+          <p role="alert" className="text-[0.6875rem] leading-snug text-(--sp-danger)">
+            {message}
+          </p>
+        ) : status ? (
+          <p className="text-[0.6875rem] leading-snug text-(--sp-text-muted)">{status}</p>
+        ) : null}
       </div>
-
-      {message && (
-        <p role="alert" className="text-sm text-destructive">
-          {message}
-        </p>
-      )}
-
-      {open && (
-        <div
-          id={listId}
-          role="listbox"
-          aria-label="Tags"
-          className="max-h-64 overflow-y-auto rounded-lg border bg-popover text-popover-foreground"
-        >
-          {canCreate && (
-            <button
-              type="button"
-              role="option"
-              aria-selected={false}
-              onMouseDown={keepFocus}
-              onClick={() => void create()}
-              disabled={creating}
-              className="flex min-h-11 w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium outline-none hover:bg-muted focus-visible:bg-muted disabled:opacity-50"
-            >
-              <Plus className="size-4 shrink-0" aria-hidden />
-              <span className="min-w-0 truncate">{creating ? "Creating…" : `Create "${q}"`}</span>
-            </button>
-          )}
-          {options.map((tag) => (
-            <button
-              key={tag.id}
-              type="button"
-              role="option"
-              aria-selected={false}
-              onMouseDown={keepFocus}
-              onClick={() => add(tag)}
-              className={cn(
-                "flex min-h-11 w-full items-center px-3 py-2 text-left text-sm outline-none hover:bg-muted focus-visible:bg-muted",
-                canCreate || "first:rounded-t-lg"
-              )}
-            >
-              <span className="min-w-0 truncate">{tag.name}</span>
-            </button>
-          ))}
-          {!canCreate && options.length === 0 && (
-            <p className="px-3 py-3 text-sm text-muted-foreground">
-              {searching
-                ? "Searching…"
-                : isArchived
-                  ? "This tag is archived."
-                  : q
-                    ? "Already chosen."
-                    : "No tags yet. Type to create one."}
-            </p>
-          )}
-        </div>
-      )}
 
       {name && value.map((tag) => <input key={tag.id} type="hidden" name={name} value={tag.id} />)}
     </div>

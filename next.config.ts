@@ -18,11 +18,6 @@ const nextConfig: NextConfig = {
       },
     },
   },
-  redirects() {
-    // Settings opens on its first tab. Done here so the redirect happens
-    // before anything renders.
-    return [{ source: "/settings", destination: "/settings/account", permanent: false }];
-  },
   rewrites() {
     if (!BACKEND_URL) {
       console.warn(

@@ -3,12 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { CloudOff, Mail } from "lucide-react";
 import { api, ApiError, errorMessage } from "@/lib/api";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { PasswordInput } from "@/components/auth/password-input";
+import { AuthHeader, EmptyState, SpButton, SpField, SpPasswordInput } from "@/components/spine-ui";
+import { linkButton, Notice } from "../auth-ui";
 
 const MIN_LENGTH = 12;
 
@@ -22,9 +20,19 @@ export function SetPasswordForm({ token, check }: { token: string; check: TokenC
   if (invalid || check.kind === "invalid") return <InvalidLink />;
   if (check.kind === "error") {
     return (
-      <Alert variant="destructive">
-        <AlertDescription>Can&apos;t check this link right now. Please try again later.</AlertDescription>
-      </Alert>
+      <CenteredState>
+        <EmptyState
+          tone="danger"
+          icon={<CloudOff />}
+          title="Can't check this link right now"
+          text="Please try again later."
+          action={
+            <Link href="/login" className={linkButton("secondary")}>
+              Back to log in
+            </Link>
+          }
+        />
+      </CenteredState>
     );
   }
   return <PasswordForm token={token} info={check.info} onInvalid={() => setInvalid(true)} />;
@@ -73,88 +81,80 @@ function PasswordForm({
   const isInvite = info.purpose === "INVITE";
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{isInvite ? "Create your password" : "Choose a new password"}</CardTitle>
-        <CardDescription>
-          For <span className="font-medium text-foreground">{info.email}</span>
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          {/* Lets password managers save the right account. */}
-          <input type="email" name="username" value={info.email} autoComplete="username" readOnly hidden />
-          <FieldGroup>
-            <Field data-invalid={touched && tooShort}>
-              <FieldLabel htmlFor="password">New password</FieldLabel>
-              <PasswordInput
-                id="password"
-                autoComplete="new-password"
-                placeholder={`At least ${MIN_LENGTH} characters`}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                aria-invalid={touched && tooShort}
-              />
-              {touched && tooShort ? (
-                <FieldError>Use at least {MIN_LENGTH} characters.</FieldError>
-              ) : (
-                <FieldDescription>At least {MIN_LENGTH} characters.</FieldDescription>
-              )}
-            </Field>
-            <Field data-invalid={touched && mismatch}>
-              <FieldLabel htmlFor="confirm">Repeat password</FieldLabel>
-              <PasswordInput
-                id="confirm"
-                autoComplete="new-password"
-                placeholder="Repeat the password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                aria-invalid={touched && mismatch}
-              />
-              {touched && mismatch && <FieldError>The passwords are not the same.</FieldError>}
-            </Field>
-          </FieldGroup>
-          <Button type="submit" size="lg" className="h-11 w-full" disabled={pending}>
-            {pending ? "Saving…" : "Save password"}
-          </Button>
-          <Link
-            href="/login"
-            className="text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
-          >
-            Back to log in
-          </Link>
-        </form>
-      </CardContent>
-    </Card>
+    <div>
+      <AuthHeader
+        title={isInvite ? "Create your password" : "Choose a new password"}
+        subtitle={`For ${info.email}. You use it to log in to Spine.`}
+      />
+      <form onSubmit={onSubmit} className="mt-[32px] space-y-[16px]" noValidate>
+        {error && <Notice tone="danger">{error}</Notice>}
+        {/* Lets password managers save the right account. */}
+        <input type="email" name="username" value={info.email} autoComplete="username" readOnly hidden />
+        <SpField
+          label="New password"
+          htmlFor="password"
+          hint={`At least ${MIN_LENGTH} characters.`}
+          error={touched && tooShort ? `Use at least ${MIN_LENGTH} characters.` : undefined}
+        >
+          <SpPasswordInput
+            id="password"
+            autoComplete="new-password"
+            placeholder={`At least ${MIN_LENGTH} characters`}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            aria-invalid={touched && tooShort}
+          />
+        </SpField>
+        <SpField
+          label="Repeat the password"
+          htmlFor="confirm"
+          error={touched && mismatch ? "The passwords are not the same." : undefined}
+        >
+          <SpPasswordInput
+            id="confirm"
+            autoComplete="new-password"
+            placeholder="Repeat the password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            aria-invalid={touched && mismatch}
+          />
+        </SpField>
+        <SpButton type="submit" className="mt-[8px] w-full" disabled={pending}>
+          {pending ? "Saving…" : "Save password"}
+        </SpButton>
+        <Link href="/login" className={linkButton("secondary", "flex w-full")}>
+          Back to log in
+        </Link>
+      </form>
+    </div>
   );
+}
+
+/** Fills the screen and puts the state in the middle (same as the 404 / error pages). */
+function CenteredState({ children }: { children: React.ReactNode }) {
+  return <div className="flex flex-1 flex-col items-center justify-center">{children}</div>;
 }
 
 function InvalidLink() {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>This link does not work</CardTitle>
-        <CardDescription>
-          It has expired or was already used. Ask your admin for a new invite, or request a new
-          reset link.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <Link href="/forgot-password" className={buttonVariants({ size: "lg", className: "h-11 w-full" })}>
-          Get a new reset link
-        </Link>
-        <Link
-          href="/login"
-          className="text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
-        >
-          Back to log in
-        </Link>
-      </CardContent>
-    </Card>
+    <CenteredState>
+      <EmptyState
+        tone="danger"
+        icon={<Mail />}
+        title="This link does not work"
+        text="It has expired or was already used. Ask your admin for a new invite, or request a new reset link."
+        action={
+          <div className="flex w-full flex-col gap-[10px]">
+            <Link href="/forgot-password" className={linkButton("primary", "flex w-full")}>
+              Get a new reset link
+            </Link>
+            <Link href="/login" className={linkButton("secondary", "flex w-full")}>
+              Back to log in
+            </Link>
+          </div>
+        }
+        className="w-full"
+      />
+    </CenteredState>
   );
 }

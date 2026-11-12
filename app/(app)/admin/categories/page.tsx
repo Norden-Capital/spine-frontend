@@ -13,14 +13,11 @@ export default async function CategoriesPage({ searchParams }: PageProps<"/admin
   const [categories, tags, icons] = await Promise.all([getAllCategories(), getAllTags(), getCategoryIcons()]);
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Categories &amp; tags</h1>
-      <CatalogAdmin
-        initialTab={tab === "tags" ? "tags" : "categories"}
-        categories={categories}
-        tags={tags}
-        icons={icons}
-      />
-    </div>
+    <CatalogAdmin
+      initialTab={tab === "tags" ? "tags" : "categories"}
+      categories={categories}
+      tags={tags}
+      icons={icons}
+    />
   );
 }

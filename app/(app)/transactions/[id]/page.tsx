@@ -1,20 +1,18 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect, unstable_rethrow } from "next/navigation";
-import { ChevronLeft, CopyPlus, Pencil } from "lucide-react";
-import { getFeatures } from "@/lib/features-server";
+import { Copy, Pencil } from "lucide-react";
 import { backendGet } from "@/lib/auth";
 import { Comments, type Comment } from "@/components/transactions/comments";
 import { formatDateTime, formatDay, type DateSettings } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
 import { getHistory, getTransaction } from "@/lib/transactions-server";
-import { monthOf, type HistoryEntry, type Transaction } from "@/lib/transactions-types";
-import { CategoryIcon } from "@/components/expenses/category-icon";
-import { Amount } from "@/components/transactions/amount";
+import { formatMoney, monthOf, type HistoryEntry } from "@/lib/transactions-types";
+import { TxLogo } from "@/components/expenses/tx-logo";
+import { WebsiteLink } from "@/components/transactions/website-link";
 import { DeleteTransaction } from "@/components/transactions/delete-transaction";
 import { ProofGallery } from "@/components/transactions/proof-gallery";
-import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SpLinkButton } from "@/components/transactions/sp-link";
+import { InfoList, PageHeader, SpPanel, Timeline, TxHero } from "@/components/spine-ui";
 
 export const metadata: Metadata = { title: "Transaction" };
 
@@ -23,11 +21,10 @@ export const instant = false;
 
 export default async function TransactionPage({ params }: PageProps<"/transactions/[id]">) {
   const { id } = await params;
-  const [res, history, dates, features, comments] = await Promise.all([
+  const [res, history, dates, comments] = await Promise.all([
     getTransaction(id),
     getHistory(id),
     getDateSettings(),
-    getFeatures(),
     getComments(id),
   ]);
   if (!res.ok && res.status === 401) redirect(`/login?next=${encodeURIComponent(`/transactions/${id}`)}`);
@@ -36,103 +33,77 @@ export default async function TransactionPage({ params }: PageProps<"/transactio
   const tx = res.data;
   const month = monthOf(tx.date);
 
+  const kind = tx.type === "INCOME" ? "Income" : "Expense";
+  const back = `/transactions?month=${month}`;
+  const fileCount = tx.files.length;
+
   return (
-    <div className="flex flex-col gap-4">
-      <Link
-        href={`/transactions?month=${month}`}
-        className="-ml-2 flex h-11 w-fit items-center gap-1 rounded-md px-2 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ChevronLeft className="size-4" aria-hidden />
-        Transactions
-      </Link>
+    <div className="flex flex-col gap-[16px]">
+      <PageHeader back={{ href: back, label: "Back to transactions" }} title={kind} subtitle="Company" />
 
-      <div className="flex items-start gap-3">
-        <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted">
-          <CategoryIcon name={tx.category.icon} className="size-6" />
-        </span>
-        <div className="flex min-w-0 flex-1 flex-col">
-          <h1 className="text-lg font-semibold break-words">{tx.description || tx.category.name}</h1>
-          <p className="text-sm text-muted-foreground">
-            {tx.type === "INCOME" ? "Income" : "Expense"} · {formatDay(tx.date, dates)}
-          </p>
-        </div>
-      </div>
-      <Amount type={tx.type} amount={tx.amount} currency={tx.currency} className="text-3xl" />
+      <TxHero
+        icon={<TxLogo logoUrl={tx.logoUrl} icon={tx.category.icon} />}
+        tag="Company"
+        title={tx.description || tx.category.name}
+        meta={`${tx.category.name} · ${formatDay(tx.date, dates)}`}
+        amount={formatMoney(tx.amount, tx.currency, tx.type === "INCOME" ? "+" : "-")}
+        kind={`${kind} · ${tx.currency}`}
+      />
 
-      <Card>
-        <CardContent>
-          <dl className="flex flex-col divide-y text-sm">
-            <Row label="Category" value={tx.category.name + (tx.category.archived ? " (archived)" : "")} />
-            <Row label="Tags" value={tx.tags.length ? tx.tags.map((t) => t.name).join(", ") : "—"} />
-            <Row label="Created" value={`${tx.createdBy.name} · ${formatDateTime(tx.createdAt, dates)}`} />
-            {tx.updatedAt && tx.updatedBy && (
-              <Row label="Edited" value={`${tx.updatedBy.name} · ${formatDateTime(tx.updatedAt, dates)}`} />
-            )}
-          </dl>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Proof</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {tx.files.length ? (
-            <ProofGallery files={tx.files} />
-          ) : (
-            <p className="text-sm text-muted-foreground">No proof.</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-2 gap-2">
-        <Link
-          href={`/transactions/${encodeURIComponent(tx.id)}/edit`}
-          className={buttonVariants({ size: "lg", className: "h-11" })}
-        >
-          <Pencil aria-hidden />
+      <div className={tx.canDelete ? "grid grid-cols-3 gap-[8px]" : "grid grid-cols-2 gap-[8px]"}>
+        <SpLinkButton href={`/transactions/${encodeURIComponent(tx.id)}/edit`} icon={<Pencil aria-hidden />}>
           Edit
-        </Link>
-        <Link
+        </SpLinkButton>
+        <SpLinkButton
           href={`/transactions/new?copy=${encodeURIComponent(tx.id)}`}
-          className={buttonVariants({ variant: "outline", size: "lg", className: "h-11" })}
+          variant="secondary"
+          icon={<Copy aria-hidden />}
         >
-          <CopyPlus aria-hidden />
           Copy
-        </Link>
+        </SpLinkButton>
         {tx.canDelete && <DeleteTransaction id={tx.id} month={month} />}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Comments</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Comments txId={tx.id} initial={comments} ai={features.ai} />
-        </CardContent>
-      </Card>
+      <InfoList
+        rows={[
+          { label: "Category", value: tx.category.name + (tx.category.archived ? " (archived)" : "") },
+          { label: "Tags", value: tx.tags.length ? tx.tags.map((t) => `#${t.name}`).join("  ") : "—" },
+          ...(tx.website ? [{ label: "Website", value: <WebsiteLink domain={tx.website} /> }] : []),
+          { label: "Created", value: `${tx.createdBy.name} · ${formatDateTime(tx.createdAt, dates)}` },
+          ...(tx.updatedAt && tx.updatedBy
+            ? [{ label: "Edited", value: `${tx.updatedBy.name} · ${formatDateTime(tx.updatedAt, dates)}` }]
+            : []),
+        ]}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {history.ok ? (
-            <History entries={history.data} tx={tx} dates={dates} />
-          ) : (
-            <p className="text-sm text-muted-foreground">History could not be loaded.</p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+      <SpPanel
+        title="Proof"
+        aside={
+          fileCount ? (
+            <span className="text-[0.625rem] text-(--sp-text-faint)">
+              {fileCount} file{fileCount === 1 ? "" : "s"}
+            </span>
+          ) : undefined
+        }
+      >
+        {fileCount ? (
+          <ProofGallery files={tx.files} />
+        ) : (
+          <p className="text-[0.75rem] text-(--sp-text-muted)">No proof.</p>
+        )}
+      </SpPanel>
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex min-h-11 items-center justify-between gap-4 py-2">
-      <dt className="shrink-0 text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 text-right font-medium break-words">{value}</dd>
+      <SpPanel title="Comments">
+        <Comments txId={tx.id} initial={comments} />
+      </SpPanel>
+
+      <SpPanel title="History">
+        {history.ok ? (
+          <History entries={history.data} dates={dates} />
+        ) : (
+          <p className="text-[0.75rem] text-(--sp-text-muted)">History could not be loaded.</p>
+        )}
+      </SpPanel>
     </div>
   );
 }
@@ -150,6 +121,7 @@ const FIELDS: Record<string, string> = {
   currency: "Currency",
   date: "Date",
   description: "Description",
+  website: "Website",
   category: "Category",
   categoryId: "Category",
   tags: "Tags",
@@ -175,35 +147,24 @@ function show(field: string, value: unknown, dates: DateSettings): string {
   return text;
 }
 
-function History({ entries, dates }: { entries: HistoryEntry[]; tx: Transaction; dates: DateSettings }) {
-  if (entries.length === 0) return <p className="text-sm text-muted-foreground">No changes yet.</p>;
+function History({ entries, dates }: { entries: HistoryEntry[]; dates: DateSettings }) {
+  if (entries.length === 0) return <p className="text-[0.75rem] text-(--sp-text-muted)">No changes yet.</p>;
   const sorted = [...entries].sort((a, b) => b.at.localeCompare(a.at));
   return (
-    <ol className="flex flex-col gap-4 border-l pl-4">
-      {sorted.map((e, i) => {
+    <Timeline
+      entries={sorted.map((e, i) => {
         const by = typeof e.by === "string" ? e.by : e.by?.name;
-        return (
-          <li key={i} className="relative">
-            <span className="absolute top-1.5 -left-[1.3rem] size-2 rounded-full bg-foreground" aria-hidden />
-            <p className="text-sm">
-              <span className="font-medium">{ACTIONS[e.action] ?? e.action}</span>
-              {by && <span className="text-muted-foreground"> by {by}</span>}
-            </p>
-            <p className="text-xs text-muted-foreground">{formatDateTime(e.at, dates)}</p>
-            {e.changes?.length > 0 && (
-              <ul className="mt-1 flex flex-col gap-0.5 text-sm">
-                {e.changes.map((c, j) => (
-                  <li key={j} className="break-words">
-                    <span className="text-muted-foreground">{FIELDS[c.field] ?? c.field}</span>{" "}
-                    {show(c.field, c.from, dates)} → {show(c.field, c.to, dates)}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </li>
-        );
+        return {
+          id: String(i),
+          title: `${ACTIONS[e.action] ?? e.action}${by ? ` by ${by}` : ""}`,
+          meta: formatDateTime(e.at, dates),
+          changes: (e.changes ?? []).map(
+            (c) => `${FIELDS[c.field] ?? c.field}: ${show(c.field, c.from, dates)} → ${show(c.field, c.to, dates)}`
+          ),
+          current: i === 0,
+        };
       })}
-    </ol>
+    />
   );
 }
 

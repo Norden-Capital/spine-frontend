@@ -2,23 +2,17 @@
 
 import { useState } from "react";
 import type { AdminUser } from "@/lib/auth-types";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { UserActions, type Notice } from "./user-actions";
+import { NoticeBox, type Notice } from "./notice";
+import { UserActions } from "./user-actions";
 
-/** Actions menu + result message on a user's page (menu only if canManage). */
-export function UserDetailActions({ user, children }: { user: AdminUser; children: React.ReactNode }) {
+/** Result message + "Manage" rows on a user's page (rows only if canManage). */
+export function UserDetailActions({ user }: { user: AdminUser }) {
   const [notice, setNotice] = useState<Notice | null>(null);
+  if (!user.canManage && !notice) return null;
   return (
     <>
-      <div className="flex items-start gap-2">
-        <div className="min-w-0 flex-1">{children}</div>
-        {user.canManage && <UserActions user={user} showView={false} onNotice={setNotice} />}
-      </div>
-      {notice && (
-        <Alert variant={notice.kind === "error" ? "destructive" : "default"}>
-          <AlertDescription>{notice.text}</AlertDescription>
-        </Alert>
-      )}
+      {notice && <NoticeBox notice={notice} />}
+      {user.canManage && <UserActions user={user} onNotice={setNotice} />}
     </>
   );
 }

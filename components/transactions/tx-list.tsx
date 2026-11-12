@@ -4,12 +4,12 @@ import { useState } from "react";
 import { api, errorMessage } from "@/lib/api";
 import { CURRENCIES, formatMoney, formatNet, type Totals, type Transaction } from "@/lib/transactions-types";
 import type { WalletTx } from "@/lib/wallet-types";
-import { CategoryIcon } from "@/components/expenses/category-icon";
+import { TxLogo } from "@/components/expenses/tx-logo";
 import { useDates } from "@/components/prefs/prefs-provider";
 import { ListItem } from "@/components/spine-ui";
 import { Button } from "@/components/ui/button";
 
-type Row = Pick<Transaction | WalletTx, "id" | "type" | "amount" | "currency" | "date" | "description" | "category" | "tags" | "createdAt">;
+type Row = Pick<Transaction | WalletTx, "id" | "type" | "amount" | "currency" | "date" | "description" | "logoUrl" | "category" | "tags" | "createdAt">;
 
 export type ListPage<T extends Row = Row> = {
   items: T[];
@@ -80,7 +80,7 @@ export function TxList({
                   <ListItem
                     key={tx.id}
                     href={`${hrefBase}/${encodeURIComponent(tx.id)}`}
-                    icon={<CategoryIcon name={tx.category.icon} />}
+                    icon={<TxLogo logoUrl={tx.logoUrl} icon={tx.category.icon} />}
                     title={tx.description || tx.category.name}
                     meta={sub}
                     amount={formatMoney(tx.amount, tx.currency, income ? "+" : "-")}

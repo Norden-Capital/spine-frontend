@@ -14,17 +14,18 @@ import {
 import { CategoryPicker } from "@/components/expenses/category-picker";
 import { DuplicateSheet, type DuplicateMatch } from "./duplicate-sheet";
 import { TagPicker } from "@/components/expenses/tag-picker";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { AmountField, Segmented, SpButton, SpField, SpInput } from "@/components/spine-ui";
 import { cn } from "@/lib/utils";
 import { ProofPicker, proofFromRef, type ProofItem } from "./proof-picker";
+import { SpLinkButton } from "./sp-link";
 
 const MAX_DESCRIPTION = 200;
 
 /** The fields a form can start from (an edited transaction, or a copied one). */
-type Draft = Pick<Transaction, "type" | "amount" | "currency" | "date" | "description" | "category" | "tags" | "files"> & {
+type Draft = Pick<
+  Transaction,
+  "type" | "amount" | "currency" | "date" | "description" | "website" | "category" | "tags" | "files"
+> & {
   id?: string;
 };
 
@@ -41,6 +42,7 @@ export function TransactionForm({
   today,
   scope = "company",
   proofFirst = false,
+  cancelHref,
 }: {
   /** null = new transaction. */
   transaction: Draft | null;
@@ -51,6 +53,8 @@ export function TransactionForm({
   scope?: "company" | "wallet";
   /** "Scan": show the proof (camera) first. */
   proofFirst?: boolean;
+  /** Edit: a "Cancel" link next to Save (back to the transaction). */
+  cancelHref?: string;
 }) {
   const router = useRouter();
   const ids = useId();
@@ -62,6 +66,7 @@ export function TransactionForm({
   const [currency, setCurrency] = useState<Currency>(base?.currency ?? "USD");
   const [date, setDate] = useState(transaction?.date ?? today);
   const [description, setDescription] = useState(base?.description ?? "");
+  const [website, setWebsite] = useState(base?.website ?? "");
   const [categoryId, setCategoryId] = useState<string | null>(base?.category.id ?? null);
   const [tags, setTags] = useState<Tag[]>((base?.tags ?? []).map((t) => ({ ...t, archived: false })));
   // A copy never takes the proof files (they belong to the original).
@@ -102,6 +107,8 @@ export function TransactionForm({
       currency,
       date,
       description: description.trim(),
+      // Always sent: PUT replaces everything, so an empty field removes it.
+      website: website.trim() || null,
       categoryId,
       tagIds: tags.map((t) => t.id),
       fileIds: doneProofs.map((p) => p.ref!.id),
@@ -128,183 +135,159 @@ export function TransactionForm({
   const showAmountError = (touched || amountText !== "") && !amount;
   const errorFor = (field: string) => (fieldError?.field === field ? fieldError.text : null);
 
+  const amountError = showAmountError ? "Enter an amount, like 12.50 or 12,50." : errorFor("amount");
+  const websiteError = fieldError?.field === "website" ? "Enter a website like example.com." : null;
+  const dateError = futureDate ? "The date can't be in the future." : errorFor("date");
+  const proofField = (
+    <SpField label="Proof" optional={wallet}>
+      <ProofPicker items={proofs} onChange={setProofs} invalid={touched && !proofOk} optional={wallet} />
+    </SpField>
+  );
+  const saveLabel = pending
+    ? "Saving…"
+    : uploading
+      ? "Uploading proof…"
+      : transaction
+        ? "Save changes"
+        : type === "INCOME"
+          ? "Save income"
+          : "Save expense";
+
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
+    <form onSubmit={onSubmit} className="flex flex-col gap-[16px]" noValidate>
       {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <p
+          role="alert"
+          className="rounded-[16px] bg-[color-mix(in_oklab,var(--sp-danger)_10%,transparent)] px-[16px] py-[12px] text-[0.8125rem] leading-snug text-(--sp-danger)"
+        >
+          {error}
+        </p>
       )}
 
-      {proofFirst && (
-        <Field data-invalid={touched && !proofOk}>
-          <FieldLabel>Photo of the receipt</FieldLabel>
-          <ProofPicker items={proofs} onChange={setProofs} invalid={touched && !proofOk} optional={wallet} />
-        </Field>
-      )}
+      {proofFirst && proofField}
 
       <Segmented
         label="Type"
         value={type}
-        onChange={setType}
-        options={[
+        onValueChange={(v) => setType(v as TxType)}
+        items={[
           { value: "EXPENSE", label: "Expense" },
           { value: "INCOME", label: "Income" },
         ]}
       />
 
-      <FieldGroup>
-        <Field data-invalid={showAmountError || Boolean(errorFor("amount"))}>
-          <FieldLabel htmlFor={`${ids}-amount`}>Amount</FieldLabel>
-          <div className="flex items-stretch gap-2">
-            <Input
-              id={`${ids}-amount`}
-              inputMode="decimal"
-              autoComplete="off"
-              placeholder="0.00"
-              value={amountText}
-              onChange={(e) => setAmountText(e.target.value)}
-              aria-invalid={showAmountError}
-              className="h-14 min-w-0 flex-1 text-3xl font-semibold tabular-nums md:text-3xl"
-            />
-            <Segmented
-              label="Currency"
-              value={currency}
-              onChange={setCurrency}
-              options={CURRENCIES.map((c) => ({ value: c, label: c }))}
-              className="w-32 shrink-0"
-              tall
-            />
-          </div>
-          {showAmountError ? (
-            <FieldError>Enter an amount, like 12.50 or 12,50.</FieldError>
-          ) : (
-            errorFor("amount") && <FieldError>{errorFor("amount")}</FieldError>
-          )}
-        </Field>
-
-        <Field data-invalid={futureDate || Boolean(errorFor("date"))}>
-          <FieldLabel htmlFor={`${ids}-date`}>Date</FieldLabel>
-          <Input
-            id={`${ids}-date`}
-            type="date"
-            max={today}
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            aria-invalid={futureDate}
-            className="h-11"
-          />
-          {futureDate ? (
-            <FieldError>The date can&apos;t be in the future.</FieldError>
-          ) : (
-            errorFor("date") && <FieldError>{errorFor("date")}</FieldError>
-          )}
-        </Field>
-
-        <Field data-invalid={Boolean(errorFor("description"))}>
-          <FieldLabel htmlFor={`${ids}-description`}>Description</FieldLabel>
-          <Input
-            id={`${ids}-description`}
-            autoComplete="off"
-            placeholder="e.g. Taxi to the client"
-            maxLength={MAX_DESCRIPTION}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="h-11"
-          />
-          {errorFor("description") && <FieldError>{errorFor("description")}</FieldError>}
-        </Field>
-
-        <Field data-invalid={touched && !categoryId}>
-          <FieldLabel id={`${ids}-category`}>Category</FieldLabel>
-          <CategoryPicker
-            categories={pickerCategories}
-            value={categoryId}
-            onChange={setCategoryId}
-            invalid={touched && !categoryId}
-            labelledBy={`${ids}-category`}
-          />
-          {touched && !categoryId && <FieldError>Pick a category.</FieldError>}
-        </Field>
-
-        <Field>
-          <FieldLabel htmlFor={`${ids}-tags`}>Tags</FieldLabel>
-          <TagPicker id={`${ids}-tags`} value={tags} onChange={setTags} basePath={wallet ? "/wallet/tags" : "/tags"} />
-        </Field>
-
-        {!proofFirst && (
-          <Field data-invalid={touched && !proofOk}>
-            <FieldLabel>{wallet ? "Proof (optional)" : "Proof"}</FieldLabel>
-            <ProofPicker items={proofs} onChange={setProofs} invalid={touched && !proofOk} optional={wallet} />
-          </Field>
+      <div className="space-y-[8px]">
+        <AmountField
+          id={`${ids}-amount`}
+          symbol={currency === "USD" ? "$" : "MAD"}
+          currencies={CURRENCIES}
+          currency={currency}
+          onCurrencyChange={(c) => setCurrency(c as Currency)}
+          placeholder="0.00"
+          value={amountText}
+          onChange={(e) => setAmountText(e.target.value)}
+          aria-invalid={Boolean(amountError) || undefined}
+          aria-describedby={amountError ? `${ids}-amount-error` : undefined}
+          className={cn(amountError && "ring-2 ring-(--sp-danger)")}
+        />
+        {amountError && (
+          <p id={`${ids}-amount-error`} className="px-[4px] text-[0.6875rem] leading-snug text-(--sp-danger)">
+            {amountError}
+          </p>
         )}
-      </FieldGroup>
+      </div>
 
-      {/* Save stays in reach of the thumb, above the tab bar. */}
-      <div className="sticky bottom-[calc(var(--sp-dock-h)+var(--sp-dock-gap)+env(safe-area-inset-bottom))] -mx-(--sp-gutter) rounded-t-(--sp-radius) bg-(--sp-bg)/95 px-(--sp-gutter) py-3 backdrop-blur">
-        <Button type="submit" size="lg" className="h-12 w-full text-base" disabled={!ready || pending}>
-          {pending
-            ? "Saving…"
-            : uploading
-              ? "Uploading proof…"
-              : transaction
-                ? "Save changes"
-                : type === "INCOME"
-                  ? "Save income"
-                  : "Save expense"}
-        </Button>
+      <SpField label="Date" htmlFor={`${ids}-date`} error={dateError ?? undefined}>
+        <SpInput
+          id={`${ids}-date`}
+          type="date"
+          max={today}
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          aria-invalid={Boolean(dateError) || undefined}
+        />
+      </SpField>
+
+      <SpField label="Description" htmlFor={`${ids}-description`} error={errorFor("description") ?? undefined}>
+        <SpInput
+          id={`${ids}-description`}
+          autoComplete="off"
+          placeholder="e.g. Taxi to the client"
+          maxLength={MAX_DESCRIPTION}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          aria-invalid={Boolean(errorFor("description")) || undefined}
+        />
+      </SpField>
+
+      <SpField
+        label="Website"
+        htmlFor={`${ids}-website`}
+        hint="Optional. We show the shop's logo."
+        error={websiteError ?? undefined}
+      >
+        <SpInput
+          id={`${ids}-website`}
+          name="website"
+          type="text"
+          inputMode="url"
+          autoComplete="off"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          placeholder="e.g. amazon.com"
+          maxLength={2048}
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+          aria-invalid={Boolean(websiteError) || undefined}
+        />
+      </SpField>
+
+      <div className="space-y-[8px]">
+        <CategoryPicker
+          categories={pickerCategories}
+          value={categoryId}
+          onChange={setCategoryId}
+          invalid={touched && !categoryId}
+        />
+        {touched && !categoryId && (
+          <p className="px-[4px] text-[0.6875rem] leading-snug text-(--sp-danger)">Pick a category.</p>
+        )}
+      </div>
+
+      <SpField label="Tags" htmlFor={`${ids}-tags`} optional={wallet}>
+        <TagPicker id={`${ids}-tags`} value={tags} onChange={setTags} basePath={wallet ? "/wallet/tags" : "/tags"} />
+      </SpField>
+
+      {!proofFirst && proofField}
+
+      {/* Forms have no dock: the main button sits in a bar at the bottom (thumb zone). */}
+      <div className="sticky bottom-0 z-10 -mx-(--sp-gutter) bg-linear-to-t from-(--sp-bg) from-70% to-transparent px-(--sp-gutter) pt-[20px] pb-[calc(env(safe-area-inset-bottom)+12px)]">
+        {cancelHref ? (
+          <div className="grid grid-cols-[1fr_2fr] gap-[8px]">
+            <SpLinkButton href={cancelHref} variant="secondary" size="lg">
+              Cancel
+            </SpLinkButton>
+            <SpButton type="submit" disabled={!ready || pending}>
+              {saveLabel}
+            </SpButton>
+          </div>
+        ) : (
+          <SpButton type="submit" className="w-full" disabled={!ready || pending}>
+            {saveLabel}
+          </SpButton>
+        )}
       </div>
       <DuplicateSheet
         matches={duplicates}
         pending={pending}
+        type={type}
+        amount={amount}
+        currency={currency}
+        wallet={wallet}
         onCancel={() => setDuplicates(null)}
         onSaveAnyway={() => void save(true)}
       />
     </form>
-  );
-}
-
-function Segmented<T extends string>({
-  label,
-  value,
-  onChange,
-  options,
-  className,
-  tall,
-}: {
-  label: string;
-  value: T;
-  onChange: (value: T) => void;
-  options: { value: T; label: string }[];
-  className?: string;
-  tall?: boolean;
-}) {
-  return (
-    <div
-      role="radiogroup"
-      aria-label={label}
-      className={cn("grid gap-1 rounded-xl bg-muted p-1", className)}
-      style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
-    >
-      {options.map((o) => {
-        const on = o.value === value;
-        return (
-          <button
-            key={o.value}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            onClick={() => onChange(o.value)}
-            className={cn(
-              "flex items-center justify-center rounded-lg px-1 text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-              tall ? "h-12" : "h-11",
-              on ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {o.label}
-          </button>
-        );
-      })}
-    </div>
   );
 }

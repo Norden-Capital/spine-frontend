@@ -2,19 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock } from "lucide-react";
+import { Check, EyeOff, KeyRound, Lock, Target, Wallet as WalletIcon } from "lucide-react";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import { useDates } from "@/components/prefs/prefs-provider";
-import { PasswordInput } from "@/components/auth/password-input";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { BottomSheet, SpButton, SpField, SpInput, SpPasswordInput } from "@/components/spine-ui";
 import { PinPad, PIN_LENGTH } from "./pin-pad";
 
-/** First time: create a 6-digit PIN (enter, then confirm). */
+type SetupStep = "welcome" | "pin" | "ready";
+
+/**
+ * First visit (no PIN yet): a welcome screen, then the PIN in 2 steps
+ * (choose, type again), then "Your wallet is ready" and the dashboard.
+ */
 export function PinSetup() {
   const router = useRouter();
+  const [step, setStep] = useState<SetupStep>("welcome");
   const [first, setFirst] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -29,14 +31,16 @@ export function PinSetup() {
     }
     if (pin !== first) {
       setFirst(null);
-      setError("The two PINs are not the same. Start again.");
+      setError("PINs don't match, try again.");
       setReset((r) => r + 1);
       return;
     }
     setPending(true);
     try {
       await api("/wallet/pin", { method: "POST", body: { pin } });
-      router.refresh();
+      setStep("ready");
+      // A short moment to see it worked, then the dashboard.
+      setTimeout(() => router.refresh(), 1400);
     } catch (err) {
       setPending(false);
       setFirst(null);
@@ -45,18 +49,61 @@ export function PinSetup() {
     }
   }
 
+  if (step === "welcome") return <WalletWelcome onStart={() => setStep("pin")} />;
+  if (step === "ready") {
+    return (
+      <div role="status" className="flex min-h-[60svh] flex-col items-center justify-center gap-4 text-center">
+        <span className="flex size-16 items-center justify-center rounded-full bg-(--sp-card-back) text-(--sp-card-back-text)">
+          <Check className="size-7" strokeWidth={2.2} aria-hidden />
+        </span>
+        <h1 className="text-[1.375rem] font-medium text-(--sp-text)">Your wallet is ready</h1>
+        <p className="text-[0.875rem] text-(--sp-text-muted)">Opening it now…</p>
+      </div>
+    );
+  }
   return (
     <Screen
-      title={first === null ? "Create your wallet PIN" : "Enter it again"}
-      subtitle={
-        first === null
-          ? "Your personal wallet is private. Nobody else can see it, not even an admin."
-          : "Type the same 6 digits to confirm."
-      }
+      step={first === null ? "Step 1 of 2" : "Step 2 of 2"}
+      title={first === null ? "Choose a 6-digit PIN" : "Type it again"}
+      subtitle={first === null ? "You type it each time you open your wallet." : "The same 6 digits, to be sure."}
       error={error}
     >
-      <PinPad onComplete={done} disabled={pending} reset={reset} error={Boolean(error)} />
+      <PinPad onComplete={done} disabled={pending} reset={reset} error={Boolean(error) && first === null} />
     </Screen>
+  );
+}
+
+const WELCOME_POINTS = [
+  { icon: <EyeOff aria-hidden />, text: "Only you can see it — not even the Owner." },
+  { icon: <Target aria-hidden />, text: "Track your own spending, budgets, goals and repeat payments." },
+  { icon: <KeyRound aria-hidden />, text: "Protected by a 6-digit PIN you choose." },
+];
+
+/** First-time welcome, in the wallet's yellow card look. */
+function WalletWelcome({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="flex flex-col gap-5 pt-2">
+      <div className="rounded-(--sp-radius) bg-(--sp-card-back) px-5 pt-6 pb-5 text-(--sp-card-back-text)">
+        <span className="flex size-12 items-center justify-center rounded-full bg-black/10">
+          <WalletIcon className="size-6" aria-hidden />
+        </span>
+        <h1 className="mt-4 text-[1.625rem] leading-tight font-medium">Welcome to your wallet</h1>
+        <p className="mt-1.5 text-[0.875rem] opacity-80">Your own private space for your personal money.</p>
+      </div>
+      <ul className="flex flex-col gap-1 rounded-(--sp-radius) bg-(--sp-panel) p-2">
+        {WELCOME_POINTS.map((p) => (
+          <li key={p.text} className="flex items-center gap-3 px-2 py-2.5">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-(--sp-soft) text-(--sp-text) [&_svg]:size-[18px]">
+              {p.icon}
+            </span>
+            <span className="text-[0.9375rem] leading-snug text-(--sp-text)">{p.text}</span>
+          </li>
+        ))}
+      </ul>
+      <SpButton onClick={onStart} className="w-full">
+        Set up my PIN
+      </SpButton>
+    </div>
   );
 }
 
@@ -105,20 +152,26 @@ export function PinUnlock({ lockedUntil }: { lockedUntil: string | null }) {
       error={blocked ? `Too many wrong PINs. Try again after ${dates.dateTime(until)}.` : error}
     >
       <PinPad onComplete={done} disabled={pending || blocked} reset={reset} error={Boolean(error) && !blocked} />
-      <Button variant="ghost" size="lg" className="h-11" onClick={() => setForgot(true)}>
+      <button
+        type="button"
+        onClick={() => setForgot(true)}
+        className="h-11 rounded-full px-4 text-[0.9375rem] font-medium text-(--sp-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97]"
+      >
         Forgot PIN?
-      </Button>
+      </button>
       <ForgotPin open={forgot} onOpenChange={setForgot} />
     </Screen>
   );
 }
 
 function Screen({
+  step,
   title,
   subtitle,
   error,
   children,
 }: {
+  step?: string;
   title: string;
   subtitle: string;
   error: string | null;
@@ -130,10 +183,11 @@ function Screen({
         <Lock className="size-6" aria-hidden />
       </span>
       <div>
+        {step && <p className="mb-1 text-[0.75rem] font-medium tracking-wide text-(--sp-text-muted) uppercase">{step}</p>}
         <h1 className="text-[22px] font-medium text-(--sp-text)">{title}</h1>
         <p className="mx-auto mt-1 max-w-[300px] text-sm text-(--sp-text-muted)">{subtitle}</p>
       </div>
-      <p role="alert" className="min-h-5 text-sm text-destructive">
+      <p role="alert" className="min-h-5 text-[0.875rem] text-(--sp-danger)">
         {error}
       </p>
       {children}
@@ -171,58 +225,61 @@ function ForgotPin({ open, onOpenChange }: { open: boolean; onOpenChange: (open:
   }
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !pending && onOpenChange(next)}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Reset your PIN</DialogTitle>
-          <DialogDescription>Enter your account password, then a new 6-digit PIN.</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={submit} className="flex flex-col gap-4 text-left" noValidate>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <Field data-invalid={touched && !password}>
-            <FieldLabel htmlFor="reset-password">Account password</FieldLabel>
-            <PasswordInput
-              id="reset-password"
-              autoComplete="current-password"
-              placeholder="Your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </Field>
-          <Field data-invalid={touched && !pinOk}>
-            <FieldLabel htmlFor="reset-pin">New PIN</FieldLabel>
-            <Input
-              id="reset-pin"
-              inputMode="numeric"
-              autoComplete="off"
-              maxLength={PIN_LENGTH}
-              placeholder="6 digits"
-              value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-              className="h-11 tracking-[0.4em]"
-            />
-            {touched && !pinOk && <FieldError>Use exactly 6 digits.</FieldError>}
-          </Field>
-          <Field data-invalid={touched && !same}>
-            <FieldLabel htmlFor="reset-pin2">Repeat the new PIN</FieldLabel>
-            <Input
-              id="reset-pin2"
-              inputMode="numeric"
-              autoComplete="off"
-              maxLength={PIN_LENGTH}
-              placeholder="6 digits"
-              value={pin2}
-              onChange={(e) => setPin2(e.target.value.replace(/\D/g, ""))}
-              className="h-11 tracking-[0.4em]"
-            />
-            {touched && !same && <FieldError>The PINs are not the same.</FieldError>}
-          </Field>
-          <Button type="submit" size="lg" className="h-11 w-full" disabled={pending}>
-            {pending ? "Saving…" : "Reset PIN"}
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <BottomSheet
+      open={open}
+      onOpenChange={(next) => !pending && onOpenChange(next)}
+      title="Reset your PIN"
+      description="Enter your account password, then a new 6-digit PIN."
+      footer={
+        <SpButton type="submit" form="reset-pin-form" className="w-full" disabled={pending}>
+          {pending ? "Saving…" : "Reset PIN"}
+        </SpButton>
+      }
+    >
+      <form id="reset-pin-form" onSubmit={submit} className="flex flex-col gap-4" noValidate>
+        {error && (
+          <p role="alert" className="rounded-2xl bg-[color-mix(in_oklab,var(--sp-danger)_12%,transparent)] px-4 py-3 text-[0.875rem] text-(--sp-danger)">
+            {error}
+          </p>
+        )}
+        <SpField label="Account password" htmlFor="reset-password" error={touched && !password ? "Enter your password." : undefined}>
+          <SpPasswordInput
+            id="reset-password"
+            surface="panel"
+            autoComplete="current-password"
+            placeholder="Your password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </SpField>
+        <SpField label="New PIN" htmlFor="reset-pin" error={touched && !pinOk ? "Use exactly 6 digits." : undefined}>
+          <SpInput
+            id="reset-pin"
+            surface="panel"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={PIN_LENGTH}
+            placeholder="6 digits"
+            value={pin}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+            className="tracking-[0.4em]"
+          />
+        </SpField>
+        <SpField label="Repeat the new PIN" htmlFor="reset-pin2" error={touched && !same ? "The PINs are not the same." : undefined}>
+          <SpInput
+            id="reset-pin2"
+            surface="panel"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={PIN_LENGTH}
+            placeholder="6 digits"
+            value={pin2}
+            onChange={(e) => setPin2(e.target.value.replace(/\D/g, ""))}
+            className="tracking-[0.4em]"
+          />
+        </SpField>
+      </form>
+    </BottomSheet>
   );
 }
 

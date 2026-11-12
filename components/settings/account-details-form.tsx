@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Lock } from "lucide-react";
 import { api, ApiError, errorMessage } from "@/lib/api";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { SpButton, SpField, SpInput } from "@/components/spine-ui";
+import { SettingsNotice } from "./settings-notice";
 
 const MAX = 100;
 
@@ -53,51 +52,43 @@ export function AccountDetailsForm({
     }
   }
 
+  const errorFor = (field: string) => (fieldError?.field === field ? fieldError.text : undefined);
+
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      {notice && (
-        <Alert variant={notice.kind === "error" ? "destructive" : "default"}>
-          <AlertDescription>{notice.text}</AlertDescription>
-        </Alert>
-      )}
-      <FieldGroup>
-        <Field data-invalid={fieldError?.field === "firstName"}>
-          <FieldLabel htmlFor="first-name">First name</FieldLabel>
-          <Input
+    <form onSubmit={onSubmit} className="space-y-[14px]">
+      {notice && <SettingsNotice kind={notice.kind}>{notice.text}</SettingsNotice>}
+      <div className="grid grid-cols-2 gap-[10px]">
+        <SpField label="First name" htmlFor="first-name" error={errorFor("firstName")} className="min-w-0">
+          <SpInput
             id="first-name"
+            surface="panel"
             autoComplete="given-name"
-            placeholder="Your first name"
+            placeholder="First name"
             maxLength={MAX}
             value={first}
             onChange={(e) => setFirst(e.target.value)}
             aria-invalid={fieldError?.field === "firstName"}
-            className="h-11"
           />
-          {fieldError?.field === "firstName" && <FieldError>{fieldError.text}</FieldError>}
-        </Field>
-        <Field data-invalid={fieldError?.field === "lastName"}>
-          <FieldLabel htmlFor="last-name">Last name</FieldLabel>
-          <Input
+        </SpField>
+        <SpField label="Last name" htmlFor="last-name" error={errorFor("lastName")} className="min-w-0">
+          <SpInput
             id="last-name"
+            surface="panel"
             autoComplete="family-name"
-            placeholder="Your last name"
+            placeholder="Last name"
             maxLength={MAX}
             value={last}
             onChange={(e) => setLast(e.target.value)}
             aria-invalid={fieldError?.field === "lastName"}
-            className="h-11"
           />
-          {fieldError?.field === "lastName" && <FieldError>{fieldError.text}</FieldError>}
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
-          <Input id="email" value={email} readOnly disabled className="h-11" />
-          <FieldDescription>Only an admin can change your email.</FieldDescription>
-        </Field>
-      </FieldGroup>
-      <Button type="submit" size="lg" className="h-11 w-full" disabled={pending || !changed}>
+        </SpField>
+      </div>
+      <SpField label="Email" htmlFor="email" hint="Only an admin can change your email.">
+        <SpInput id="email" surface="panel" icon={<Lock />} value={email} readOnly />
+      </SpField>
+      <SpButton type="submit" className="w-full" disabled={pending || !changed}>
         {pending ? "Saving…" : "Save"}
-      </Button>
+      </SpButton>
     </form>
   );
 }

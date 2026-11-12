@@ -338,7 +338,7 @@ function FilterSheet({
         )}
 
         <Section title="Tags">
-          <TagPicker value={tags} onChange={setTags} basePath={tagsPath} allowCreate={false} />
+          <TagPicker value={tags} onChange={setTags} basePath={tagsPath} allowCreate={false} surface="panel" />
         </Section>
 
         {people.length > 0 && (

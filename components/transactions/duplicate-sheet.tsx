@@ -1,8 +1,9 @@
 "use client";
 
-import { Copy } from "lucide-react";
+import { Receipt } from "lucide-react";
 import { useDates } from "@/components/prefs/prefs-provider";
-import { BottomSheet, SpButton } from "@/components/spine-ui";
+import { BottomSheet, ListItem, SpButton } from "@/components/spine-ui";
+import { formatMoney, type Currency, type TxType } from "@/lib/transactions-types";
 
 export type DuplicateMatch = { id: string; description: string; createdBy: { id: string; name: string }; createdAt: string };
 
@@ -13,25 +14,36 @@ export type DuplicateMatch = { id: string; description: string; createdBy: { id:
 export function DuplicateSheet({
   matches,
   pending,
+  type,
+  amount,
+  currency,
+  wallet = false,
   onCancel,
   onSaveAnyway,
 }: {
   /** null = closed. */
   matches: DuplicateMatch[] | null;
   pending: boolean;
+  /** The amount being saved (the matches have the same one). */
+  type: TxType;
+  amount: string | null;
+  currency: Currency;
+  wallet?: boolean;
   onCancel: () => void;
   onSaveAnyway: () => void;
 }) {
   const dates = useDates();
   const one = matches?.length === 1;
+  const word = type === "INCOME" ? "income" : "expense";
+  const shown = amount ? formatMoney(amount, currency, type === "INCOME" ? "+" : undefined) : "";
   return (
     <BottomSheet
       open={matches !== null}
       onOpenChange={(open) => !open && !pending && onCancel()}
       title="Already saved?"
-      description={`${one ? "This transaction has" : "These transactions have"} the same type, amount, currency and date.`}
+      description={`${one ? `An ${word} with` : `${word[0].toUpperCase()}${word.slice(1)}s with`} the same type, amount, currency and date already ${one ? "exists" : "exist"}${wallet ? " in your wallet" : ""}.`}
       footer={
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-[8px]">
           <SpButton variant="secondary" onClick={onCancel} disabled={pending}>
             Cancel
           </SpButton>
@@ -41,18 +53,16 @@ export function DuplicateSheet({
         </div>
       }
     >
-      <ul className="flex flex-col rounded-(--sp-radius) bg-(--sp-panel) py-2">
+      <ul className="-mx-[14px] flex flex-col">
         {(matches ?? []).map((m) => (
-          <li key={m.id} className="flex items-center gap-[10.8px] px-[14px] py-[7.5px]">
-            <span className="flex size-[33px] shrink-0 items-center justify-center rounded-full bg-(--sp-soft) [&_svg]:size-[15px]">
-              <Copy aria-hidden />
-            </span>
-            <span className="min-w-0 flex-1 leading-none">
-              <span className="block truncate text-[12px] font-medium">{m.description || "No description"}</span>
-              <span className="mt-[3.9px] block truncate text-[10px] text-(--sp-text-faint)">
-                {m.createdBy.name} · {dates.dateTime(m.createdAt)}
-              </span>
-            </span>
+          <li key={m.id}>
+            <ListItem
+              icon={<Receipt />}
+              title={m.description || "No description"}
+              meta={wallet ? dates.dateTime(m.createdAt) : `${m.createdBy.name} • ${dates.dateTime(m.createdAt)}`}
+              amount={shown}
+              tone={type === "INCOME" ? "income" : "expense"}
+            />
           </li>
         ))}
       </ul>

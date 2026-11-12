@@ -62,7 +62,10 @@ export function ProgressBar({ value, tone = "accent", label, valueText, ariaLabe
         className={cn("h-[8px] overflow-hidden rounded-full", onCard ? "bg-white/25" : "bg-(--sp-soft)")}
       >
         <div
-          className={cn("h-full rounded-full transition-[width] duration-500", over ? FILL.danger : FILL[tone])}
+          className={cn(
+            "sp-grow-x h-full rounded-full transition-[width] duration-500 ease-(--sp-ease) motion-reduce:transition-none",
+            over ? FILL.danger : FILL[tone]
+          )}
           style={{ width: `${pct}%` }}
         />
       </div>

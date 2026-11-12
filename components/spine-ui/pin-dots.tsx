@@ -30,7 +30,7 @@ export function PinDots({ length = 4, filled, error, errorKey, className }: PinD
             error
               ? "bg-(--sp-danger)"
               : i < filled
-                ? "bg-(--sp-text)"
+                ? "sp-pop bg-(--sp-text)"
                 : "ring-[1.5px] ring-(--sp-text-faint) ring-inset"
           )}
         />

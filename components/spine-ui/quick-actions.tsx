@@ -18,7 +18,7 @@ export function QuickAction({ label, icon, className, type = "button", ...props 
       )}
       {...props}
     >
-      <span className="flex size-[48px] items-center justify-center rounded-full bg-(--sp-soft) text-(--sp-text) transition group-hover:bg-(--sp-soft-hover) group-active:scale-95 [&_svg]:size-[18px] [&_svg]:stroke-[1.9]">
+      <span className="flex size-[48px] items-center justify-center rounded-full bg-(--sp-soft) text-(--sp-text) transition group-hover:bg-(--sp-soft-hover) group-active:scale-95 motion-reduce:transition-none motion-reduce:group-active:scale-100 [&_svg]:size-[18px] [&_svg]:stroke-[1.9]">
         {icon}
       </span>
       <span className="mt-[11.2px] w-full truncate text-center text-[12px] text-(--sp-text-2)">{label}</span>

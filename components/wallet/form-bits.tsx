@@ -3,9 +3,10 @@
 // Small form pieces shared by the wallet managers (budgets, goals, recurring).
 import { groupByParent, type Category } from "@/lib/catalog-types";
 import { CURRENCIES, type Currency } from "@/lib/transactions-types";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
-import { cn } from "@/lib/utils";
+import { ChevronDown } from "lucide-react";
+import { Segmented as KitSegmented } from "@/components/spine-ui";
 
+/** Kit Segmented (black active pill) with a typed value. */
 export function Segmented<T extends string>({
   label,
   value,
@@ -17,33 +18,7 @@ export function Segmented<T extends string>({
   onChange: (v: T) => void;
   options: { value: T; label: string }[];
 }) {
-  return (
-    <div
-      role="radiogroup"
-      aria-label={label}
-      className="grid gap-1 rounded-xl bg-muted p-1"
-      style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
-    >
-      {options.map((o) => {
-        const on = o.value === value;
-        return (
-          <button
-            key={o.value}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            onClick={() => onChange(o.value)}
-            className={cn(
-              "flex h-11 items-center justify-center rounded-lg px-1 text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-              on ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {o.label}
-          </button>
-        );
-      })}
-    </div>
-  );
+  return <KitSegmented label={label} value={value} onValueChange={(v) => onChange(v as T)} items={options} />;
 }
 
 export function CurrencyChoice({ value, onChange }: { value: Currency; onChange: (c: Currency) => void }) {
@@ -66,13 +41,24 @@ export function CategorySelect({
   emptyLabel?: string;
 }) {
   return (
-    <NativeSelect id={id} value={value} onChange={(e) => onChange(e.target.value)} className="h-11 w-full">
-      <NativeSelectOption value="">{emptyLabel ?? "Choose a category"}</NativeSelectOption>
-      {groupByParent(categories.filter((c) => !c.archived || c.id === value)).map(({ item, child }) => (
-        <NativeSelectOption key={item.id} value={item.id}>
-          {child ? `   ↳ ${item.name}` : item.name}
-        </NativeSelectOption>
-      ))}
-    </NativeSelect>
+    <div className="relative">
+      <select
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-[52px] w-full min-w-0 appearance-none rounded-[16px] bg-(--sp-panel) pr-[44px] pl-[16px] text-(--sp-text) outline-none focus-visible:ring-2 focus-visible:ring-(--sp-card-front)"
+      >
+        <option value="">{emptyLabel ?? "Choose a category"}</option>
+        {groupByParent(categories.filter((c) => !c.archived || c.id === value)).map(({ item, child }) => (
+          <option key={item.id} value={item.id}>
+            {child ? `   ↳ ${item.name}` : item.name}
+          </option>
+        ))}
+      </select>
+      <ChevronDown
+        aria-hidden
+        className="pointer-events-none absolute top-1/2 right-[16px] size-[18px] -translate-y-1/2 text-(--sp-text-faint)"
+      />
+    </div>
   );
 }

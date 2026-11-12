@@ -1,33 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
+import { SignInActivity, SignInHeatmap, type SignInDay as Cell } from "@/components/spine-ui";
 import { useDates } from "@/components/prefs/prefs-provider";
-import { cn } from "@/lib/utils";
-import { addDays, chartStart, WEEKS, type SignInDay } from "@/lib/sign-ins";
+import { addDays, WEEKS, type SignInDay } from "@/lib/sign-ins";
 
 /**
- * Last 6 months of sign-ins, one square per day (ported from the LMS
- * "My account" year chart). A column is a week, Sunday on top. 26 columns
- * share the width, so it fits a 375px phone with no side scroll.
+ * Last 6 months of sign-ins, one square per day (kit SignInHeatmap: a
+ * column is a week, Monday on top; purple = signed in, red = only failed).
+ * 26 columns share the width, so it fits a 375px phone with no side scroll.
  *
  * Squares are too small to tap one by one, so instead of a tooltip the day
  * under the finger (tap, or slide along the grid) or mouse is shown in the
  * line under the chart.
  */
-
-const WEEKDAYS = ["", "Mon", "", "Wed", "", "Fri", ""];
-
-const TONE = {
-  ok: "bg-foreground",
-  failed: "bg-destructive",
-  none: "bg-foreground/[0.07]",
-};
-
-const KEYS = [
-  { tone: TONE.ok, label: "Signed in" },
-  { tone: TONE.failed, label: "Only failed" },
-  { tone: TONE.none, label: "None" },
-];
 
 function times(n: number, one: string, many = `${one}s`) {
   return `${n} ${n === 1 ? one : many}`;
@@ -39,107 +25,109 @@ function monthLabel(day: string) {
   return new Date(`${day}T00:00:00Z`).toLocaleString("en-GB", { month: "short", timeZone: "UTC" });
 }
 
-export function SignInChart({ days, today }: { days: SignInDay[]; today: string }) {
+/**
+ * `start`: the Monday of the first column (from the server).
+ * `variant`: kit SignInHeatmap (squares) or SignInActivity (big number, round dots).
+ */
+export function SignInChart({
+  days,
+  today,
+  start,
+  variant = "heatmap",
+}: {
+  days: SignInDay[];
+  today: string;
+  start: string;
+  variant?: "heatmap" | "activity";
+}) {
   const dates = useDates();
+  const chartId = useId();
   const [picked, setPicked] = useState<string | null>(null);
 
-  const start = chartStart(today);
   const byDate = new Map(days.map((d) => [d.date, d]));
   const inRange = days.filter((d) => d.date >= start && d.date <= today);
   const okDays = inRange.filter((d) => d.ok > 0).length;
   const failed = inRange.reduce((sum, d) => sum + d.failed, 0);
 
-  // Month name under the first week column that starts a new month.
-  const months = Array.from({ length: WEEKS }, (_, col) => {
-    const first = addDays(start, col * 7);
-    const prev = addDays(first, -7);
-    return col === 0 || first.slice(5, 7) !== prev.slice(5, 7) ? monthLabel(addDays(first, 6)) : "";
+  const cells: Cell[] = Array.from({ length: WEEKS * 7 }, (_, i) => {
+    const date = addDays(start, i);
+    const day = date > today ? undefined : byDate.get(date);
+    return (day?.ok ?? 0) > 0 ? "ok" : (day?.failed ?? 0) > 0 ? "failed" : "none";
   });
 
-  function pickAt(x: number, y: number) {
-    const el = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-date]");
-    if (el?.dataset.date) setPicked(el.dataset.date);
+  // Month name above the week whose Sunday is in a new month. The first
+  // column gets one too, unless the next month starts too close to it.
+  const monthOf = (col: number) => addDays(start, col * 7 + 6).slice(0, 7);
+  const starts = Array.from({ length: WEEKS }, (_, col) => col).filter(
+    (col) => col > 0 && monthOf(col) !== monthOf(col - 1)
+  );
+  const months = [...((starts[0] ?? WEEKS) >= 3 ? [0] : []), ...starts].map((week) => ({
+    label: monthLabel(addDays(start, week * 7 + 6)),
+    week,
+  }));
+
+  function pickAt(wrapper: HTMLElement, x: number, y: number) {
+    const grid = wrapper.querySelector<HTMLElement>('[role="img"]');
+    if (!grid) return;
+    const r = grid.getBoundingClientRect();
+    if (x < r.left || x > r.right || y < r.top || y > r.bottom) return;
+    const col = Math.min(WEEKS - 1, Math.floor(((x - r.left) / r.width) * WEEKS));
+    const row = Math.min(6, Math.floor(((y - r.top) / r.height) * 7));
+    const date = addDays(start, col * 7 + row);
+    if (date <= today) setPicked(date);
   }
 
+  const pickedIndex = picked ? Math.round((Date.parse(picked) - Date.parse(start)) / 86_400_000) : -1;
   const pickedDay = picked ? byDate.get(picked) : undefined;
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-baseline justify-between gap-2">
-        <h2 className="font-semibold">Sign-ins</h2>
-        <p className="text-xs text-muted-foreground tabular-nums">
-          {times(okDays, "day")} · {failedTries(failed)}
-        </p>
+    <div data-signin-chart={chartId} className="rounded-(--sp-radius) bg-(--sp-panel)">
+      {pickedIndex >= 0 && (
+        // Ring on the picked square (the kit grid has no "picked" prop).
+        <style>{`[data-signin-chart="${chartId}"] [role="img"] > span:nth-child(${pickedIndex + 1}) { outline: 2px solid var(--sp-text); outline-offset: 1px; }`}</style>
+      )}
+      <div
+        className="touch-pan-y select-none"
+        onPointerDown={(e) => pickAt(e.currentTarget, e.clientX, e.clientY)}
+        onPointerMove={(e) =>
+          (e.pointerType === "mouse" || e.buttons > 0) && pickAt(e.currentTarget, e.clientX, e.clientY)
+        }
+      >
+        {variant === "activity" ? (
+          <SignInActivity
+            days={cells}
+            months={months}
+            total={okDays}
+            totalLabel={okDays === 1 ? "day with a sign-in" : "days with a sign-in"}
+            failed={failed}
+            className="bg-transparent pb-[12px]"
+          />
+        ) : (
+          <SignInHeatmap
+            days={cells}
+            months={months}
+            summary={`${times(okDays, "day")} · ${failedTries(failed)}`}
+            className="bg-transparent pb-[12px]"
+          />
+        )}
       </div>
-
-      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-1.5">
-        <div className="grid grid-rows-7 gap-[3px] text-[0.625rem] leading-none text-muted-foreground">
-          {WEEKDAYS.map((name, row) => (
-            <span key={row} className="flex items-center">
-              {name}
-            </span>
-          ))}
-        </div>
-
-        <div
-          role="img"
-          aria-label={`Last 6 months: signed in on ${times(okDays, "day")}, ${failedTries(failed)}.`}
-          className="grid touch-pan-y grid-flow-col grid-cols-[repeat(26,minmax(0,1fr))] grid-rows-7 gap-[3px] select-none"
-          onPointerDown={(e) => pickAt(e.clientX, e.clientY)}
-          onPointerMove={(e) => (e.pointerType === "mouse" || e.buttons > 0) && pickAt(e.clientX, e.clientY)}
-        >
-          {Array.from({ length: WEEKS * 7 }, (_, i) => {
-            const date = addDays(start, i);
-            if (date > today) return <span key={date} aria-hidden className="aspect-square" />;
-            const day = byDate.get(date);
-            const tone = (day?.ok ?? 0) > 0 ? TONE.ok : (day?.failed ?? 0) > 0 ? TONE.failed : TONE.none;
-            return (
-              <span
-                key={date}
-                data-date={date}
-                className={cn(
-                  "aspect-square rounded-[2px]",
-                  tone,
-                  picked === date && "ring-2 ring-ring ring-offset-1 ring-offset-background"
-                )}
-              />
-            );
-          })}
-        </div>
-
-        <div />
-        <div className="mt-1 grid grid-cols-[repeat(26,minmax(0,1fr))] gap-[3px] text-[0.625rem] leading-none text-muted-foreground">
-          {months.map((m, col) => (
-            <span key={col} className="overflow-visible whitespace-nowrap">
-              {m}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <p aria-live="polite" className="min-h-10 rounded-lg bg-muted px-3 py-2 text-sm">
+      <p
+        aria-live="polite"
+        className="mx-[14px] mb-[14px] min-h-[40px] rounded-[12px] bg-(--sp-soft) px-[12px] py-[10px] text-[0.75rem] leading-snug"
+      >
         {picked ? (
           <>
-            <span className="font-medium">{dates.day(picked)}</span>
-            <span className="text-muted-foreground">
+            <span className="font-medium text-(--sp-text)">{dates.day(picked)}</span>
+            <span className="text-(--sp-text-muted)">
               {" · "}
               {pickedDay?.ok ? `Signed in ${times(pickedDay.ok, "time")}` : "No sign-in"}
               {pickedDay?.failed ? ` · ${failedTries(pickedDay.failed)}` : ""}
             </span>
           </>
         ) : (
-          <span className="text-muted-foreground">Tap a square to see that day.</span>
+          <span className="text-(--sp-text-muted)">Tap a square to see that day.</span>
         )}
       </p>
-
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        {KEYS.map((key) => (
-          <span key={key.label} className="flex items-center gap-1.5">
-            <span className={cn("size-3 rounded-[2px] ring-1 ring-border", key.tone)} aria-hidden />
-            {key.label}
-          </span>
-        ))}
-      </div>
     </div>
   );
 }

@@ -18,11 +18,10 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   if (user) redirect("/");
 
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center px-4 py-10">
-      <div className="w-full max-w-sm">
-        <p className="mb-6 text-center text-2xl font-semibold tracking-tight">Spine</p>
-        {children}
-      </div>
+    // Kit page: gray background (body), 18px sides, phone width. Each page
+    // starts with the logo (AuthHeader), no "Spine" word.
+    <main className="mx-auto flex min-h-svh w-full max-w-[430px] flex-col px-(--sp-gutter) pt-[40px] pb-[32px] text-(--sp-text)">
+      {children}
     </main>
   );
 }
