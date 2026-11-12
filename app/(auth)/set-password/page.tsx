@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { unstable_rethrow } from "next/navigation";
 import { backendGet } from "@/lib/auth";
 import { SetPasswordForm, type TokenCheck, type TokenInfo } from "./set-password-form";
 
@@ -19,7 +20,9 @@ async function checkToken(token: string): Promise<TokenCheck> {
     const res = await backendGet(`/auth/token/${encodeURIComponent(token)}`);
     if (res.ok) return { kind: "ready", info: (await res.json()) as TokenInfo };
     if (res.status === 410 || res.status === 404) return { kind: "invalid" };
-  } catch {
+  } catch (err) {
+    // Let Next.js internal signals (dynamic rendering, redirect) through.
+    unstable_rethrow(err);
     // Backend down: show the "try again later" message.
   }
   return { kind: "error" };

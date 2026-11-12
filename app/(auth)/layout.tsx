@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 
 // Guest-only pages (login, forgot password, set password): only for people
@@ -10,7 +10,11 @@ export const instant = false;
 // /api/auth/me), so an expired cookie (401) still shows the page and never
 // loops. If the backend is down, the page shows too.
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser().catch(() => null);
+  const user = await getCurrentUser().catch((err: unknown) => {
+    // Let Next.js internal signals through; a real error = show the page.
+    unstable_rethrow(err);
+    return null;
+  });
   if (user) redirect("/");
 
   return (

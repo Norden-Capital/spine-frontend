@@ -1,6 +1,7 @@
 // Server-only: the logged-in user's preferences, read once per request.
 import { cache } from "react";
 import { cookies } from "next/headers";
+import { unstable_rethrow } from "next/navigation";
 import { backendGet } from "./auth";
 import { DEFAULT_PREFERENCES, DEVICE_ZONE_COOKIE, type DateSettings, type Preferences } from "./prefs";
 
@@ -10,7 +11,9 @@ export const getPreferences = cache(async (): Promise<Preferences> => {
     const res = await backendGet("/me/preferences");
     if (!res.ok) return DEFAULT_PREFERENCES;
     return { ...DEFAULT_PREFERENCES, ...((await res.json()) as Partial<Preferences>) };
-  } catch {
+  } catch (err) {
+    // Let Next.js internal signals (dynamic rendering, redirect) through.
+    unstable_rethrow(err);
     return DEFAULT_PREFERENCES;
   }
 });

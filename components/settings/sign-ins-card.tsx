@@ -1,6 +1,7 @@
 // Server component: a card with the 6-month sign-ins chart. The chart
 // streams in; the page shows first with a skeleton in its place.
 import { Suspense } from "react";
+import { unstable_rethrow } from "next/navigation";
 import { backendGet } from "@/lib/auth";
 import { chartStart, WEEKS, type SignInDay } from "@/lib/sign-ins";
 import { Card, CardContent } from "@/components/ui/card";
@@ -45,6 +46,8 @@ async function SignIns({ path, today }: { path: string; today: string }) {
     if (res.ok) days = (await res.json()) as SignInDay[];
     else console.error(`[sign-ins] ${path} failed: ${res.status}`);
   } catch (err) {
+    // Let Next.js internal signals (dynamic rendering, redirect) through.
+    unstable_rethrow(err);
     console.error(`[sign-ins] ${path} failed:`, err);
   }
   if (!days) {
