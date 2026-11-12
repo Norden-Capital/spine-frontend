@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, LogOut, Settings } from "lucide-react";
+import { ChevronDown, LogOut, Settings, Shapes, Users } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,12 +12,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { displayName, initials, type CurrentUser } from "@/lib/auth-types";
+import { canSeeUsers, displayName, initials, type CurrentUser } from "@/lib/auth-types";
 import { LogoutDialog } from "./logout-button";
 
 const ITEM = "min-h-11 gap-3 px-3 text-base";
 
-/** Header button with the user's initials + name; opens Settings / Log out. */
+/**
+ * Header button with the user's initials + name. Opens Settings, the manager
+ * pages (owners and admins only) and Log out. The manager links live here
+ * because a 375px header has no room for them.
+ */
 export function UserMenu({ user }: { user: CurrentUser }) {
   const [logoutOpen, setLogoutOpen] = useState(false);
   const name = displayName(user);
@@ -50,6 +54,20 @@ export function UserMenu({ user }: { user: CurrentUser }) {
             <Settings aria-hidden />
             Settings
           </DropdownMenuItem>
+          {canSeeUsers(user.role) && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className={ITEM} render={<Link href="/admin/users" />}>
+                <Users aria-hidden />
+                Users
+              </DropdownMenuItem>
+              <DropdownMenuItem className={ITEM} render={<Link href="/admin/categories" />}>
+                <Shapes aria-hidden />
+                Categories &amp; tags
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
           <DropdownMenuItem className={ITEM} variant="destructive" onClick={() => setLogoutOpen(true)}>
             <LogOut aria-hidden />
             Log out

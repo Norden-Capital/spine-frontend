@@ -41,6 +41,10 @@ const ERROR_MESSAGES: Record<string, string> = {
   last_admin: "You can't do this: there must always be at least one active admin.",
   email_taken: "This email already has an account.",
   not_active: "This user is not active, so no reset email can be sent.",
+  name_taken: "This name is already used. Pick another one.",
+  tag_archived: "This tag exists but is archived. A manager can bring it back.",
+  category_not_found: "This category no longer exists.",
+  tag_not_found: "This tag no longer exists.",
   // Client side
   network_error: "Can't reach the server. Check your connection.",
 };
@@ -130,10 +134,18 @@ async function readError(res: Response): Promise<ApiError> {
   return new ApiError(res.status, code, friendlyMessage(res.status, code, field), field);
 }
 
-export async function api<T = unknown>(
+type ApiOptions = { method?: string; body?: unknown };
+
+/** Call the backend; returns the JSON body. Throws ApiError on failure. */
+export async function api<T = unknown>(path: string, options: ApiOptions = {}): Promise<T> {
+  return (await apiWithStatus<T>(path, options)).data;
+}
+
+/** Same as api(), plus the HTTP status (e.g. 200 "already there" vs 201 "created"). */
+export async function apiWithStatus<T = unknown>(
   path: string,
-  options: { method?: string; body?: unknown } = {}
-): Promise<T> {
+  options: ApiOptions = {}
+): Promise<{ status: number; data: T }> {
   const method = options.method ?? "GET";
   const needsCsrf = method !== "GET" && method !== "HEAD";
 
@@ -168,8 +180,8 @@ export async function api<T = unknown>(
   }
 
   if (res.status === 204 || res.headers.get("content-length") === "0") {
-    return undefined as T;
+    return { status: res.status, data: undefined as T };
   }
   const text = await res.text();
-  return (text ? JSON.parse(text) : undefined) as T;
+  return { status: res.status, data: (text ? JSON.parse(text) : undefined) as T };
 }

@@ -28,15 +28,18 @@ export const metadata: Metadata = {
   appleWebApp: { title: "Spine", capable: true, statusBarStyle: "default" },
   // Next writes only the newer "mobile-web-app-capable"; older iOS reads this one.
   other: { "apple-mobile-web-app-capable": "yes" },
-  // Static files in public/ (opaque, no transparency). iOS ignores a
-  // generated icon URL without a file extension, so these are plain .png
-  // files. iOS also checks /apple-touch-icon(-precomposed).png on its own.
+  // Static files in public/. iOS ignores a generated icon URL without a file
+  // extension, so these are plain .png files.
+  // - Tab icons (favicon.ico, icon-32/192): white rounded square, transparent
+  //   corners. "?v=" makes browsers fetch them again after a change.
+  // - apple-touch-icon: square and opaque on purpose (iOS rounds it itself).
+  //   iOS also checks /apple-touch-icon(-precomposed).png on its own.
   icons: {
     icon: [
-      { url: "/icon-32.png", sizes: "32x32", type: "image/png" },
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-32.png?v=2", sizes: "32x32", type: "image/png" },
+      { url: "/icon-192.png?v=2", sizes: "192x192", type: "image/png" },
     ],
-    shortcut: "/favicon.ico",
+    shortcut: "/favicon.ico?v=2",
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };

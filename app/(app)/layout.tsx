@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { requireUser } from "@/lib/auth";
-import { canSeeUsers, safeNextPath } from "@/lib/auth-types";
+import { safeNextPath } from "@/lib/auth-types";
 import { appLayoutPrefsScript } from "@/lib/prefs";
 import { deviceZone, getPreferences } from "@/lib/prefs-server";
 import { UserMenu } from "@/components/auth/user-menu";
@@ -34,13 +34,6 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <Link href="/" className="flex h-11 items-center font-semibold">
               Spine
             </Link>
-            {canSeeUsers(user.role) && (
-              <nav className="flex text-sm text-muted-foreground">
-                <Link href="/admin/users" className="flex h-11 items-center px-2 hover:text-foreground">
-                  Users
-                </Link>
-              </nav>
-            )}
             <div className="ml-auto min-w-0">
               <UserMenu user={user} />
             </div>
