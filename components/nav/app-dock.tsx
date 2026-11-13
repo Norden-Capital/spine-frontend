@@ -30,7 +30,7 @@ export function isFormPath(pathname: string): boolean {
 /** Wait this long before showing the skeleton: a fast navigation shows no flash. */
 const SHOW_AFTER_MS = 80;
 /** If the navigation never happens (error, cancelled), show the page again. */
-const GIVE_UP_MS = 15_000;
+const GIVE_UP_MS = 8_000;
 
 /** The page the user just tapped while it loads, else null. */
 const PendingPathContext = createContext<string | null>(null);
@@ -54,6 +54,14 @@ export function NavPending({ owner, children }: { owner: boolean; children: Reac
   useEffect(() => {
     here.current = pathname;
   }, [pathname]);
+
+  // The server sent a new page tree: the tap is over, even when the address
+  // did not change (e.g. the page redirected back here, or a refresh). Without
+  // this the skeleton waited for a new address that never came ("stuck").
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- children change = navigation done
+    setPending(null);
+  }, [children]);
 
   useEffect(() => {
     let showTimer: number | undefined;
@@ -79,9 +87,16 @@ export function NavPending({ owner, children }: { owner: boolean; children: Reac
       }, SHOW_AFTER_MS);
       giveUpTimer = window.setTimeout(() => setPending(null), GIVE_UP_MS);
     };
+    // Back / forward: no skeleton for those.
+    const onPop = () => {
+      window.clearTimeout(showTimer);
+      setPending(null);
+    };
     window.addEventListener("click", onClick);
+    window.addEventListener("popstate", onPop);
     return () => {
       window.removeEventListener("click", onClick);
+      window.removeEventListener("popstate", onPop);
       window.clearTimeout(showTimer);
       window.clearTimeout(giveUpTimer);
     };

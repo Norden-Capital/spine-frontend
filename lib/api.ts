@@ -74,6 +74,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   occurrence_exists: "The reminder for this date is already there.",
   // Client side
   network_error: "Can't reach the server. Check your connection.",
+  timeout: "The server did not answer in time. Please try again.",
 };
 
 const STATUS_MESSAGES: Record<number, string> = {
@@ -109,6 +110,10 @@ function friendlyMessage(status: number, code: string, field?: string): string {
   }
   return ERROR_MESSAGES[code] ?? STATUS_MESSAGES[status] ?? FALLBACK_MESSAGE;
 }
+
+/** Longest wait for one API answer before we show an error (uploads: longer). */
+const REQUEST_TIMEOUT_MS = 20_000;
+const UPLOAD_TIMEOUT_MS = 120_000;
 
 const CSRF_COOKIE = "XSRF-TOKEN";
 const CSRF_HEADER = "X-XSRF-TOKEN";
@@ -203,6 +208,8 @@ export async function uploadFile<T = unknown>(
       xhr.upload.onprogress = (e) => e.lengthComputable && onProgress?.(e.loaded / e.total);
       xhr.onload = () => resolve({ status: xhr.status, body: xhr.responseText });
       xhr.onerror = () => reject(new ApiError(0, "network_error", ERROR_MESSAGES.network_error));
+      xhr.timeout = UPLOAD_TIMEOUT_MS;
+      xhr.ontimeout = () => reject(new ApiError(0, "timeout", ERROR_MESSAGES.timeout));
       xhr.onabort = () => reject(new DOMException("Upload stopped", "AbortError"));
       signal?.addEventListener("abort", () => xhr.abort(), { once: true });
       const form = new FormData();
@@ -245,8 +252,13 @@ export async function apiWithStatus<T = unknown>(
         headers,
         credentials: "same-origin",
         body: options.body === undefined ? undefined : JSON.stringify(options.body),
+        // Never spin forever: no answer in 20 s = an error the screen shows.
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
-    } catch {
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "TimeoutError") {
+        throw new ApiError(0, "timeout", ERROR_MESSAGES.timeout);
+      }
       throw new ApiError(0, "network_error", ERROR_MESSAGES.network_error);
     }
   }

@@ -17,6 +17,7 @@ async function session(request: NextRequest): Promise<Session> {
     const res = await fetch(`${BACKEND_URL}/api/auth/me`, {
       headers: { cookie: request.headers.get("cookie") ?? "", accept: "application/json" },
       cache: "no-store",
+      signal: AbortSignal.timeout(8_000),
     });
     if (res.ok) {
       const me = (await res.json().catch(() => null)) as { role?: string } | null;

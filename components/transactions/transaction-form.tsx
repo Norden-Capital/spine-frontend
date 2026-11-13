@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState, type ComponentProps } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError, errorMessage, fieldErrorText } from "@/lib/api";
 import type { Category } from "@/lib/catalog-types";
@@ -54,7 +54,42 @@ type Draft = Pick<
  * `occurrence` = a repeat-expense reminder being saved: its date is used and
  * its id goes in the POST ("recurringOccurrenceId"), so the reminder is done.
  */
-export function TransactionForm({
+/**
+ * Next 16 keeps visited pages alive (React Activity, hidden) and shows the
+ * SAME form again on the next "+". After a successful save we start over:
+ * when the page is hidden, the form gets a new key, so the next visit is
+ * empty (defaults only) with a working Save. A draft left without saving
+ * is kept, as before. Opening another item (edit B after A) also starts a
+ * fresh form, filled from that item. (See next/dist/docs: preserving-ui-state.)
+ */
+export function TransactionForm(props: ComponentProps<typeof TransactionFormBody>) {
+  const [round, setRound] = useState(0);
+  const savedRef = useRef(false);
+  // Runs when Activity hides the page (and on a real unmount, where it does nothing).
+  useLayoutEffect(
+    () => () => {
+      if (savedRef.current) {
+        savedRef.current = false;
+        setRound((n) => n + 1);
+      }
+    },
+    []
+  );
+  // The page can be reused for another item (edit B after A, copy of another
+  // one): a new item = a new form, filled from that item.
+  const item = `${props.transaction?.id ?? "new"}|${props.copyFrom?.id ?? ""}|${props.occurrence?.id ?? ""}`;
+  return (
+    <TransactionFormBody
+      key={`${round}|${item}`}
+      {...props}
+      onSaved={() => {
+        savedRef.current = true;
+      }}
+    />
+  );
+}
+
+function TransactionFormBody({
   transaction,
   copyFrom,
   categories,
@@ -62,7 +97,10 @@ export function TransactionForm({
   scope = "company",
   cancelHref,
   occurrence,
+  onSaved,
 }: {
+  /** Called after a successful save (the wrapper then starts a fresh form). */
+  onSaved?: () => void;
   /** null = new transaction. */
   transaction: Draft | null;
   copyFrom?: Draft | null;
@@ -148,6 +186,7 @@ export function TransactionForm({
         ? await api<{ id: string }>(`${apiPath}/${encodeURIComponent(transaction.id)}`, { method: "PUT", body })
         : await api<{ id: string }>(apiPath, { method: "POST", body });
       setDuplicates(null);
+      onSaved?.();
       router.replace(`${apiPath}/${encodeURIComponent(saved?.id ?? transaction!.id!)}`);
       router.refresh();
     } catch (err) {

@@ -18,6 +18,10 @@ export function DeleteTransaction({ id, month }: { id: string; month: string }) 
     setError(null);
     try {
       await api(`/transactions/${encodeURIComponent(id)}`, { method: "DELETE" });
+      // Next keeps this page alive (hidden): close the sheet now, so going
+      // Back never shows a stuck "Deleting…".
+      setPending(false);
+      setOpen(false);
       router.replace(`/transactions?month=${month}`);
       router.refresh();
     } catch (err) {

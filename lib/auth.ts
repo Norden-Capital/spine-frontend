@@ -16,6 +16,9 @@ export async function backendGet(path: string): Promise<Response> {
   return fetch(`${BACKEND_URL}/api${path}`, {
     headers: { cookie: cookieHeader, accept: "application/json" },
     cache: "no-store",
+    // A hung backend must not keep the page loading forever: after 15 s the
+    // page shows its error state (with "Try again") instead.
+    signal: AbortSignal.timeout(15_000),
   });
 }
 

@@ -25,7 +25,11 @@ export function DeleteWalletTx({ id, month }: { id: string; month: string }) {
       setError(errorMessage(err));
       return;
     }
-    // Deleted: leave this page and make every wallet page fresh (list, dashboard, totals).
+    // Deleted. Next keeps this page alive (hidden): close the sheet now, so
+    // going Back never shows a stuck "Deleting…".
+    setPending(false);
+    setOpen(false);
+    // Leave this page and make every wallet page fresh (list, dashboard, totals).
     const to = `/wallet/transactions?month=${encodeURIComponent(month)}`;
     try {
       await walletChanged(to);
