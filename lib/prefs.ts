@@ -13,7 +13,14 @@ export type Preferences = {
   theme: Theme;
   font: Font;
   textSize: TextSize;
+  /** Private wallet only: the currency new items start with and totals are shown in. */
+  walletCurrency: WalletCurrencyPref;
+  /** Private wallet only: 1 USD = this many MAD, as a decimal string ("10.00"). */
+  walletUsdRate: string;
 };
+
+/** Same values as WalletCurrency (lib/wallet-types.ts). */
+export type WalletCurrencyPref = "USD" | "MAD";
 
 export const DEFAULT_PREFERENCES: Preferences = {
   dateFormat: "DD/MM/YYYY",
@@ -21,6 +28,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   theme: "SYSTEM",
   font: "GEIST",
   textSize: "NORMAL",
+  walletCurrency: "USD",
+  walletUsdRate: "10.00",
 };
 
 // ---------------------------------------------------------------------------

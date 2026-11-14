@@ -1,6 +1,7 @@
 // Transactions (module 4): types and money formatting. Server and client.
 
-// The whole app is USD only: money is always shown with "$".
+// The company is USD only: its money is always shown with "$". The private
+// wallet also has MAD (each wallet item has its own currency).
 export type TxType = "EXPENSE" | "INCOME";
 
 export type FileRef = { id: string; name: string; contentType: string; size: number };
@@ -49,26 +50,35 @@ export type HistoryEntry = {
 
 const NUMBER = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-/** "$1,234.50". `sign`: "+" / "−" in front (for in/out). */
-export function formatMoney(amount: string | number, sign?: "+" | "-"): string {
+/**
+ * A money currency. No currency given = USD ("$"): the company always is.
+ * Only the private wallet also uses MAD (see lib/wallet-types.ts).
+ */
+export type Currency = "USD" | "MAD";
+
+/**
+ * "$1,234.50" (USD, the default) or "1,234.50 MAD". `sign`: "+" / "−" in
+ * front (for in/out): "−$20.00", "−2,000.00 MAD".
+ */
+export function formatMoney(amount: string | number, sign?: "+" | "-", currency?: Currency): string {
   const value = Math.abs(Number(amount));
   const text = NUMBER.format(Number.isFinite(value) ? value : 0);
   const prefix = sign === "+" ? "+" : sign === "-" ? "−" : "";
-  return `${prefix}$${text}`;
+  return currency === "MAD" ? `${prefix}${text} MAD` : `${prefix}$${text}`;
 }
 
 /** Net total with its own sign: "+$400.00", "−$12.00", "$0.00". */
-export function formatNet(amount: string): string {
+export function formatNet(amount: string, currency?: Currency): string {
   const n = Number(amount);
-  return formatMoney(n, n > 0 ? "+" : n < 0 ? "-" : undefined);
+  return formatMoney(n, n > 0 ? "+" : n < 0 ? "-" : undefined, currency);
 }
 
 /** Money with its direction: in "+$500.00", out "−$120.00", net its own sign; zero is "$0.00". */
-export function signedMoney(amount: string | number, direction: "in" | "out" | "net"): string {
+export function signedMoney(amount: string | number, direction: "in" | "out" | "net", currency?: Currency): string {
   const n = Number(amount);
-  if (!n) return formatMoney(0);
-  if (direction === "net") return formatNet(String(n));
-  return formatMoney(n, direction === "in" ? "+" : "-");
+  if (!n) return formatMoney(0, undefined, currency);
+  if (direction === "net") return formatNet(String(n), currency);
+  return formatMoney(n, direction === "in" ? "+" : "-", currency);
 }
 
 /** In / out of a transaction type (INCOME = in, everything else = out). */

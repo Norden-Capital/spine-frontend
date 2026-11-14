@@ -3,7 +3,7 @@
 import { IconReceipt } from "@/components/spine-ui";
 import { useDates } from "@/components/prefs/prefs-provider";
 import { BottomSheet, ListItem, SpButton } from "@/components/spine-ui";
-import { signedMoney, type PersonRef, type TxType } from "@/lib/transactions-types";
+import { signedMoney, type Currency, type PersonRef, type TxType } from "@/lib/transactions-types";
 import { UserAvatar } from "@/components/nav/user-avatar";
 import { seedOf } from "@/lib/avatar";
 
@@ -19,6 +19,7 @@ export function DuplicateSheet({
   type,
   amount,
   wallet = false,
+  currency,
   onCancel,
   onSaveAnyway,
 }: {
@@ -29,13 +30,15 @@ export function DuplicateSheet({
   type: TxType;
   amount: string | null;
   wallet?: boolean;
+  /** Wallet only: the amount's currency (none = "$", the company). */
+  currency?: Currency;
   onCancel: () => void;
   onSaveAnyway: () => void;
 }) {
   const dates = useDates();
   const one = matches?.length === 1;
   const word = type === "INCOME" ? "income" : "expense";
-  const shown = amount ? signedMoney(amount, type === "INCOME" ? "in" : "out") : "";
+  const shown = amount ? signedMoney(amount, type === "INCOME" ? "in" : "out", currency) : "";
   return (
     <BottomSheet
       open={matches !== null}

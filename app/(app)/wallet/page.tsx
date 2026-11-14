@@ -13,10 +13,20 @@ import {
   SwapStack,
 } from "@/components/spine-ui";
 import { formatDay, todayIn } from "@/lib/prefs";
-import { getDateSettings } from "@/lib/prefs-server";
-import { formatMoney, signedMoney, txDirection } from "@/lib/transactions-types";
+import { getDateSettings, getPreferences } from "@/lib/prefs-server";
+import { txDirection } from "@/lib/transactions-types";
 import { getDashboard, getRecurring, getWalletCategories } from "@/lib/wallet-server";
-import { movedIntoGoals, savingsOf, type Budget } from "@/lib/wallet-types";
+import {
+  movedIntoGoals,
+  rateFooter,
+  rateOf,
+  savingsOf,
+  walletBalance,
+  walletCurrencyOf,
+  walletMoney,
+  walletSigned,
+  type Budget,
+} from "@/lib/wallet-types";
 import { TxLogo } from "@/components/expenses/tx-logo";
 import { LinkAddPill, LinkQuickAction, QuickActionsPanel } from "@/components/home/home-links";
 import { LockWalletIconButton, SheetPill, SheetQuickAction, WalletSheets } from "@/components/home/space-actions";
@@ -35,11 +45,12 @@ export const instant = false;
  * actions, due soon, budgets, recent.
  */
 export default async function WalletPage() {
-  const [res, dates, recurring, categories] = await Promise.all([
+  const [res, dates, recurring, categories, prefs] = await Promise.all([
     getDashboard(),
     getDateSettings(),
     getRecurring(),
     getWalletCategories(),
+    getPreferences(),
   ]);
   if (!res.ok) {
     return (
@@ -49,11 +60,15 @@ export default async function WalletPage() {
   const d = res.data;
   const month = d.thisMonth;
   const today = todayIn(dates.zone);
-  const savings = savingsOf(d.goals);
+  // Totals are in my default currency (from the answer; else my saved prefs).
+  const cur = walletCurrencyOf(d.currency ?? prefs.walletCurrency);
+  const usdRate = rateOf(d.usdRate ?? prefs.walletUsdRate);
+  const totalsIn = { currency: cur, usdRate };
+  const savings = savingsOf(d.goals, totalsIn);
   // All money now in goals: the API's own total, else the sum of the goals.
   const savedInGoals = d.savedInGoals ?? savings.saved;
   // Money moved into goals this month (the Savings card's "In").
-  const savedThisMonth = movedIntoGoals(d.goals, today.slice(0, 7));
+  const savedThisMonth = movedIntoGoals(d.goals, today.slice(0, 7), totalsIn);
 
   return (
     <WalletSheets today={today} categories={categories.ok ? categories.data : []}>
@@ -68,13 +83,10 @@ export default async function WalletPage() {
                 tag="Personal wallet"
                 amountLabel="Balance"
                 // The balance is a state, not a movement: no "+" (a "−" stays when below 0).
-                amount={Number(d.balance ?? 0) < 0 ? signedMoney(d.balance ?? "0", "net") : formatMoney(d.balance ?? "0")}
-                detail={month ? { label: "In", value: signedMoney(month.in, "in") } : undefined}
-                footer={
-                  month
-                    ? { label: "Out this month", value: signedMoney(month.out, "out") }
-                    : undefined
-                }
+                amount={walletBalance(d.balance ?? "0", cur)}
+                detail={month ? { label: "Out this month", value: walletSigned(month.out, "out", cur) } : undefined}
+                // How the other currency is counted: "USD counted at" / "1 USD = 10.00 MAD".
+                footer={rateFooter(cur, usdRate)}
                 action={<LinkAddPill glass href="/wallet/transactions/new" label="Expense" testId="wallet-add-expense" />}
               />
             </div>,
@@ -83,7 +95,7 @@ export default async function WalletPage() {
                 <BalanceCard
                   tag="Savings"
                   amountLabel="Saved in goals"
-                  amount={formatMoney(0)}
+                  amount={walletMoney(0, cur)}
                   footer={{ label: "Savings", value: "No savings goal yet" }}
                   action={<SheetPill glass sheet="goal" label="Set a goal" icon={<IconGoal aria-hidden />} />}
                 />
@@ -91,11 +103,11 @@ export default async function WalletPage() {
                 <BalanceCard
                   tag={`Savings · ${savings.count} ${savings.count === 1 ? "goal" : "goals"}`}
                   amountLabel="Saved in goals"
-                  amount={formatMoney(savedInGoals)}
-                  detail={{ label: "In", value: signedMoney(savedThisMonth, "in") }}
+                  amount={walletMoney(savedInGoals, cur)}
+                  detail={{ label: "In", value: walletSigned(savedThisMonth, "in", cur) }}
                   footer={{
                     label: "Progress",
-                    value: `${savings.percent}% of ${formatMoney(savings.target)}`,
+                    value: `${savings.percent}% of ${walletMoney(savings.target, cur)}`,
                   }}
                   action={
                     <LinkAddPill glass href="/wallet/goals" label="Goals" icon={<IconGoal aria-hidden />} testId="savings-goals" />
@@ -141,7 +153,7 @@ export default async function WalletPage() {
                   icon={<TxLogo logoUrls={tx.logoUrls} icon={tx.category.icon} />}
                   title={tx.description || tx.category.name}
                   meta={`${tx.category.name} • ${formatDay(tx.date, dates)}`}
-                  amount={signedMoney(tx.amount, dir)}
+                  amount={walletSigned(tx.amount, dir, tx.currency)}
                   tone={dir === "in" ? "income" : "expense"}
                 />
               );
@@ -170,7 +182,7 @@ function BudgetRow({ b }: { b: Budget }) {
       <div className="flex items-baseline justify-between gap-[8px] text-[0.75rem] leading-snug">
         <span className="min-w-0 truncate font-medium text-(--sp-text)">{name}</span>
         <span className="shrink-0 text-(--sp-text-faint) tabular-nums">
-          {formatMoney(b.spent)} / {formatMoney(b.limit)}
+          {walletMoney(b.spent, b.currency)} / {walletMoney(b.limit, b.currency)}
         </span>
       </div>
       <ProgressBar percent={b.percent} status={b.status} label={`${name}: ${statusText(b.status, b.percent)}`} />

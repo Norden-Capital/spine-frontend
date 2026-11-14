@@ -9,7 +9,8 @@ import { api, ApiError, errorMessage, fieldErrorText } from "@/lib/api";
 import type { Category } from "@/lib/catalog-types";
 import type { RepeatUnit } from "@/lib/repeat-schedule";
 import { parseAmountInput, type TxType } from "@/lib/transactions-types";
-import type { Recurring } from "@/lib/wallet-types";
+import { walletCurrencyOf, type Recurring, type WalletCurrency } from "@/lib/wallet-types";
+import { CurrencyInputIcon, CurrencySwitch, currencyInputClass, useWalletDefaults } from "./currency-switch";
 import { CategoryIcon } from "@/components/expenses/category-icon";
 import { NoticeBox, type Notice } from "@/components/admin/notice";
 import { ConfirmSheet } from "@/components/admin/confirm-sheet";
@@ -204,6 +205,7 @@ function walletView(r: Recurring): RepeatView {
     pausedUntil: r.pausedUntil ?? null,
     upcoming: r.upcoming ?? [],
     logo: <CategoryIcon name={r.category.icon} />,
+    currency: walletCurrencyOf(r.currency),
   };
 }
 
@@ -223,6 +225,11 @@ function RecurringForm({
   onDone: (text: string) => void;
 }) {
   const dates = useDates();
+  const walletDefaults = useWalletDefaults();
+  // Its own currency (edit), else my default.
+  const [currency, setCurrency] = useState<WalletCurrency>(
+    item?.currency ? walletCurrencyOf(item.currency) : walletDefaults.currency
+  );
   const [name, setName] = useState(item?.name ?? "");
   const [type, setType] = useState<TxType>(item?.type ?? "EXPENSE");
   const [amountText, setAmountText] = useState(item?.amount ?? "");
@@ -269,6 +276,7 @@ function RecurringForm({
       unit,
       every,
       startDate,
+      currency,
     };
     try {
       if (item) await api(`/wallet/recurring/${encodeURIComponent(item.id)}`, { method: "PUT", body });
@@ -309,6 +317,9 @@ function RecurringForm({
           { value: "INCOME", label: "Income" },
         ]}
       />
+      <SpField label="Currency">
+        <CurrencySwitch surface="panel" value={currency} onChange={setCurrency} />
+      </SpField>
       <SpField label="Amount" htmlFor="rec-amount" error={touched && !amount ? "Enter an amount." : undefined}>
         <SpInput
           id="rec-amount"
@@ -317,7 +328,8 @@ function RecurringForm({
           placeholder="0.00"
           value={amountText}
           aria-invalid={touched && !amount}
-          icon={<span className="text-[0.9375rem] font-medium">$</span>}
+          icon={<CurrencyInputIcon currency={currency} />}
+          className={currencyInputClass(currency)}
           onChange={(e) => setAmountText(e.target.value)}
         />
       </SpField>

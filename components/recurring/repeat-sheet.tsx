@@ -17,7 +17,7 @@ import { NoticeBox, type Notice } from "@/components/admin/notice";
 import { useDates } from "@/components/prefs/prefs-provider";
 import { api, ApiError, errorMessage, fieldErrorText } from "@/lib/api";
 import { dueState, nextDay, repeatLabel, shortDay, type RepeatUnit, type UpcomingDate } from "@/lib/repeat-schedule";
-import { signedMoney, txDirection, type TxType } from "@/lib/transactions-types";
+import { signedMoney, txDirection, type Currency, type TxType } from "@/lib/transactions-types";
 import { cn } from "@/lib/utils";
 
 /** What the sheet shows, the same for wallet and company items. */
@@ -35,6 +35,8 @@ export type RepeatView = {
   upcoming: UpcomingDate[];
   /** Logo or category icon. */
   logo: ReactNode;
+  /** Wallet only: the item's currency. None = "$" (the company). */
+  currency?: Currency;
 };
 
 /** Error text for the sheet: the backend's own words for a bad date, else the friendly text. */
@@ -188,7 +190,7 @@ export function RepeatSheet<T extends { id: string }>({
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-[1.25rem] leading-snug font-semibold">
-                <SpMoney direction={dir}>{signedMoney(v.amount, dir)}</SpMoney>
+                <SpMoney direction={dir}>{signedMoney(v.amount, dir, v.currency)}</SpMoney>
               </p>
               <p className="mt-[6px] text-[0.75rem] leading-normal text-(--sp-text-muted)">
                 {repeatLabel(v.unit, v.every)}

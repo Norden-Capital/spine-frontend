@@ -21,6 +21,8 @@ export default async function GoalsPage() {
           goals={goals.data}
           today={todayIn(dates.zone)}
           available={dashboard.ok ? (dashboard.data.balance ?? null) : null}
+          availableCurrency={dashboard.ok ? dashboard.data.currency : null}
+          usdRate={dashboard.ok ? dashboard.data.usdRate : null}
         />
       ) : (
         <WalletLoadError what="Goals" />

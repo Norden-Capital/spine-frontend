@@ -4,8 +4,9 @@ import { notFound } from "next/navigation";
 import { IconCopy, IconEdit, IconRepeat } from "@/components/spine-ui";
 import { formatDateTime, formatDay } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
-import { formatMoney, monthOf } from "@/lib/transactions-types";
+import { monthOf } from "@/lib/transactions-types";
 import { getWalletTx } from "@/lib/wallet-server";
+import { walletMoney } from "@/lib/wallet-types";
 import { TxLogo } from "@/components/expenses/tx-logo";
 import { WebsiteLink } from "@/components/transactions/website-link";
 import { ProofGallery } from "@/components/transactions/proof-gallery";
@@ -42,7 +43,7 @@ export default async function WalletTxPage({ params }: PageProps<"/wallet/transa
         tag="Personal wallet"
         title={tx.description || tx.category.name}
         meta={`${tx.category.name} · ${formatDay(tx.date, dates)}`}
-        amount={formatMoney(tx.amount, tx.type === "INCOME" ? "+" : "-")}
+        amount={walletMoney(tx.amount, tx.currency, tx.type === "INCOME" ? "+" : "-")}
         kind={kind}
       />
 

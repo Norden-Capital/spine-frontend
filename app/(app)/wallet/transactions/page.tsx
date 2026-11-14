@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import { IconNoResults, IconReceipt, PageHeader } from "@/components/spine-ui";
 import { filtersToQuery, hasFilters, parseFilters } from "@/lib/filters";
 import { todayIn } from "@/lib/prefs";
-import { getDateSettings } from "@/lib/prefs-server";
+import { getDateSettings, getPreferences } from "@/lib/prefs-server";
 import { getList } from "@/lib/list-server";
 import { monthLabel, monthOf } from "@/lib/transactions-types";
 import { getWalletCategories } from "@/lib/wallet-server";
+import { walletCurrencyOf } from "@/lib/wallet-types";
 import { FilterBar } from "@/components/filters/filter-bar";
 import { TxList } from "@/components/transactions/tx-list";
 import { PageEmpty } from "@/components/nav/page-empty";
@@ -20,7 +21,7 @@ export const instant = false;
 /** My private wallet transactions: month (or range), search, filters, totals. */
 export default async function WalletTransactionsPage({ searchParams }: PageProps<"/wallet/transactions">) {
   const params = await searchParams;
-  const dates = await getDateSettings();
+  const [dates, prefs] = await Promise.all([getDateSettings(), getPreferences()]);
   const today = todayIn(dates.zone);
   const current = monthOf(today);
   const filters = parseFilters(params);
@@ -48,6 +49,7 @@ export default async function WalletTransactionsPage({ searchParams }: PageProps
         placeholder="Description, website"
         totalItems={list?.totalItems}
         totals={list?.totals ?? undefined}
+        currency={walletCurrencyOf(list?.currency ?? prefs.walletCurrency)}
       />
 
       {list ? (

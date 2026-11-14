@@ -3,16 +3,22 @@
 import { useState } from "react";
 import { api, errorMessage } from "@/lib/api";
 import { signedMoney, type Totals, type Transaction } from "@/lib/transactions-types";
-import type { WalletTx } from "@/lib/wallet-types";
+import { walletCurrencyOf, type WalletCurrency, type WalletTx } from "@/lib/wallet-types";
 import { TxLogo } from "@/components/expenses/tx-logo";
 import { useDates } from "@/components/prefs/prefs-provider";
 import { ListItem, SpButton } from "@/components/spine-ui";
 
-type Row = Pick<Transaction | WalletTx, "id" | "type" | "amount" | "date" | "description" | "logoUrls" | "category" | "createdAt">;
+type Row = Pick<Transaction | WalletTx, "id" | "type" | "amount" | "date" | "description" | "logoUrls" | "category" | "createdAt"> & {
+  /** Wallet rows only: the row's own currency. */
+  currency?: WalletCurrency;
+};
 
 export type ListPage<T extends Row = Row> = {
   items: T[];
   totals: Totals;
+  /** Wallet only: the default currency the totals are in, and the rate used ("10.00"). */
+  currency?: WalletCurrency;
+  usdRate?: string;
   page?: number;
   hasNext?: boolean;
   totalItems?: number;
@@ -37,6 +43,8 @@ export function TxList({
   empty: React.ReactNode;
 }) {
   const dates = useDates();
+  // Wallet rows show their own currency; company rows stay "$".
+  const wallet = apiPath.startsWith("/wallet/");
   const [items, setItems] = useState(first.items);
   const [page, setPage] = useState(first.page ?? 0);
   const [hasNext, setHasNext] = useState(Boolean(first.hasNext));
@@ -92,7 +100,7 @@ export function TxList({
                     icon={<TxLogo logoUrls={tx.logoUrls} icon={tx.category.icon} />}
                     title={tx.description || tx.category.name}
                     meta={tx.category.name}
-                    amount={signedMoney(tx.amount, income ? "in" : "out")}
+                    amount={signedMoney(tx.amount, income ? "in" : "out", wallet ? walletCurrencyOf(tx.currency) : undefined)}
                     tone={income ? "income" : "expense"}
                   />
                 );

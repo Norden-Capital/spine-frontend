@@ -4,7 +4,9 @@ import { useId, useLayoutEffect, useRef, useState, type ComponentProps } from "r
 import { useRouter } from "next/navigation";
 import { api, ApiError, errorMessage, fieldErrorText } from "@/lib/api";
 import type { Category } from "@/lib/catalog-types";
-import { parseAmountInput, type Transaction, type TxType } from "@/lib/transactions-types";
+import { formatMoney, parseAmountInput, type Transaction, type TxType } from "@/lib/transactions-types";
+import { convertMoney, usdRateText, walletCurrencyOf, type WalletCurrency } from "@/lib/wallet-types";
+import { CurrencySwitch, useWalletDefaults } from "@/components/wallet/currency-switch";
 import { CategoryPicker } from "@/components/expenses/category-picker";
 import { DuplicateSheet, type DuplicateMatch } from "./duplicate-sheet";
 import { AmountField, DateField, Segmented, SpButton, SpField, SpInput } from "@/components/spine-ui";
@@ -44,6 +46,8 @@ type Draft = Pick<
   "type" | "amount" | "date" | "description" | "website" | "category" | "files"
 > & {
   id?: string;
+  /** Wallet only: the item's own currency. */
+  currency?: WalletCurrency;
 };
 
 /**
@@ -119,6 +123,11 @@ function TransactionFormBody({
   const base = transaction ?? copyFrom ?? null;
   const wallet = scope === "wallet";
   const apiPath = wallet ? "/wallet/transactions" : "/transactions";
+  // Wallet only: MAD / USD per item. Starts on the item's own (edit / copy), else my default.
+  const walletDefaults = useWalletDefaults();
+  const [currency, setCurrency] = useState<WalletCurrency>(
+    base?.currency ? walletCurrencyOf(base.currency) : walletDefaults.currency
+  );
   const [type, setType] = useState<TxType>(base?.type ?? "EXPENSE");
   const [amountText, setAmountText] = useState(base?.amount ?? "");
   const [date, setDate] = useState(transaction?.date ?? occurrence?.date ?? today);
@@ -178,6 +187,8 @@ function TransactionFormBody({
       website: website.trim() || null,
       categoryId,
       fileIds: doneProofs.map((p) => p.ref!.id),
+      // The company has no currency (always USD).
+      ...(wallet ? { currency } : {}),
       ...(transaction?.id ? {} : { confirmDuplicate }),
       ...(!transaction?.id && occurrence ? { recurringOccurrenceId: occurrence.id } : {}),
     };
@@ -207,6 +218,15 @@ function TransactionFormBody({
   const errorFor = (field: string) => (fieldError?.field === field ? fieldError.text : null);
 
   const amountError = showAmountError ? "Enter an amount, like 12.50 or 12,50." : errorFor("amount");
+  // Wallet, other currency than my default: "≈ 20,000.00 MAD in your totals (1 USD = 10.00 MAD)".
+  const inTotals =
+    wallet && amount && !amountError && currency !== walletDefaults.currency
+      ? `≈ ${formatMoney(
+          convertMoney(Number(amount), currency, walletDefaults.currency, walletDefaults.usdRate),
+          undefined,
+          walletDefaults.currency
+        )} in your totals (${usdRateText(walletDefaults.usdRate)})`
+      : null;
   const websiteError = fieldError?.field === "website" ? "Enter a website like example.com." : null;
   const dateError = futureDate ? "The date can't be in the future." : errorFor("date");
   const categoryError = touched && !categoryId ? "Pick a category." : errorFor("categoryId");
@@ -247,10 +267,12 @@ function TransactionFormBody({
         ]}
       />
 
+      {wallet && <CurrencySwitch value={currency} onChange={setCurrency} />}
+
       <div className="space-y-[8px]">
         <AmountField
           id={`${ids}-amount`}
-          symbol="$"
+          symbol={wallet && currency === "MAD" ? "MAD" : "$"}
           placeholder="0.00"
           value={amountText}
           onChange={(e) => setAmountText(e.target.value)}
@@ -264,6 +286,11 @@ function TransactionFormBody({
         {amountError && (
           <p id={`${ids}-amount-error`} className="px-[4px] text-[0.6875rem] leading-snug text-(--sp-danger)">
             {amountError}
+          </p>
+        )}
+        {inTotals && (
+          <p className="text-center text-[0.75rem] leading-snug text-(--sp-text-muted) tabular-nums" aria-live="polite">
+            {inTotals}
           </p>
         )}
       </div>
@@ -356,6 +383,7 @@ function TransactionFormBody({
         type={type}
         amount={amount}
         wallet={wallet}
+        currency={wallet ? currency : undefined}
         onCancel={() => setDuplicates(null)}
         onSaveAnyway={() => void save(true)}
       />

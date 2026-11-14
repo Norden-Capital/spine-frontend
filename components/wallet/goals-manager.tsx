@@ -40,8 +40,19 @@ import {
   SpMoney,
 } from "@/components/spine-ui";
 import { api, ApiError, errorMessage } from "@/lib/api";
-import { formatMoney, parseAmountInput } from "@/lib/transactions-types";
-import type { Contribution, Goal } from "@/lib/wallet-types";
+import { parseAmountInput } from "@/lib/transactions-types";
+import {
+  convertMoney,
+  rateOf,
+  walletBalance,
+  walletCurrencyOf,
+  walletMoney,
+  type Contribution,
+  type Goal,
+  type TotalsIn,
+  type WalletCurrency,
+} from "@/lib/wallet-types";
+import { CurrencyInputIcon, CurrencySwitch, currencyInputClass, useWalletDefaults } from "./currency-switch";
 import { walletChanged } from "@/lib/wallet-actions";
 import { nextDay } from "@/lib/repeat-schedule";
 import { useDates } from "@/components/prefs/prefs-provider";
@@ -50,9 +61,9 @@ import { NoticeBox } from "@/components/admin/notice";
 import { cn } from "@/lib/utils";
 import { ProgressBar } from "./progress";
 
-/** "$1,234.00", or "−$20.00" below 0. */
-function plainMoney(amount: string | number): string {
-  return formatMoney(amount, Number(amount) < 0 ? "-" : undefined);
+/** A goal's money in the goal's own currency: "$1,234.00" / "1,234.00 MAD". */
+function goalMoney(amount: string | number, goal: Goal, sign?: "+" | "-"): string {
+  return walletMoney(amount, goal.currency, sign);
 }
 
 /**
@@ -63,14 +74,25 @@ export function GoalsManager({
   goals,
   today,
   available,
+  availableCurrency,
+  usdRate,
 }: {
   goals: Goal[];
   today: string;
   /** The wallet's AVAILABLE balance (dashboard `balance`); null = not known. */
   available: string | null;
+  /** The balance's currency (dashboard `currency`, my default); missing = my saved default. */
+  availableCurrency?: string | null;
+  /** The rate (dashboard `usdRate`); missing = my saved rate. */
+  usdRate?: string | null;
 }) {
   const router = useRouter();
   const dates = useDates();
+  const walletDefaults = useWalletDefaults();
+  const availableIn: TotalsIn = {
+    currency: availableCurrency ? walletCurrencyOf(availableCurrency) : walletDefaults.currency,
+    usdRate: usdRate ? rateOf(usdRate) : walletDefaults.usdRate,
+  };
   // The sheet keeps the last goal while it slides away (no title flash).
   const [edit, setEdit] = useState<{ goal: Goal | null; open: boolean }>({
     goal: null,
@@ -268,8 +290,8 @@ export function GoalsManager({
                                 {g.name}
                               </span>
                               <span className="mt-[2px] block text-[0.6875rem] leading-snug text-(--sp-text-muted) tabular-nums">
-                                {formatMoney(g.saved)} of{" "}
-                                {formatMoney(g.target)} · {g.percent}%
+                                {goalMoney(g.saved, g)} of{" "}
+                                {goalMoney(g.target, g)} · {g.percent}%
                                 {g.deadline
                                   ? ` · by ${dates.day(g.deadline)}`
                                   : ""}
@@ -292,7 +314,7 @@ export function GoalsManager({
                           <div className="flex flex-col gap-[14px] border-t border-(--sp-soft) pt-[14px]">
                             <p className="px-[4px] text-[0.8125rem] leading-snug text-(--sp-text-muted)">
                               {left > 0
-                                ? `${formatMoney(left)} to go.`
+                                ? `${goalMoney(left, g)} to go.`
                                 : "Goal reached!"}
                             </p>
                             <div className="flex flex-col gap-[8px]">
@@ -340,8 +362,9 @@ export function GoalsManager({
                                             direction={out ? "out" : "in"}
                                             className="font-medium"
                                           >
-                                            {formatMoney(
+                                            {goalMoney(
                                               c.amount,
+                                              g,
                                               out ? "-" : "+",
                                             )}
                                           </SpMoney>
@@ -438,6 +461,7 @@ export function GoalsManager({
         kind={move.kind}
         today={today}
         available={available}
+        availableIn={availableIn}
         onDone={async (text) => {
           setNotice({ kind: "ok", text });
           await refreshWallet();
@@ -450,7 +474,7 @@ export function GoalsManager({
         title={`Remove "${remove?.name ?? ""}"?`}
         text={
           remove && Number(remove.saved) > 0
-            ? `The goal and its money moves are deleted. Its ${formatMoney(remove.saved)} goes back to your balance.`
+            ? `The goal and its money moves are deleted. Its ${goalMoney(remove.saved, remove)} goes back to your balance.`
             : "The goal is deleted."
         }
         confirm="Remove"
@@ -468,8 +492,8 @@ export function GoalsManager({
         text={
           money
             ? undoTakeOut
-              ? `${formatMoney(money.item.amount)} from ${dates.day(money.item.date)} goes back into "${money.goal.name}" and leaves your balance.`
-              : `${formatMoney(money.item.amount)} from ${dates.day(money.item.date)} leaves "${money.goal.name}" and goes back to your balance.`
+              ? `${goalMoney(money.item.amount, money.goal)} from ${dates.day(money.item.date)} goes back into "${money.goal.name}" and leaves your balance.`
+              : `${goalMoney(money.item.amount, money.goal)} from ${dates.day(money.item.date)} leaves "${money.goal.name}" and goes back to your balance.`
             : ""
         }
         confirm={undoTakeOut ? "Undo" : "Remove"}
@@ -566,6 +590,11 @@ function GoalForm({
   onDone: (text: string) => void;
 }) {
   const dates = useDates();
+  const walletDefaults = useWalletDefaults();
+  // Its own currency (edit), else my default.
+  const [currency, setCurrency] = useState<WalletCurrency>(
+    goal?.currency ? walletCurrencyOf(goal.currency) : walletDefaults.currency
+  );
   const [name, setName] = useState(goal?.name ?? "");
   const [target, setTarget] = useState(goal?.target ?? "");
   const [deadline, setDeadline] = useState(goal?.deadline ?? "");
@@ -580,7 +609,7 @@ function GoalForm({
     setError(null);
     if (!trimmed || !amount) return;
     onPending(true);
-    const body = { name: trimmed, target: amount, deadline: deadline || null };
+    const body = { name: trimmed, target: amount, deadline: deadline || null, currency };
     try {
       if (goal)
         await api(`/wallet/goals/${encodeURIComponent(goal.id)}`, {
@@ -627,6 +656,9 @@ function GoalForm({
           onChange={(e) => setName(e.target.value)}
         />
       </SpField>
+      <SpField label="Currency">
+        <CurrencySwitch surface="panel" value={currency} onChange={setCurrency} />
+      </SpField>
       <SpField
         label="Target"
         htmlFor="goal-target"
@@ -639,7 +671,8 @@ function GoalForm({
           placeholder="0.00"
           value={target}
           aria-invalid={touched && !amount}
-          icon={<span className="text-[0.9375rem] font-medium">$</span>}
+          icon={<CurrencyInputIcon currency={currency} />}
+          className={currencyInputClass(currency)}
           onChange={(e) => setTarget(e.target.value)}
         />
       </SpField>
@@ -673,6 +706,7 @@ function MoveSheet({
   kind,
   today,
   available,
+  availableIn,
   onDone,
 }: {
   open: boolean;
@@ -681,6 +715,7 @@ function MoveSheet({
   kind: MoveKind;
   today: string;
   available: string | null;
+  availableIn: TotalsIn;
   onDone: (text: string) => Promise<void>;
 }) {
   const formId = `goal-move-form-${goal?.id ?? "none"}`;
@@ -730,6 +765,7 @@ function MoveSheet({
           kind={kind}
           today={today}
           available={available}
+          availableIn={availableIn}
           onPending={setPending}
           onDone={async (text) => {
             onOpenChange(false);
@@ -747,6 +783,7 @@ function MoveForm({
   kind,
   today,
   available,
+  availableIn,
   onPending,
   onDone,
 }: {
@@ -755,6 +792,8 @@ function MoveForm({
   kind: MoveKind;
   today: string;
   available: string | null;
+  /** The balance's currency and the rate. */
+  availableIn: TotalsIn;
   onPending: (pending: boolean) => void;
   onDone: (text: string) => Promise<void>;
 }) {
@@ -769,13 +808,18 @@ function MoveForm({
   const value = amount ? Number(amount) : 0;
   const saved = Number(goal.saved) || 0;
   const tooMuch = out && value > saved;
-  const overBalance = !out && available !== null && value > Number(available);
+  // The balance is in my default currency; the goal may be in the other one.
+  const goalCurrency = walletCurrencyOf(goal.currency);
+  const overBalance =
+    !out &&
+    available !== null &&
+    convertMoney(value, goalCurrency, availableIn.currency, availableIn.usdRate) > Number(available);
   const amountError = !touched
     ? undefined
     : !amount
       ? "Enter an amount, like 50."
       : tooMuch
-        ? `This goal holds only ${formatMoney(saved)}.`
+        ? `This goal holds only ${goalMoney(saved, goal)}.`
         : undefined;
 
   async function submit(e: React.FormEvent) {
@@ -835,7 +879,7 @@ function MoveForm({
         >
           {out ? "In this goal: " : "Available: "}
           <span className="font-medium text-(--sp-text)">
-            {out ? formatMoney(saved) : plainMoney(available ?? 0)}
+            {out ? goalMoney(saved, goal) : walletBalance(available ?? 0, availableIn.currency)}
           </span>
         </p>
       )}
@@ -848,7 +892,8 @@ function MoveForm({
           autoComplete="off"
           value={amountText}
           aria-invalid={Boolean(amountError)}
-          icon={<span className="text-[0.9375rem] font-medium">$</span>}
+          icon={<CurrencyInputIcon currency={goalCurrency} />}
+          className={currencyInputClass(goalCurrency)}
           onChange={(e) => setAmountText(e.target.value)}
           data-testid="goal-move-amount"
         />
@@ -859,8 +904,8 @@ function MoveForm({
         data-testid="goal-move-text"
       >
         {out
-          ? `Moves ${formatMoney(value)} from this goal back to your balance.`
-          : `Moves ${formatMoney(value)} from your balance to this goal.`}
+          ? `Moves ${goalMoney(value, goal)} from this goal back to your balance.`
+          : `Moves ${goalMoney(value, goal)} from your balance to this goal.`}
       </p>
       {overBalance && (
         <p

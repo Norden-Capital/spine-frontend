@@ -29,6 +29,8 @@ import {
   type ThemeValue,
 } from "@/components/spine-ui";
 import { cn } from "@/lib/utils";
+import { formatRate, rateOf, walletCurrencyOf } from "@/lib/wallet-types";
+import { CurrencySwitch } from "@/components/wallet/currency-switch";
 import { SettingsNotice } from "./settings-notice";
 
 // Backend values <-> kit values.
@@ -86,7 +88,9 @@ export function PreferencesForm() {
       await api("/me/preferences", { method: "PUT", body: next });
       setStatus({ kind: "ok", text: "Saved." });
       // Dates drawn on the server (account page, lists) use the new format/zone.
-      if ("dateFormat" in change || "timeZone" in change) router.refresh();
+      // Wallet totals (server pages) use the new default currency / rate.
+      if ("dateFormat" in change || "timeZone" in change || "walletCurrency" in change || "walletUsdRate" in change)
+        router.refresh();
     } catch (err) {
       setPrefs(before);
       setStatus({ kind: "error", text: `Not saved. ${errorMessage(err)}` });
@@ -165,6 +169,29 @@ export function PreferencesForm() {
         </div>
       </SpPanel>
 
+      <SpPanel title="Wallet currency" description="Only for your private wallet. The company stays in USD.">
+        <div className="space-y-[16px]">
+          <SpField
+            label="Default currency"
+            hint="New expenses, goals, budgets and repeats start with it. You can change it on each one."
+          >
+            <CurrencySwitch
+              label="Default currency"
+              surface="panel"
+              long
+              value={walletCurrencyOf(prefs.walletCurrency)}
+              onChange={(v) => v !== prefs.walletCurrency && save({ walletCurrency: v })}
+            />
+          </SpField>
+          <RateField
+            // A new saved value (or a failed save going back) starts the field over.
+            key={prefs.walletUsdRate}
+            saved={prefs.walletUsdRate}
+            onSave={(walletUsdRate) => save({ walletUsdRate })}
+          />
+        </div>
+      </SpPanel>
+
       <ZonePicker
         open={zoneOpen}
         onOpenChange={setZoneOpen}
@@ -176,6 +203,60 @@ export function PreferencesForm() {
         }}
       />
     </>
+  );
+}
+
+/** "10,5" -> 10.5; null if not a rate the backend takes (> 0, ≤ 1000, up to 4 decimals). */
+function parseRate(raw: string): number | null {
+  const cleaned = raw.trim().replace(/[\s ']/g, "").replace(",", ".");
+  if (!/^\d{1,4}(\.\d{1,4})?$/.test(cleaned)) return null;
+  const n = Number(cleaned);
+  return n > 0 && n <= 1000 ? n : null;
+}
+
+/** "1 USD = [10.00] MAD": saved when you leave the field or press Enter (if valid and changed). */
+function RateField({ saved, onSave }: { saved: string; onSave: (rate: string) => void }) {
+  const [text, setText] = useState(() => formatRate(rateOf(saved)));
+  const [error, setError] = useState<string | null>(null);
+
+  function commit() {
+    const n = parseRate(text);
+    if (n === null) {
+      setError("Enter a rate above 0, like 10.00.");
+      return;
+    }
+    setError(null);
+    const value = formatRate(n);
+    setText(value);
+    if (n !== Number(saved)) onSave(value);
+  }
+
+  return (
+    <SpField label="Exchange rate" hint="Used to add MAD and USD together in your totals." error={error ?? undefined}>
+      <div className="flex items-center gap-[10px]">
+        <span className="shrink-0 text-[0.875rem] font-medium text-(--sp-text)">1 USD =</span>
+        <SpInput
+          inputMode="decimal"
+          autoComplete="off"
+          aria-label="MAD for 1 USD"
+          className="text-right tabular-nums"
+          value={text}
+          aria-invalid={Boolean(error) || undefined}
+          onChange={(e) => {
+            setText(e.target.value);
+            if (error) setError(null);
+          }}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commit();
+            }
+          }}
+        />
+        <span className="shrink-0 text-[0.875rem] font-medium text-(--sp-text)">MAD</span>
+      </div>
+    </SpField>
   );
 }
 

@@ -16,8 +16,9 @@ import {
 } from "@/components/spine-ui";
 import { api, ApiError, errorMessage, fieldErrorText } from "@/lib/api";
 import type { Category } from "@/lib/catalog-types";
-import { formatMoney, parseAmountInput } from "@/lib/transactions-types";
-import type { Budget } from "@/lib/wallet-types";
+import { parseAmountInput } from "@/lib/transactions-types";
+import { walletCurrencyOf, walletMoney, type Budget, type WalletCurrency } from "@/lib/wallet-types";
+import { CurrencyInputIcon, CurrencySwitch, currencyInputClass, useWalletDefaults } from "./currency-switch";
 import { CategoryIcon } from "@/components/expenses/category-icon";
 import { ConfirmSheet } from "@/components/admin/confirm-sheet";
 import { NoticeBox } from "@/components/admin/notice";
@@ -85,8 +86,8 @@ export function BudgetsManager({ budgets, categories }: { budgets: Budget[]; cat
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[0.9375rem] leading-normal font-medium text-(--sp-text)">{name}</p>
                     <p className="mt-[2px] text-[0.6875rem] leading-snug text-(--sp-text-muted) tabular-nums">
-                      {formatMoney(b.spent)} of {formatMoney(b.limit)} ·{" "}
-                      {left >= 0 ? `${formatMoney(left)} left` : `${formatMoney(-left)} over`}
+                      {walletMoney(b.spent, b.currency)} of {walletMoney(b.limit, b.currency)} ·{" "}
+                      {left >= 0 ? `${walletMoney(left, b.currency)} left` : `${walletMoney(-left, b.currency)} over`}
                     </p>
                   </div>
                   <IconButton
@@ -222,6 +223,11 @@ function BudgetForm({
   onPending: (pending: boolean) => void;
   onDone: (text: string) => void;
 }) {
+  const walletDefaults = useWalletDefaults();
+  // Its own currency (edit), else my default.
+  const [currency, setCurrency] = useState<WalletCurrency>(
+    budget?.currency ? walletCurrencyOf(budget.currency) : walletDefaults.currency
+  );
   const [limit, setLimit] = useState(budget?.limit ?? "");
   const [categoryId, setCategoryId] = useState(budget?.category?.id ?? "");
   const [touched, setTouched] = useState(false);
@@ -238,7 +244,7 @@ function BudgetForm({
     setCategoryError(null);
     if (!amount) return;
     onPending(true);
-    const body = { limit: amount, categoryId: categoryId || null };
+    const body = { limit: amount, categoryId: categoryId || null, currency };
     try {
       if (budget) await api(`/wallet/budgets/${encodeURIComponent(budget.id)}`, { method: "PUT", body });
       else await api("/wallet/budgets", { method: "POST", body });
@@ -277,6 +283,9 @@ function BudgetForm({
           emptyLabel="All spending (total)"
         />
       </SpField>
+      <SpField label="Currency">
+        <CurrencySwitch surface="panel" value={currency} onChange={setCurrency} />
+      </SpField>
       <SpField label="Monthly limit" htmlFor="budget-limit" error={touched && !amount ? "Enter an amount, like 500." : undefined}>
         <SpInput
           id="budget-limit"
@@ -285,7 +294,8 @@ function BudgetForm({
           placeholder="0.00"
           value={limit}
           aria-invalid={touched && !amount}
-          icon={<span className="text-[0.9375rem] font-medium">$</span>}
+          icon={<CurrencyInputIcon currency={currency} />}
+          className={currencyInputClass(currency)}
           onChange={(e) => setLimit(e.target.value)}
         />
       </SpField>

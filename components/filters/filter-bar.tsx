@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { Category } from "@/lib/catalog-types";
 import { DATE_PRESETS, filtersToQuery, hasFilters, matchPreset, rangeLabel, type Filters } from "@/lib/filters";
-import { addMonths, formatMoney, signedMoney } from "@/lib/transactions-types";
+import { addMonths, formatMoney, signedMoney, type Currency } from "@/lib/transactions-types";
 import { CategoryIcon } from "@/components/expenses/category-icon";
 import { ActiveFilters, PeriodBar, SearchBar, SpMoney, type ActiveFilter } from "@/components/spine-ui";
 import { FilterSheet, type PersonOption } from "./filter-sheet";
@@ -29,6 +29,7 @@ export function FilterBar({
   placeholder,
   totalItems,
   totals,
+  currency,
   autoFocusSearch,
 }: {
   /** Current filters; `month` is filled in when there is no range. */
@@ -44,6 +45,8 @@ export function FilterBar({
   totalItems?: number;
   /** The period's In / Out (server totals for these filters). */
   totals?: { in: string; out: string };
+  /** Wallet only: the currency of the totals (my default). None = "$" (the company). */
+  currency?: Currency;
   autoFocusSearch?: boolean;
 }) {
   const router = useRouter();
@@ -112,9 +115,11 @@ export function FilterBar({
   }
   if (filters.minAmount || filters.maxAmount) {
     const { minAmount: lo, maxAmount: hi } = filters;
+    // Wallet items have their own currency (MAD or USD): the amount is shown without a symbol.
+    const money = (v: string) => (apiPath === "/wallet/transactions" ? formatMoney(v).replace("$", "") : formatMoney(v));
     chips.push({
       key: "amount",
-      label: lo && hi ? `${formatMoney(lo)} – ${formatMoney(hi)}` : lo ? `≥ ${formatMoney(lo)}` : `≤ ${formatMoney(hi!)}`,
+      label: lo && hi ? `${money(lo)} – ${money(hi)}` : lo ? `≥ ${money(lo)}` : `≤ ${money(hi!)}`,
       onRemove: () => go({ ...filters, minAmount: undefined, maxAmount: undefined }),
     });
   }
@@ -151,9 +156,9 @@ export function FilterBar({
   const money =
     totals && totalItems && (hasIn || hasOut) ? (
       <>
-        {hasIn && <SpMoney direction="in">{signedMoney(totals.in, "in")} in</SpMoney>}
+        {hasIn && <SpMoney direction="in">{signedMoney(totals.in, "in", currency)} in</SpMoney>}
         {hasIn && hasOut ? " · " : ""}
-        {hasOut && <SpMoney direction="out">{signedMoney(totals.out, "out")} out</SpMoney>}
+        {hasOut && <SpMoney direction="out">{signedMoney(totals.out, "out", currency)} out</SpMoney>}
       </>
     ) : null;
   // With In / Out money, the plain "N transactions" count is left out: on a

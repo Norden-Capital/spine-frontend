@@ -2,8 +2,8 @@ import { DueBadge, RowIcon, SectionCard, SpMoney, SpRow } from "@/components/spi
 import { CategoryIcon } from "@/components/expenses/category-icon";
 import type { DateFormat } from "@/lib/prefs";
 import { daysBetween, dueState, repeatLabel, shortDay } from "@/lib/repeat-schedule";
-import { signedMoney, txDirection } from "@/lib/transactions-types";
-import type { Recurring } from "@/lib/wallet-types";
+import { txDirection } from "@/lib/transactions-types";
+import { walletSigned, type Recurring } from "@/lib/wallet-types";
 
 /** Running items (not paused) whose next date is in the next 7 days, or already passed. Soonest first. */
 export function walletDueSoon(items: Recurring[], today: string): Recurring[] {
@@ -52,7 +52,7 @@ export function WalletDueCard({
               trailing={
                 <span className="flex shrink-0 flex-col items-end gap-[4px]" data-testid="wallet-due-card-row">
                   <SpMoney direction={dir} className="text-[0.8125rem] font-semibold whitespace-nowrap">
-                    {signedMoney(r.amount, dir)}
+                    {walletSigned(r.amount, dir, r.currency)}
                   </SpMoney>
                   {due && <DueBadge state={due.state} label={due.label} />}
                 </span>

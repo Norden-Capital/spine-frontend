@@ -49,7 +49,7 @@ export function RepeatRow({
           <div className="flex items-baseline gap-[8px]">
             <p className="min-w-0 flex-1 truncate text-[0.875rem] leading-normal font-medium text-(--sp-text)">{v.name}</p>
             <SpMoney direction={dir} className="shrink-0 text-[0.875rem] leading-snug font-semibold whitespace-nowrap">
-              {signedMoney(v.amount, dir)}
+              {signedMoney(v.amount, dir, v.currency)}
             </SpMoney>
           </div>
           <div className="mt-[6px] flex flex-wrap items-center gap-x-[8px] gap-y-[4px]">
