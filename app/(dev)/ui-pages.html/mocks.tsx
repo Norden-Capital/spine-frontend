@@ -72,6 +72,7 @@ import {
 import { OpenSheet } from "./client";
 import { BALANCE_MOCKS } from "./balances-mocks";
 import { NOTIFICATION_MOCKS } from "./notifications-mocks";
+import { GOALS_MOCKS } from "./goals-mocks";
 
 // Full-page mocks of the redesigned pages (dev only). Fake data.
 // Each mock is the page content; the [mock] route wraps it in a themed frame.
@@ -2243,6 +2244,7 @@ function DateSheetMock() {
 const MOCKS: Record<string, () => ReactNode> = {
   ...BALANCE_MOCKS,
   ...NOTIFICATION_MOCKS,
+  ...GOALS_MOCKS,
   home: () => <HomeMock />,
   "date-fields": () => <DateFieldsMock />,
   "date-sheet": () => <DateSheetMock />,
