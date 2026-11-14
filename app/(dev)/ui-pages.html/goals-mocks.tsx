@@ -12,7 +12,8 @@ import { cn } from "@/lib/utils";
 import { GoalsManager } from "@/components/wallet/goals-manager";
 import { PrefsProvider } from "@/components/prefs/prefs-provider";
 import { DEFAULT_PREFERENCES } from "@/lib/prefs";
-import type { Goal } from "@/lib/wallet-types";
+import type { Budget, Goal } from "@/lib/wallet-types";
+import { BudgetsManager } from "@/components/wallet/budgets-manager";
 
 type G = { name: string; saved: string; target: string; percent: number; by?: string };
 
@@ -147,8 +148,27 @@ function GoalsLive() {
   );
 }
 
+const BUDGETS = [
+  { id: "b1", limit: "5000.00", currency: "MAD", category: null, spent: "2200.00", percent: 44, status: "OK" },
+  { id: "b2", limit: "1500.00", currency: "MAD", category: { id: "c1", name: "Food", icon: "utensils", archived: false, parentId: null, kind: "EXPENSE" }, spent: "1300.00", percent: 86, status: "WARNING" },
+  { id: "b3", limit: "100.00", currency: "USD", category: { id: "c2", name: "Subscriptions", icon: "tv", archived: false, parentId: null, kind: "EXPENSE" }, spent: "120.00", percent: 120, status: "EXCEEDED" },
+] as unknown as Budget[];
+
+/** 4. The real budgets screen (component), fake data. Saving fails here (no server). */
+function BudgetsLive() {
+  return (
+    <PrefsProvider initialPrefs={{ ...DEFAULT_PREFERENCES, walletCurrency: "MAD" }} deviceZone="UTC">
+      <div className="flex flex-col gap-[16px] pb-[24px]">
+        <PageHeader back={{ href: "#", label: "Back to wallet" }} title="Budgets" subtitle="Wallet" />
+        <BudgetsManager budgets={BUDGETS} categories={[]} />
+      </div>
+    </PrefsProvider>
+  );
+}
+
 export const GOALS_MOCKS: Record<string, () => ReactNode> = {
   "goals-1-list": () => <GoalsList />,
   "goals-2-dragging": () => <GoalsDragging />,
   "goals-3-live": () => <GoalsLive />,
+  "budgets-live": () => <BudgetsLive />,
 };

@@ -21,6 +21,7 @@ export const MOCK_LIST: { name: string; title: string; kind: "app" | "auth" }[] 
   { name: "goals-1-list", title: "Goals 1 · Reorder grip", kind: "app" },
   { name: "goals-2-dragging", title: "Goals 2 · Dragging", kind: "app" },
   { name: "goals-3-live", title: "Goals 3 · Real component", kind: "app" },
+  { name: "budgets-live", title: "Budgets · Reorder grip (real component)", kind: "app" },
   { name: "notif-1-alerts-off", title: "Notifications 1 · Alerts, off (forced)", kind: "app" },
   { name: "notif-2-alerts-unsupported", title: "Notifications 2 · Alerts, can't push (Safari)", kind: "app" },
   { name: "notif-3-alerts-blocked", title: "Notifications 3 · Alerts, blocked", kind: "app" },

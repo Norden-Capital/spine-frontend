@@ -17,31 +17,62 @@ import {
 import { api, ApiError, errorMessage, fieldErrorText } from "@/lib/api";
 import type { Category } from "@/lib/catalog-types";
 import { parseAmountInput } from "@/lib/transactions-types";
-import { walletCurrencyOf, walletMoney, type Budget, type WalletCurrency } from "@/lib/wallet-types";
-import { CurrencyInputIcon, CurrencySwitch, currencyInputClass, useWalletDefaults } from "./currency-switch";
+import {
+  walletCurrencyOf,
+  walletMoney,
+  type Budget,
+  type WalletCurrency,
+} from "@/lib/wallet-types";
+import {
+  CurrencyInputIcon,
+  CurrencySwitch,
+  currencyInputClass,
+  useWalletDefaults,
+} from "./currency-switch";
 import { CategoryIcon } from "@/components/expenses/category-icon";
 import { ConfirmSheet } from "@/components/admin/confirm-sheet";
 import { NoticeBox } from "@/components/admin/notice";
 import { CategorySelect } from "./form-bits";
 import { ProgressBar, statusText } from "./progress";
+import { SortableCard, SortableCardList, useCardOrder } from "./sortable-cards";
 
 /** Monthly budgets: a total, or per expense category. Bars turn amber at 80 %, red at 100 %. */
-export function BudgetsManager({ budgets, categories }: { budgets: Budget[]; categories: Category[] }) {
+export function BudgetsManager({
+  budgets,
+  categories,
+}: {
+  budgets: Budget[];
+  categories: Category[];
+}) {
   const router = useRouter();
   // The sheet keeps the last budget while it slides away (no title flash).
-  const [edit, setEdit] = useState<{ budget: Budget | null; open: boolean }>({ budget: null, open: false });
+  const [edit, setEdit] = useState<{ budget: Budget | null; open: boolean }>({
+    budget: null,
+    open: false,
+  });
   const [remove, setRemove] = useState<Budget | null>(null);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [notice, setNotice] = useState<{
+    kind: "ok" | "error";
+    text: string;
+  } | null>(null);
+  const { shown, saving, onDragEnd } = useCardOrder(
+    budgets,
+    "/wallet/budgets/order",
+    (text) => setNotice({ kind: "error", text }),
+    () => router.refresh(),
+  );
 
   async function confirmRemove() {
     if (!remove) return;
     setBusy(true);
     setRemoveError(null);
     try {
-      await api(`/wallet/budgets/${encodeURIComponent(remove.id)}`, { method: "DELETE" });
+      await api(`/wallet/budgets/${encodeURIComponent(remove.id)}`, {
+        method: "DELETE",
+      });
       setNotice({ kind: "ok", text: "Budget removed." });
       setRemoveOpen(false);
     } catch (err) {
@@ -70,62 +101,83 @@ export function BudgetsManager({ budgets, categories }: { budgets: Budget[]; cat
           text="A budget is a monthly limit for all your spending or for one category."
         />
       ) : (
-        <ul className="flex flex-col gap-[12px]">
-          {budgets.map((b) => {
+        <SortableCardList
+          ids={shown.map((b) => b.id)}
+          onDragEnd={(e) => void onDragEnd(e)}
+        >
+          {shown.map((b) => {
             const name = b.category ? b.category.name : "All spending";
             const left = Number(b.limit) - Number(b.spent);
             return (
-              <li
+              <SortableCard
                 key={b.id}
+                id={b.id}
+                name={name}
+                busy={saving}
+                testId="budget-item"
                 className="flex flex-col gap-[12px] rounded-(--sp-radius) bg-(--sp-panel) pt-[10px] pr-[8px] pb-[16px] pl-[14px]"
               >
-                <div className="flex items-center gap-[10.8px]">
-                  <span className="flex size-[33px] shrink-0 items-center justify-center rounded-full bg-(--sp-soft) text-(--sp-text) [&_svg]:size-[15px]">
-                    <CategoryIcon name={b.category?.icon ?? "banknote"} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[0.9375rem] leading-normal font-medium text-(--sp-text)">{name}</p>
-                    <p className="mt-[2px] text-[0.6875rem] leading-snug text-(--sp-text-muted) tabular-nums">
-                      {walletMoney(b.spent, b.currency)} of {walletMoney(b.limit, b.currency)} ·{" "}
-                      {left >= 0 ? `${walletMoney(left, b.currency)} left` : `${walletMoney(-left, b.currency)} over`}
+                {(grip) => (
+                  <>
+                    <div className="flex items-center gap-[10.8px]">
+                      {grip}
+                      <span className="flex size-[33px] shrink-0 items-center justify-center rounded-full bg-(--sp-soft) text-(--sp-text) [&_svg]:size-[15px]">
+                        <CategoryIcon name={b.category?.icon ?? "banknote"} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[0.9375rem] leading-normal font-medium text-(--sp-text)">
+                          {name}
+                        </p>
+                        <p className="mt-[2px] text-[0.6875rem] leading-snug text-(--sp-text-muted) tabular-nums">
+                          {walletMoney(b.spent, b.currency)} of{" "}
+                          {walletMoney(b.limit, b.currency)} ·{" "}
+                          {left >= 0
+                            ? `${walletMoney(left, b.currency)} left`
+                            : `${walletMoney(-left, b.currency)} over`}
+                        </p>
+                      </div>
+                      <IconButton
+                        variant="ghost"
+                        label={`Edit ${name}`}
+                        icon={<IconEdit aria-hidden />}
+                        onClick={() => setEdit({ budget: b, open: true })}
+                      />
+                      <IconButton
+                        variant="ghost"
+                        label={`Remove ${name}`}
+                        icon={<IconDelete aria-hidden />}
+                        className="text-(--sp-danger)"
+                        onClick={() => {
+                          setRemove(b);
+                          setRemoveError(null);
+                          setRemoveOpen(true);
+                        }}
+                      />
+                    </div>
+                    <div className="pr-[6px]">
+                      <ProgressBar
+                        percent={b.percent}
+                        status={b.status}
+                        label={`${name}: ${statusText(b.status, b.percent)}`}
+                      />
+                    </div>
+                    <p
+                      className={
+                        b.status === "EXCEEDED"
+                          ? "text-[0.6875rem] leading-snug font-medium text-(--sp-danger)"
+                          : b.status === "WARNING"
+                            ? "text-[0.6875rem] leading-snug font-medium text-(--sp-warning)"
+                            : "text-[0.6875rem] leading-snug text-(--sp-text-muted)"
+                      }
+                    >
+                      {statusText(b.status, b.percent)}
                     </p>
-                  </div>
-                  <IconButton
-                    variant="ghost"
-                    label={`Edit ${name}`}
-                    icon={<IconEdit aria-hidden />}
-                    onClick={() => setEdit({ budget: b, open: true })}
-                  />
-                  <IconButton
-                    variant="ghost"
-                    label={`Remove ${name}`}
-                    icon={<IconDelete aria-hidden />}
-                    className="text-(--sp-danger)"
-                    onClick={() => {
-                      setRemove(b);
-                      setRemoveError(null);
-                      setRemoveOpen(true);
-                    }}
-                  />
-                </div>
-                <div className="pr-[6px]">
-                  <ProgressBar percent={b.percent} status={b.status} label={`${name}: ${statusText(b.status, b.percent)}`} />
-                </div>
-                <p
-                  className={
-                    b.status === "EXCEEDED"
-                      ? "text-[0.6875rem] leading-snug font-medium text-(--sp-danger)"
-                      : b.status === "WARNING"
-                        ? "text-[0.6875rem] leading-snug font-medium text-(--sp-warning)"
-                        : "text-[0.6875rem] leading-snug text-(--sp-text-muted)"
-                  }
-                >
-                  {statusText(b.status, b.percent)}
-                </p>
-              </li>
+                  </>
+                )}
+              </SortableCard>
             );
           })}
-        </ul>
+        </SortableCardList>
       )}
 
       <BudgetSheet
@@ -168,7 +220,13 @@ export type BudgetSheetProps = {
  * all spending) and monthly limit. Used on the Budgets page and on the wallet
  * dashboard ("Set a budget").
  */
-export function BudgetSheet({ open, onOpenChange, budget = null, categories, onSaved }: BudgetSheetProps) {
+export function BudgetSheet({
+  open,
+  onOpenChange,
+  budget = null,
+  categories,
+  onSaved,
+}: BudgetSheetProps) {
   const router = useRouter();
   const formId = `budget-form-${budget?.id ?? "new"}`;
   const [pending, setPending] = useState(false);
@@ -187,7 +245,13 @@ export function BudgetSheet({ open, onOpenChange, budget = null, categories, onS
       title={budget ? "Edit budget" : "Set a budget"}
       description="A monthly limit for all spending or one category. You see how much is left."
       footer={
-        <SpButton type="submit" form={formId} className="w-full" disabled={pending} data-testid="budget-save">
+        <SpButton
+          type="submit"
+          form={formId}
+          className="w-full"
+          disabled={pending}
+          data-testid="budget-save"
+        >
           {pending ? "Saving…" : budget ? "Save" : "Create budget"}
         </SpButton>
       }
@@ -226,7 +290,9 @@ function BudgetForm({
   const walletDefaults = useWalletDefaults();
   // Its own currency (edit), else my default.
   const [currency, setCurrency] = useState<WalletCurrency>(
-    budget?.currency ? walletCurrencyOf(budget.currency) : walletDefaults.currency
+    budget?.currency
+      ? walletCurrencyOf(budget.currency)
+      : walletDefaults.currency,
   );
   const [limit, setLimit] = useState(budget?.limit ?? "");
   const [categoryId, setCategoryId] = useState(budget?.category?.id ?? "");
@@ -235,7 +301,9 @@ function BudgetForm({
   const [categoryError, setCategoryError] = useState<string | null>(null);
   const amount = parseAmountInput(limit);
   // Budgets are for spending: expense categories only (the saved one stays, even if archived).
-  const expenseCategories = categories.filter((c) => (c.kind ?? "EXPENSE") === "EXPENSE" || c.id === budget?.category?.id);
+  const expenseCategories = categories.filter(
+    (c) => (c.kind ?? "EXPENSE") === "EXPENSE" || c.id === budget?.category?.id,
+  );
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -246,21 +314,35 @@ function BudgetForm({
     onPending(true);
     const body = { limit: amount, categoryId: categoryId || null, currency };
     try {
-      if (budget) await api(`/wallet/budgets/${encodeURIComponent(budget.id)}`, { method: "PUT", body });
+      if (budget)
+        await api(`/wallet/budgets/${encodeURIComponent(budget.id)}`, {
+          method: "PUT",
+          body,
+        });
       else await api("/wallet/budgets", { method: "POST", body });
       onPending(false);
       onDone(budget ? "Budget saved." : "Budget added.");
     } catch (err) {
       onPending(false);
-      if (err instanceof ApiError && err.field === "categoryId") setCategoryError(fieldErrorText(err));
+      if (err instanceof ApiError && err.field === "categoryId")
+        setCategoryError(fieldErrorText(err));
       else setError(err instanceof ApiError ? err.message : errorMessage(err));
     }
   }
 
   return (
-    <form id={id} onSubmit={submit} className="flex flex-col gap-[14px] pt-[4px]" noValidate data-testid="budget-form">
+    <form
+      id={id}
+      onSubmit={submit}
+      className="flex flex-col gap-[14px] pt-[4px]"
+      noValidate
+      data-testid="budget-form"
+    >
       {error && (
-        <p role="alert" className="px-[4px] text-[0.8125rem] text-(--sp-danger)">
+        <p
+          role="alert"
+          className="px-[4px] text-[0.8125rem] text-(--sp-danger)"
+        >
           {error}
         </p>
       )}
@@ -284,9 +366,17 @@ function BudgetForm({
         />
       </SpField>
       <SpField label="Currency">
-        <CurrencySwitch surface="panel" value={currency} onChange={setCurrency} />
+        <CurrencySwitch
+          surface="panel"
+          value={currency}
+          onChange={setCurrency}
+        />
       </SpField>
-      <SpField label="Monthly limit" htmlFor="budget-limit" error={touched && !amount ? "Enter an amount, like 500." : undefined}>
+      <SpField
+        label="Monthly limit"
+        htmlFor="budget-limit"
+        error={touched && !amount ? "Enter an amount, like 500." : undefined}
+      >
         <SpInput
           id="budget-limit"
           surface="panel"
