@@ -419,9 +419,9 @@ function BalanceFormBody({ balance, categories, today, onSaved }: Props & { onSa
             </div>
           </SpField>
           <p className="rounded-[16px] bg-(--sp-soft) px-[14px] py-[12px] text-[0.75rem] leading-snug text-(--sp-text-2)">
-            {lowValue ? "3 alerts" : "2 alerts"}, all on: {lowValue ? "below the limit, " : ""}
-            {warnBad ? "" : `${warn} ${warn === 1 ? "day" : "days"} before empty, `}and when it reaches $0. Everyone in the
-            company sees them.
+            Everyone in the company gets all of these alerts, so anyone can remind the team to recharge:{" "}
+            {lowValue ? "below the limit, " : ""}
+            {warnBad ? "" : `${warn} ${warn === 1 ? "day" : "days"} before empty, `}and when it reaches $0.
           </p>
         </div>
       </SpPanel>
