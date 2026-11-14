@@ -9,7 +9,7 @@ export function WebsiteLink({ domain }: { domain: string }) {
       rel="noopener noreferrer"
       className="inline-flex min-h-[44px] max-w-full items-center gap-[6px] underline underline-offset-2 [&_svg]:size-[14px] [&_svg]:shrink-0"
     >
-      <span className="min-w-0 break-all">{domain}</span>
+      <span className="min-w-0 truncate">{domain}</span>
       <IconExternal aria-hidden />
       <span className="sr-only"> (opens in a new tab)</span>
     </a>

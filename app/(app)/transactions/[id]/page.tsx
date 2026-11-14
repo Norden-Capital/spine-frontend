@@ -205,9 +205,9 @@ function History({ entries, dates }: { entries: HistoryEntry[]; dates: DateSetti
 /** "Anna Smith · 12 Nov 2026, 14:20" with the person's face in front. */
 function ByLine({ person, text }: { person: PersonRef; text: string }) {
   return (
-    <span className="inline-flex items-center justify-end gap-[8px]">
-      <UserAvatar seed={seedOf(person)} size={22} className="self-start" />
-      <span>{text}</span>
+    <span className="inline-flex max-w-full items-center justify-end gap-[8px] align-middle" title={text}>
+      <UserAvatar seed={seedOf(person)} size={22} className="shrink-0" />
+      <span className="min-w-0 truncate">{text}</span>
     </span>
   );
 }
@@ -234,7 +234,7 @@ function HistoryTimeline({ entries }: { entries: (TimelineEntry & { person: Pers
             ) : null}
           </span>
           <div className="min-w-0 flex-1 leading-snug">
-            <p className="text-[0.75rem] font-medium text-(--sp-text)">{e.title}</p>
+            <p className="truncate text-[0.75rem] font-medium text-(--sp-text)" title={e.title}>{e.title}</p>
             <p className="mt-[4px] text-[0.625rem] text-(--sp-text-faint)">{e.meta}</p>
             {e.changes?.length ? (
               <ul className="mt-[8px] space-y-[4px]">

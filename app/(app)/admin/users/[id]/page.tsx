@@ -47,7 +47,7 @@ export default async function UserPage({ params }: PageProps<"/admin/users/[id]"
 
       <InfoList
         rows={[
-          { label: "Email", value: <span className="break-all">{user.email}</span> },
+          { label: "Email", value: <span title={user.email}>{user.email}</span> },
           { label: "Role", value: roleLabel(user.role) },
           { label: "Created", value: formatDate(user.createdAt, dates) },
           { label: "Last login", value: user.lastLoginAt ? formatDateTime(user.lastLoginAt, dates) : "Never" },

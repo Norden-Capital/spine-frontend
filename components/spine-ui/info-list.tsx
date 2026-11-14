@@ -24,7 +24,7 @@ export function InfoList({ rows, title, className }: InfoListProps) {
         {rows.map((r) => (
           <div key={r.label} className="flex min-h-[44px] items-center justify-between gap-[16px] py-[8px]">
             <dt className="shrink-0 text-[0.75rem] leading-snug text-(--sp-text-muted)">{r.label}</dt>
-            <dd className="min-w-0 text-right text-[0.8125rem] leading-snug font-medium break-words text-(--sp-text)">
+            <dd className="min-w-0 truncate text-right text-[0.8125rem] leading-snug font-medium text-(--sp-text)">
               {r.value}
             </dd>
           </div>
