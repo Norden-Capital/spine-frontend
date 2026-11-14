@@ -15,6 +15,8 @@ export type AlertRowProps = {
   icon: ReactNode;
   tone?: AlertTone;
   title: string;
+  /** Small muted icon before the title, same line, no background (e.g. Company / Private). Decorative: say it in text elsewhere if it matters to screen readers. */
+  titleIcon?: ReactNode;
   /** One or two short lines. */
   message?: string;
   /** Right side, e.g. "2h" or "12 Nov". */
@@ -30,7 +32,7 @@ export type AlertRowProps = {
  * text at 57.8, title 12 / Medium, message 10 gray) so both mix in one
  * SectionCard. The icon circle is tinted by tone.
  */
-export function AlertRow({ icon, tone = "info", title, message, time, unread, href, className }: AlertRowProps) {
+export function AlertRow({ icon, tone = "info", title, titleIcon, message, time, unread, href, className }: AlertRowProps) {
   const body = (
     <>
       <span
@@ -42,7 +44,17 @@ export function AlertRow({ icon, tone = "info", title, message, time, unread, hr
         {icon}
       </span>
       <span className="mt-[10.5px] ml-[10.8px] min-w-0 flex-1">
-        <span className="-my-[0.25em] block truncate text-[12px] font-medium text-(--sp-text)">{title}</span>
+        {titleIcon ? (
+          <span className="-my-[0.25em] flex min-w-0 items-center gap-[4px] text-[12px] font-medium text-(--sp-text)">
+            <span aria-hidden className="flex shrink-0 text-(--sp-text-muted) [&_svg]:size-[12px]! [&_svg]:stroke-[1.8]">
+              {/* "!" because drawn kit icons (IconOffice…) set width/height inline. */}
+              {titleIcon}
+            </span>
+            <span className="min-w-0 truncate">{title}</span>
+          </span>
+        ) : (
+          <span className="-my-[0.25em] block truncate text-[12px] font-medium text-(--sp-text)">{title}</span>
+        )}
         {message ? (
           <span className="mt-[calc(3.9px-0.075em)] line-clamp-2 text-[10px] leading-[1.5] text-(--sp-text-faint)">{message}</span>
         ) : null}

@@ -20,8 +20,8 @@ export default async function EditTransactionPage({ params }: PageProps<"/transa
   if (!res.ok && res.status === 401) redirect(`/login?next=${encodeURIComponent(`/transactions/${id}/edit`)}`);
   if (!res.ok && (res.status === 404 || res.status === 400 || res.status === 403)) notFound();
   if (!res.ok) throw new Error(`Loading transaction failed (${res.status})`);
-  // Someone else's transaction (member): no edit page. The backend would say 403 on save.
-  if (!res.data.canEdit) notFound();
+  // Someone else's transaction (member): no edit page, show it read only instead of "not found".
+  if (!res.data.canEdit) redirect(`/transactions/${encodeURIComponent(id)}`);
   const back = `/transactions/${encodeURIComponent(id)}`;
   return (
     <div className="flex flex-col gap-[16px]">

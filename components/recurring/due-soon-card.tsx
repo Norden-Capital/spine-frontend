@@ -5,7 +5,7 @@ import { dueState, shortDay } from "@/lib/repeat-schedule";
 import { duePath, type Occurrence } from "@/lib/recurring-types";
 import { signedMoney, txDirection } from "@/lib/transactions-types";
 
-/** Home, the owner: up to 3 repeat-expense reminders waiting, + "See all". */
+/** Home, everyone: up to 3 repeat-expense reminders waiting, + "See all". */
 export function DueSoonCard({
   items,
   dates,

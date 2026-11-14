@@ -7,6 +7,7 @@ import { appLayoutPrefsScript } from "@/lib/prefs";
 import { deviceZone, getPreferences, isFallbackPrefs } from "@/lib/prefs-server";
 import { AppDock, AppMain, NavPending } from "@/components/nav/app-dock";
 import { WalletAutoLock } from "@/components/wallet/wallet-auto-lock";
+import { PushSync } from "@/components/push/push-sync";
 import { AppTopBar } from "@/components/nav/app-top-bar";
 import { getUnreadAlerts } from "@/lib/alerts-server";
 import { PrefsProvider } from "@/components/prefs/prefs-provider";
@@ -44,6 +45,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       {/* Tap feedback: the tapped page's skeleton and dock item show at once. */}
       {/* The private wallet locks as soon as you leave it. */}
       <WalletAutoLock />
+      {/* Push on this device: re-sends a lost subscription, the app badge, "opened from a notification". */}
+      <PushSync unread={unread} />
       <NavPending owner={owner}>
         <div className="mx-auto flex min-h-svh w-full max-w-2xl flex-col px-(--sp-gutter) pt-3">
           <AppTopBar user={user} unread={unread} />

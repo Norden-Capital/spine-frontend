@@ -85,7 +85,7 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/tra
         categories={categories ?? []}
         people={people}
         apiPath="/transactions"
-        placeholder="Description, comment, website"
+        placeholder="Search transactions"
         totalItems={list?.totalItems}
         totals={list?.totals ?? undefined}
         autoFocusSearch={params.search === "1"}

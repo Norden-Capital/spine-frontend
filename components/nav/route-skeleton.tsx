@@ -354,13 +354,28 @@ function SettingsHubSk() {
           <S key={i} className="h-[76px] rounded-[18px]" />
         ))}
       </div>
-      <RowsSk rows={3} />
+      <RowsSk rows={4} />
       <S className="h-[52px] w-full rounded-full" />
     </div>
   );
 }
 
 function SettingsTabSk({ tab }: { tab: string }) {
+  if (tab === "notifications") {
+    return (
+      <>
+        <SpPanelSk>
+          <div className="space-y-[14px]">
+            <RowsSk rows={1} />
+            <S className="h-[52px] w-full" />
+          </div>
+        </SpPanelSk>
+        <SpPanelSk>
+          <RowsSk rows={3} />
+        </SpPanelSk>
+      </>
+    );
+  }
   if (tab === "security") {
     return (
       <>
@@ -532,7 +547,7 @@ function skeletonFor(pathname: string, scope: SkeletonScope, owner: boolean): Re
 
   // Settings v2: the layout has no title or tabs; each page draws its own header.
   if (p === "/settings") return <SettingsHubSk />;
-  if ((m = p.match(/^\/settings\/(account|security|preferences)$/))) {
+  if ((m = p.match(/^\/settings\/(account|security|preferences|notifications)$/))) {
     return (
       <div className="flex flex-col gap-[16px]">
         <PageHeadSk back />

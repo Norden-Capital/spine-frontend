@@ -426,7 +426,7 @@ function BalanceFormBody({ balance, categories, today, onSaved }: Props & { onSa
         </div>
       </SpPanel>
 
-      <SpPanel title="Note" description="Optional.">
+      <SpPanel title="Note" description="(optional)">
         <SpTextarea aria-label="Note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} />
       </SpPanel>
 

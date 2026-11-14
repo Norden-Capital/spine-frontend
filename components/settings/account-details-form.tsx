@@ -83,7 +83,7 @@ export function AccountDetailsForm({
           />
         </SpField>
       </div>
-      <SpField label="Email" htmlFor="email" hint="Only the owner can change your email.">
+      <SpField label="Email" htmlFor="email" hint="Your login email. It can't be changed here.">
         <SpInput id="email" surface="panel" icon={<IconLock />} value={email} readOnly />
       </SpField>
       <SpButton type="submit" className="w-full" disabled={pending || !changed}>

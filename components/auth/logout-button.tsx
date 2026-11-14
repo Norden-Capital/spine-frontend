@@ -4,6 +4,7 @@ import { useState } from "react";
 import { IconLogout } from "@/components/spine-ui";
 import { BottomSheet, SpButton } from "@/components/spine-ui";
 import { api } from "@/lib/api";
+import { forgetPushDevice } from "@/lib/push";
 import { cn } from "@/lib/utils";
 
 /** "Log out?" confirm (bottom sheet). Logout asks first: a tap by mistake must not end the session. */
@@ -12,6 +13,9 @@ export function LogoutDialog({ open, onOpenChange }: { open: boolean; onOpenChan
 
   async function logout() {
     setPending(true);
+    // Stop this device's notifications for this person (the browser keeps its
+    // subscription: the next person who logs in here sends it again).
+    await forgetPushDevice().catch(() => {});
     try {
       await api("/auth/logout", { method: "POST" });
     } catch {

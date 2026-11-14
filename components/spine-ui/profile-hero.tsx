@@ -38,7 +38,7 @@ export function ProfileHero({ name, email, role, since, status, action, classNam
           >
             {initials(name)}
           </span>
-          <span className="inline-flex h-[26px] items-center rounded-full bg-white/20 px-[11px] text-[0.6875rem] leading-[1.5] font-medium">
+          <span className="inline-flex h-[26px] items-center text-[0.6875rem] leading-[1.5] font-medium">
             {role}
           </span>
         </div>
@@ -49,7 +49,7 @@ export function ProfileHero({ name, email, role, since, status, action, classNam
             <p className="-my-[0.25em] flex items-center gap-[8px] text-[0.6875rem] leading-[1.5] text-(--sp-card-front-muted)">
               {status ? (
                 <span className="flex items-center gap-[5px] text-(--sp-card-front-text)">
-                  <span className="size-[7px] rounded-full bg-[#7CF29A]" />
+                  <span className="size-[7px] rounded-full bg-white" />
                   {status}
                 </span>
               ) : null}

@@ -120,14 +120,16 @@ export function AlertsList({ items, unread }: { items: Alert[]; unread: number }
                   icon={ICONS[a.kind] ?? <IconBell aria-hidden />}
                   tone={TONES[a.kind] ?? "info"}
                   title={a.title}
-                  message={a.body || undefined}
+                  titleIcon={<ScopeIcon scope={scopeOf(a)} />}
+                  // The backend writes days as 2026-11-14: show them in the user's date format.
+                  message={a.body ? a.body.replace(/\b\d{4}-\d{2}-\d{2}\b/g, (d) => dates.day(d)) : undefined}
                   time={dates.dateTime(a.createdAt)}
                   unread={!a.read}
                   href={safeLink(a.link) ?? "/alerts"}
                 />
-                {/* Plain text under the row (no pill): Company or Private, then how urgent. */}
-                <div className="-mt-[2px] flex flex-wrap items-center gap-x-[12px] gap-y-[4px] pb-[8px] pl-[57.8px]">
-                  <ScopeLabel scope={scopeOf(a)} />
+                {/* Under the row: the scope for screen readers (the icon is decorative), then how urgent. */}
+                <div className={due ? "-mt-[2px] flex items-center pb-[8px] pl-[57.8px]" : undefined}>
+                  <span className="sr-only">{scopeOf(a) === "COMPANY" ? "Company alert" : "Private alert"}</span>
                   {due && (
                     <span data-testid="alert-due-badge">
                       <DueBadge state={due.state} label={due.label} />
@@ -144,17 +146,11 @@ export function AlertsList({ items, unread }: { items: Alert[]; unread: number }
   );
 }
 
-/** "Company" (building) or "Private" (lock): gray text with its icon, no background. */
-function ScopeLabel({ scope }: { scope: "COMPANY" | "PRIVATE" }) {
-  const company = scope === "COMPANY";
+/** Company (building) or Private (lock): a small gray icon before the title. */
+function ScopeIcon({ scope }: { scope: "COMPANY" | "PRIVATE" }) {
   return (
-    <span
-      data-testid="alert-scope"
-      data-scope={scope}
-      className="inline-flex items-center gap-[4px] text-[0.625rem] leading-[1.5] font-medium text-(--sp-text-muted) [&_svg]:size-[12px]"
-    >
-      {company ? <IconOffice aria-hidden /> : <IconLock aria-hidden />}
-      {company ? "Company" : "Private"}
+    <span data-testid="alert-scope" data-scope={scope} className="inline-flex">
+      {scope === "COMPANY" ? <IconOffice aria-hidden /> : <IconLock aria-hidden />}
     </span>
   );
 }

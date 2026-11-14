@@ -61,7 +61,7 @@ export default async function BalancesPage() {
           title="No balances yet"
           text={
             owner
-              ? "Add an account you top up, like an API or a toll pass. Spine guesses when it runs out and warns you."
+              ? "Add an account you top up, like an API or a toll pass. Spine guesses when it runs out and warns everyone."
               : "The owner has not added any. Accounts you top up will show here."
           }
           action={

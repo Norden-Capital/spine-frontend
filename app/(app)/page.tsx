@@ -11,7 +11,6 @@ import {
   SwapStack,
 } from "@/components/spine-ui";
 import { requireUser } from "@/lib/auth";
-import { isOwner } from "@/lib/roles";
 import { formatDay, todayIn } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
 import { getRecurringDue } from "@/lib/recurring-server";
@@ -34,13 +33,13 @@ export const instant = false;
  * due soon, recent. The wallet balance is never loaded here (privacy).
  */
 export default async function HomePage() {
-  const [user, dates] = await Promise.all([requireUser("/"), getDateSettings()]);
+  const [, dates] = await Promise.all([requireUser("/"), getDateSettings()]);
   const today = todayIn(dates.zone);
   const month = monthOf(today);
-  // The owner: repeat-expense reminders waiting ("Due soon" card; the alerts go to the owner only).
+  // Repeat-expense reminders waiting ("Due soon" card): everyone sees them, like the alerts.
   const [res, due, balances] = await Promise.all([
     getMonth(month),
-    isOwner(user) ? getRecurringDue() : null,
+    getRecurringDue(),
     // Balances: owner and members (members read only).
     getBalances(),
   ]);

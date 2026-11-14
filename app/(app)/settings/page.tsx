@@ -5,6 +5,8 @@ import { IconTile, PageHeader, RowGroup, SpRow } from "@/components/spine-ui";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { getMe } from "@/components/settings/settings-data";
 import { SettingsProfile } from "@/components/settings/settings-profile";
+import { NotificationBing } from "iconsax-react";
+import { PushStatusText } from "@/components/push/notifications-settings";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -18,6 +20,14 @@ const ENTRIES = [
     subtitle: "Name, email, role, sign-ins",
     icon: <IconUser />,
     tone: "violet",
+  },
+  {
+    href: "/settings/notifications",
+    title: "Notifications",
+    // This device's push state, read in the browser.
+    subtitle: <PushStatusText />,
+    icon: <NotificationBing variant="Bulk" color="currentColor" className="size-[18px]" aria-hidden />,
+    tone: "red",
   },
   {
     href: "/settings/security",

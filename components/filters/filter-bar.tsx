@@ -156,12 +156,15 @@ export function FilterBar({
         {hasOut && <SpMoney direction="out">{signedMoney(totals.out, "out")} out</SpMoney>}
       </>
     ) : null;
+  // With In / Out money, the plain "N transactions" count is left out: on a
+  // 375px phone it no longer fits and was cut with "…".
+  const tail = money && !filtered && !range && !presetLabel ? undefined : head;
   const summary =
-    head || money ? (
+    tail || money ? (
       <>
         {money}
-        {money && head ? " · " : ""}
-        {head}
+        {money && tail ? " · " : ""}
+        {tail}
       </>
     ) : undefined;
 

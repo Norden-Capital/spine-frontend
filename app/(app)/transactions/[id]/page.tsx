@@ -141,6 +141,8 @@ const ACTIONS: Record<string, string> = {
   RESTORED: "Restored",
 };
 
+const HIDDEN_FIELDS = new Set(["tags", "tagIds"]);
+
 const FIELDS: Record<string, string> = {
   type: "Type",
   amount: "Amount",
@@ -150,8 +152,6 @@ const FIELDS: Record<string, string> = {
   website: "Website",
   category: "Category",
   categoryId: "Category",
-  tags: "Tags",
-  tagIds: "Tags",
   files: "Proof",
   fileIds: "Proof",
 };
@@ -170,6 +170,7 @@ function show(field: string, value: unknown, dates: DateSettings): string {
   const text = String(value);
   if (field === "date" && /^\d{4}-\d{2}-\d{2}$/.test(text)) return formatDay(text, dates);
   if (field === "type") return text === "INCOME" ? "Income" : text === "EXPENSE" ? "Expense" : text;
+  if (field === "amount" && /^\d+(\.\d+)?$/.test(text)) return formatMoney(text);
   return text;
 }
 
@@ -185,8 +186,14 @@ function History({ entries, dates }: { entries: HistoryEntry[]; dates: DateSetti
           id: String(i),
           title: `${ACTIONS[e.action] ?? e.action}${by ? ` by ${by}` : ""}`,
           meta: formatDateTime(e.at, dates),
-          changes: (e.changes ?? []).map(
-            (c) => `${FIELDS[c.field] ?? c.field}: ${show(c.field, c.from, dates)} → ${show(c.field, c.to, dates)}`
+          // Tags were removed from the app: hide old tag changes.
+          changes: (e.changes ?? []).filter((c) => !HIDDEN_FIELDS.has(c.field)).map(
+            (c) => {
+              const label = FIELDS[c.field] ?? c.field;
+              const from = show(c.field, c.from, dates);
+              // A new value (nothing before): "Amount: $64.10", not "Amount: — → $64.10".
+              return from === "—" ? `${label}: ${show(c.field, c.to, dates)}` : `${label}: ${from} → ${show(c.field, c.to, dates)}`;
+            }
           ),
           current: i === 0,
         };
