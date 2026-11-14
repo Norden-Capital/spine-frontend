@@ -8,7 +8,7 @@ import { hasSkeleton, OwnerContext, RouteSkeleton } from "@/components/nav/route
 
 /** Add / edit forms hide the dock: their Save button sits in a bottom bar instead. */
 export function isFormPath(pathname: string): boolean {
-  return /^\/(wallet\/)?transactions\/(new|[^/]+\/edit)\/?$/.test(pathname);
+  return /^\/((wallet\/)?transactions|balances)\/(new|[^/]+\/edit)\/?$/.test(pathname);
 }
 
 /* ------------------------------------------------------------------ tap feedback

@@ -525,6 +525,11 @@ function skeletonFor(pathname: string, scope: SkeletonScope, owner: boolean): Re
   if (p === "/recurring") return <RecurringSk />;
   if (/^\/recurring\/due\/[^/]+$/.test(p)) return <DueReminderSk />;
 
+  // Balances: list like the repeat expenses, form and detail like a transaction.
+  if (p === "/balances") return <RecurringSk />;
+  if (/^\/balances\/(new|[^/]+\/edit)$/.test(p)) return <TxFormSk />;
+  if (/^\/balances\/[^/]+$/.test(p)) return <TxDetailSk />;
+
   // Settings v2: the layout has no title or tabs; each page draws its own header.
   if (p === "/settings") return <SettingsHubSk />;
   if ((m = p.match(/^\/settings\/(account|security|preferences)$/))) {

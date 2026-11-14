@@ -13,7 +13,7 @@ export type BalanceCardProps = {
   amount: string;
   /**
    * Small block right of the amount, e.g. "Expenses" / "24". Set `direction`
-   * when the value is money in / out: it shows in a soft pill (AA on the card).
+   * when the value is money in / out: plain card text with its sign (no pill, no colour).
    */
   detail?: { label: string; value: ReactNode; direction?: MoneyDirection };
   /** Bottom-left block, e.g. "Name" / "Sam Tremblay". `direction` like detail. */

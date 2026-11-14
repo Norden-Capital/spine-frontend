@@ -58,12 +58,7 @@
      AA >= 4.6 on the gray page, white panels / sheets and input fills. */
   --sp-money-in: #356d4c;
   --sp-money-out: #934f47;
-  /* On a coloured card (purple / yellow / ink) coloured text can't be AA, so the
-     amount sits in a soft pill. Same in light and dark (cards don't change). */
-  --sp-money-in-chip: #e2f3e8;
-  --sp-money-in-chip-text: #2c6043;   /* 6.4 */
-  --sp-money-out-chip: #f8e5e2;
-  --sp-money-out-chip-text: #86423a;  /* 6.1 */
+  /* On a coloured card (purple / yellow / ink): plain card text with its sign. No pill, no colour. */
 
   /* Status (alerts, budgets). Not in the reference: calm, same weight as the rest. */
   --sp-success: #137333;
@@ -179,6 +174,7 @@
   --sp-due-week-text: #6b21a8;    /* 7.3 */
   --sp-due-paused-bg: #ececec;
   --sp-due-paused-text: #525252;  /* 6.6 */
+  --sp-due-red-text: #b91c1c;     /* DueBadge text (no pill): 5.6 on the gray page, 6.5 on white */
 }
 .dark {
   --sp-due-overdue-bg: #b91c1c;
@@ -191,6 +187,7 @@
   --sp-due-week-text: #d8b4fe;    /* 8.9 */
   --sp-due-paused-bg: #2a2a2a;
   --sp-due-paused-text: #b5b5b5;  /* 7.0 */
+  --sp-due-red-text: #f87171;     /* 6.5 on panels, 7.6 on black */
 }
 
 /* Card colour for one card (inside a SwapStack): purple is the default. */

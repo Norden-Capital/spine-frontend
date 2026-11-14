@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   BalanceCard,
-  IconBell,
   IconExpenses,
   IconLock,
   IconRepeat,
@@ -21,6 +20,10 @@ import { monthOf, signedMoney, txDirection, type Transaction } from "@/lib/trans
 import { TxLogo } from "@/components/expenses/tx-logo";
 import { LinkAddPill, LinkIconButton, LinkQuickAction, QuickActionsPanel } from "@/components/home/home-links";
 import { DueSoonCard } from "@/components/recurring/due-soon-card";
+import { BalancesCard } from "@/components/balances/balances-card";
+import { BalancesIcon } from "@/components/balances/balance-parts";
+import { getBalances } from "@/lib/balances-server";
+import { byUrgency } from "@/lib/balances-types";
 
 // Blocks on the server on purpose (session data), so nothing flashes.
 export const instant = false;
@@ -35,7 +38,12 @@ export default async function HomePage() {
   const today = todayIn(dates.zone);
   const month = monthOf(today);
   // The owner: repeat-expense reminders waiting ("Due soon" card; the alerts go to the owner only).
-  const [res, due] = await Promise.all([getMonth(month), isOwner(user) ? getRecurringDue() : null]);
+  const [res, due, balances] = await Promise.all([
+    getMonth(month),
+    isOwner(user) ? getRecurringDue() : null,
+    // Balances: owner and members (members read only).
+    getBalances(),
+  ]);
   const items = res.ok ? res.data.items : [];
 
   // The Company card: this month's company money (USD).
@@ -88,15 +96,23 @@ export default async function HomePage() {
         ]}
       />
 
-      {/* Same for every role. No "Add": the card's "+ Expense" pill does it. */}
+      {/* Same for every role. No "Add": the card's "+ Expense" pill does it. No "Alerts": the bell opens them. */}
       <QuickActionsPanel>
         <LinkQuickAction href="/recurring" label="Repeat" icon={<IconRepeat />} />
         <LinkQuickAction href="/transactions" label="All" icon={<IconExpenses />} />
-        <LinkQuickAction href="/alerts" label="Alerts" icon={<IconBell />} />
+        <LinkQuickAction href="/balances" label="Balances" icon={<BalancesIcon />} />
         <LinkQuickAction href="/transactions?search=1" label="Search" icon={<IconSearch />} />
       </QuickActionsPanel>
 
       {due?.ok && <DueSoonCard items={due.data} dates={dates} today={today} />}
+
+      {balances.ok && (
+        <BalancesCard
+          list={{ ...balances.data, items: [...balances.data.items].sort(byUrgency) }}
+          dates={dates}
+          today={today}
+        />
+      )}
 
       <SectionCard title="Recent" action={{ label: "View All", href: "/transactions" }}>
         {!res.ok ? (

@@ -1,6 +1,18 @@
 // Names of the page mocks (dev only). Kept apart from mocks.tsx (client).
 export const MOCK_LIST: { name: string; title: string; kind: "app" | "auth" }[] = [
   { name: "home", title: "Home", kind: "app" },
+  { name: "balances-1-entry", title: "Balances 1 · Entry (company dashboard)", kind: "app" },
+  { name: "balances-2-list", title: "Balances 2 · List", kind: "app" },
+  { name: "balances-3-empty", title: "Balances 3 · Empty", kind: "app" },
+  { name: "balances-4-form", title: "Balances 4 · New balance", kind: "app" },
+  { name: "balances-4-form-edit", title: "Balances 4 · Edit balance", kind: "app" },
+  { name: "balances-5-detail", title: "Balances 5 · Detail", kind: "app" },
+  { name: "balances-5b-fix-sheet", title: "Balances 5b · Fix the real balance", kind: "app" },
+  { name: "balances-6-recharge-sheet", title: "Balances 6 · Recharge sheet", kind: "app" },
+  { name: "balances-7-alerts", title: "Balances 7 · Alerts", kind: "app" },
+  { name: "balances-8-member-list", title: "Balances 8 · Member list", kind: "app" },
+  { name: "balances-8-member-detail", title: "Balances 8 · Member detail", kind: "app" },
+  { name: "balances-8-member-empty", title: "Balances 8 · Member empty", kind: "app" },
   { name: "date-fields", title: "Date fields (all rules)", kind: "app" },
   { name: "date-sheet", title: "Date sheet (single date)", kind: "app" },
   { name: "due-badges", title: "Due badges (repeat payments)", kind: "app" },

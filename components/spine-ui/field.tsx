@@ -118,7 +118,8 @@ export function SpSelect({ options, placeholder, children, surface: _surface, cl
         className={cn(
           SP_INPUT_CLASS,
           "h-[52px] appearance-none truncate pr-[44px] pl-[16px]",
-          empty && "text-(--sp-input-placeholder)",
+          // A <select> matches :read-only, so undo the muted read-only text of the input look.
+          empty ? "text-(--sp-input-placeholder) read-only:text-(--sp-input-placeholder)" : "read-only:text-(--sp-text)",
           className
         )}
         {...props}

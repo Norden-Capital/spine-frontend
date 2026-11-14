@@ -3,7 +3,9 @@
 import { PageEmpty } from "@/components/nav/page-empty";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { IconBell, IconCalendarRepeat, IconRepeat, IconSuccess, IconWarning } from "@/components/spine-ui";
+import { BatteryEmpty, EmptyWalletTime } from "iconsax-react";
+import { IconBell, IconCalendarRepeat, IconLock, IconOffice, IconRepeat, IconSuccess, IconWarning } from "@/components/spine-ui";
+import { BulkIcon } from "@/components/balances/balance-parts";
 import { api, errorMessage } from "@/lib/api";
 import type { Alert } from "@/lib/alerts-server";
 import { useDates } from "@/components/prefs/prefs-provider";
@@ -18,6 +20,10 @@ const ICONS: Record<string, React.ReactNode> = {
   RECURRING_DUE_TOMORROW: <IconCalendarRepeat aria-hidden />,
   // Company repeat expense due: link "/recurring/due/<occurrenceId>".
   COMPANY_RECURRING_DUE: <IconCalendarRepeat aria-hidden />,
+  // Company balances: link "/balances/<id>".
+  BALANCE_EMPTY: <BulkIcon icon={BatteryEmpty} />,
+  BALANCE_LOW: <IconWarning aria-hidden />,
+  BALANCE_SOON: <BulkIcon icon={EmptyWalletTime} />,
 };
 
 const TONES: Record<string, AlertTone> = {
@@ -26,7 +32,14 @@ const TONES: Record<string, AlertTone> = {
   RECURRING_CREATED: "success",
   RECURRING_DUE_TOMORROW: "info",
   COMPANY_RECURRING_DUE: "warning",
+  BALANCE_EMPTY: "danger",
+  BALANCE_LOW: "danger",
+  BALANCE_SOON: "warning",
 };
+
+/** Company or private: the backend's `scope`, else guessed from the kind (older alerts). */
+const scopeOf = (a: Alert): "COMPANY" | "PRIVATE" =>
+  a.scope ?? (a.kind.startsWith("COMPANY_") || a.kind.startsWith("BALANCE_") ? "COMPANY" : "PRIVATE");
 
 /** COMPANY_RECURRING_DUE body: "USD 1200.00 · due 2026-11-12. Tap to add it…" → "2026-11-12". */
 const dueDateOf = (a: Alert) =>
@@ -93,7 +106,7 @@ export function AlertsList({ items, unread }: { items: Alert[]; unread: number }
         </p>
       )}
       {list.length === 0 ? (
-        <PageEmpty icon={<IconBell />} title="No alerts" text="Budget and recurring alerts show here." />
+        <PageEmpty icon={<IconBell />} title="No alerts" text="Company and private alerts show here: balances, repeat expenses and budgets." />
       ) : (
         <SectionCard title="Latest">
           <ul className="flex flex-col">
@@ -112,11 +125,15 @@ export function AlertsList({ items, unread }: { items: Alert[]; unread: number }
                   unread={!a.read}
                   href={safeLink(a.link) ?? "/alerts"}
                 />
-                {due && (
-                  <div className="-mt-[2px] pb-[8px] pl-[57.8px]" data-testid="alert-due-badge">
-                    <DueBadge state={due.state} label={due.label} />
-                  </div>
-                )}
+                {/* Plain text under the row (no pill): Company or Private, then how urgent. */}
+                <div className="-mt-[2px] flex flex-wrap items-center gap-x-[12px] gap-y-[4px] pb-[8px] pl-[57.8px]">
+                  <ScopeLabel scope={scopeOf(a)} />
+                  {due && (
+                    <span data-testid="alert-due-badge">
+                      <DueBadge state={due.state} label={due.label} />
+                    </span>
+                  )}
+                </div>
               </li>
               );
             })}
@@ -124,5 +141,20 @@ export function AlertsList({ items, unread }: { items: Alert[]; unread: number }
         </SectionCard>
       )}
     </div>
+  );
+}
+
+/** "Company" (building) or "Private" (lock): gray text with its icon, no background. */
+function ScopeLabel({ scope }: { scope: "COMPANY" | "PRIVATE" }) {
+  const company = scope === "COMPANY";
+  return (
+    <span
+      data-testid="alert-scope"
+      data-scope={scope}
+      className="inline-flex items-center gap-[4px] text-[0.625rem] leading-[1.5] font-medium text-(--sp-text-muted) [&_svg]:size-[12px]"
+    >
+      {company ? <IconOffice aria-hidden /> : <IconLock aria-hidden />}
+      {company ? "Company" : "Private"}
+    </span>
   );
 }

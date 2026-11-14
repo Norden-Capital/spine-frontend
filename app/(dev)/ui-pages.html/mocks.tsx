@@ -70,6 +70,7 @@ import {
   type SignInDay,
 } from "@/components/spine-ui";
 import { OpenSheet } from "./client";
+import { BALANCE_MOCKS } from "./balances-mocks";
 
 // Full-page mocks of the redesigned pages (dev only). Fake data.
 // Each mock is the page content; the [mock] route wraps it in a themed frame.
@@ -2239,6 +2240,7 @@ function DateSheetMock() {
 /* ---------- registry ---------- */
 
 const MOCKS: Record<string, () => ReactNode> = {
+  ...BALANCE_MOCKS,
   home: () => <HomeMock />,
   "date-fields": () => <DateFieldsMock />,
   "date-sheet": () => <DateSheetMock />,

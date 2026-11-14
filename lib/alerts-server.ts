@@ -5,6 +5,8 @@ import { backendGet } from "./auth";
 export type Alert = {
   id: string;
   kind: string;
+  /** Whose alert: the company (owner + members) or my private wallet. */
+  scope?: "COMPANY" | "PRIVATE";
   title: string;
   body: string;
   /** Frontend path hint, e.g. "/wallet/budgets". */
