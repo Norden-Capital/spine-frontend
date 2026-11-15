@@ -4,8 +4,7 @@
 // dock; the main dock is not changed. A tap reloads the page.
 
 import type { ReactNode } from "react";
-import { Refresh } from "iconsax-react";
-import { FloatingDock, IconAdmin, IconExpenses, IconHome, IconSettings, IconWallet, type DockItem } from "@/components/spine-ui";
+import { FloatingDock, IconRestore, IconAdmin, IconExpenses, IconHome, IconSettings, IconWallet, type DockItem } from "@/components/spine-ui";
 
 function items(owner: boolean): DockItem[] {
   return [
@@ -26,8 +25,9 @@ function RefreshDock() {
         aria-label="Refresh the page"
         className="flex size-[44px] items-center justify-center px-[3px]"
       >
-        <span className="flex size-[38px] items-center justify-center rounded-full bg-(--sp-dock-item) text-(--sp-dock-item-text)">
-          <Refresh size={18} variant="Bulk" color="currentColor" />
+        <span className="flex size-[38px] items-center justify-center rounded-full bg-(--sp-dock-item) text-(--sp-dock-item-text) [&_svg]:size-[18px]">
+          {/* Same icon as the "Try again" button on the error page. */}
+          <IconRestore aria-hidden />
         </span>
       </button>
     </div>
