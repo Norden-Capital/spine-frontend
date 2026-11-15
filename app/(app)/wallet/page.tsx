@@ -29,7 +29,7 @@ import {
 } from "@/lib/wallet-types";
 import { TxLogo } from "@/components/expenses/tx-logo";
 import { LinkAddPill, LinkQuickAction, QuickActionsPanel } from "@/components/home/home-links";
-import { LockWalletIconButton, SheetPill, SheetQuickAction, WalletSheets } from "@/components/home/space-actions";
+import { SheetPill, SheetQuickAction, WalletHeaderActions, WalletSheets } from "@/components/home/space-actions";
 import { ProgressBar, statusText } from "@/components/wallet/progress";
 import { WalletDueCard } from "@/components/wallet/wallet-due-card";
 import { WalletLoadError } from "@/components/wallet/wallet-page-head";
@@ -73,7 +73,7 @@ export default async function WalletPage() {
   return (
     <WalletSheets today={today} categories={categories.ok ? categories.data : []}>
       <div className="sp-space-wallet flex flex-col gap-[16px]">
-        <PageHeader title="Wallet" subtitle="Personal · only you" action={<LockWalletIconButton />} />
+        <PageHeader title="Wallet" subtitle="Personal · only you" action={<WalletHeaderActions currency={cur} />} />
 
         <SwapStack
           labels={["Personal wallet", "Savings"]}

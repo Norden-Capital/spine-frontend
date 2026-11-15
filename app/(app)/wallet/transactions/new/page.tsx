@@ -20,17 +20,19 @@ export default async function NewWalletTxPage({ searchParams }: PageProps<"/wall
     getDateSettings(),
     typeof copy === "string" ? getWalletTx(copy) : Promise.resolve(null),
   ]);
+  // Goal money is not copied (it is made on the Goals page).
+  const from = source?.ok && !source.data.goalId ? source.data : null;
   return (
     <div className="flex flex-col gap-[16px]">
       <PageHeader
-        title={source?.ok ? "Copy to wallet" : "Add to wallet"}
+        title={from ? "Copy to wallet" : "Add to wallet"}
         subtitle="Personal wallet · only you"
         action={<SpIconLink href={"/wallet"} label="Cancel and go back" icon={<IconClose aria-hidden />} />}
       />
       <TransactionForm
         scope="wallet"
         transaction={null}
-        copyFrom={source?.ok ? source.data : null}
+        copyFrom={from}
         categories={categories.ok ? categories.data : []}
         today={todayIn(dates.zone)}
       />

@@ -20,6 +20,8 @@ import {
 } from "@/components/spine-ui";
 import { I } from "./icon-set";
 import { OpenSheet } from "./client";
+import { ICON_BUTTON_CLASS } from "@/components/home/home-links";
+import { IconLock } from "@/components/spine-ui";
 import { CurrencyFlag } from "@/components/wallet/currency-flag";
 
 const CURRENCIES = [
@@ -181,10 +183,57 @@ function GoalSheet() {
   );
 }
 
+/** 5. Wallet header: a MAD / USD button before the lock. A tap switches the totals. */
+function HeaderSwitch({ currency }: { currency: "MAD" | "USD" }) {
+  const mad = currency === "MAD";
+  return (
+    <Page>
+      <PageHeader
+        title="Wallet"
+        subtitle="Personal · only you"
+        action={
+          <div className="flex items-center gap-[8px]">
+            <button
+              type="button"
+              aria-label={`Totals in ${currency}. Tap to show them in ${mad ? "USD" : "MAD"}.`}
+              className="inline-flex h-[44px] shrink-0 items-center gap-[6px] rounded-full bg-(--sp-icon-btn) px-[14px] text-[0.8125rem] font-medium text-(--sp-icon-btn-text)"
+            >
+              <CurrencyFlag currency={currency} />
+              {currency}
+            </button>
+            <button type="button" aria-label="Lock wallet" className={ICON_BUTTON_CLASS}>
+              <IconLock aria-hidden />
+            </button>
+          </div>
+        }
+      />
+      <BalanceCard
+        tag="Private wallet"
+        amountLabel="Available balance"
+        amount={mad ? "12,450.00 MAD" : "$1,245.00"}
+        detail={{ label: "Out this month", value: mad ? "−2,200.00 MAD" : "−$220.00" }}
+        footer={mad ? { label: "USD counted at", value: "1 USD = 10.00 MAD" } : { label: "MAD counted at", value: "1 MAD = 0.10 USD" }}
+      />
+      <SectionCard title="Recent">
+        <ul className="flex flex-col">
+          <li>
+            <ListItem icon={<I.Receipt />} title="Rent" meta="14 Nov 2026" amount="−2,000.00 MAD" />
+          </li>
+          <li>
+            <ListItem icon={<I.Receipt />} title="Netflix" meta="12 Nov 2026" amount="−$20.00" />
+          </li>
+        </ul>
+      </SectionCard>
+    </Page>
+  );
+}
+
 export const CURRENCY_MOCKS: Record<string, () => ReactNode> = {
   "currency-1-preferences": () => <Preferences />,
   "currency-2-form-mad": () => <AddForm currency="MAD" />,
   "currency-2-form-usd": () => <AddForm currency="USD" />,
   "currency-3-wallet": () => <WalletHome />,
   "currency-4-goal": () => <GoalSheet />,
+  "currency-5-header-mad": () => <HeaderSwitch currency="MAD" />,
+  "currency-5-header-usd": () => <HeaderSwitch currency="USD" />,
 };

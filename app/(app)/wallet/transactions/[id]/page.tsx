@@ -47,19 +47,37 @@ export default async function WalletTxPage({ params }: PageProps<"/wallet/transa
         kind={kind}
       />
 
-      <div className="grid grid-cols-3 gap-[8px]">
-        <SpLinkButton href={`/wallet/transactions/${encodeURIComponent(tx.id)}/edit`} icon={<IconEdit aria-hidden />}>
-          Edit
-        </SpLinkButton>
-        <SpLinkButton
-          href={`/wallet/transactions/new?copy=${encodeURIComponent(tx.id)}`}
-          variant="secondary"
-          icon={<IconCopy aria-hidden />}
-        >
-          Copy
-        </SpLinkButton>
-        <DeleteWalletTx id={tx.id} month={month} />
-      </div>
+      {tx.goalId ? (
+        // Goal money is made on the Goals page: change it there (delete still works here).
+        <div className="flex flex-col gap-[8px]" data-testid="wallet-tx-goal">
+          <p className="px-[4px] text-[0.8125rem] leading-snug text-(--sp-text-muted)">
+            Goal money ·{" "}
+            <Link
+              href="/wallet/goals"
+              className="font-medium text-(--sp-text) underline underline-offset-2 outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
+            >
+              change it on the Goals page
+            </Link>
+          </p>
+          <div className="grid grid-cols-3 gap-[8px]">
+            <DeleteWalletTx id={tx.id} month={month} goal={tx.type === "INCOME" ? "out" : "add"} />
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-[8px]">
+          <SpLinkButton href={`/wallet/transactions/${encodeURIComponent(tx.id)}/edit`} icon={<IconEdit aria-hidden />}>
+            Edit
+          </SpLinkButton>
+          <SpLinkButton
+            href={`/wallet/transactions/new?copy=${encodeURIComponent(tx.id)}`}
+            variant="secondary"
+            icon={<IconCopy aria-hidden />}
+          >
+            Copy
+          </SpLinkButton>
+          <DeleteWalletTx id={tx.id} month={month} />
+        </div>
+      )}
 
       <InfoList
         rows={[

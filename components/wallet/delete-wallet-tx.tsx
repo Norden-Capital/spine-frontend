@@ -3,12 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconDelete } from "@/components/spine-ui";
-import { api, errorMessage } from "@/lib/api";
+import { api, ApiError, errorMessage } from "@/lib/api";
 import { walletChanged } from "@/lib/wallet-actions";
 import { BottomSheet, SpButton } from "@/components/spine-ui";
 
-/** Wallet delete is final (no trash): ask first and say so. */
-export function DeleteWalletTx({ id, month }: { id: string; month: string }) {
+/**
+ * Wallet delete is final (no trash): ask first and say so. `goal` = goal
+ * money ("add" = an expense into a goal, "out" = an income out of it): the
+ * server also removes the goal's money move.
+ */
+export function DeleteWalletTx({ id, month, goal }: { id: string; month: string; goal?: "add" | "out" }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -22,7 +26,11 @@ export function DeleteWalletTx({ id, month }: { id: string; month: string }) {
     } catch (err) {
       setPending(false);
       setOpen(false);
-      setError(errorMessage(err));
+      setError(
+        err instanceof ApiError && err.code === "not_enough_saved"
+          ? "Some of this money was already taken out of the goal. Undo that on the Goals page first."
+          : errorMessage(err)
+      );
       return;
     }
     // Deleted. Next keeps this page alive (hidden): close the sheet now, so
@@ -54,7 +62,13 @@ export function DeleteWalletTx({ id, month }: { id: string; month: string }) {
         open={open}
         onOpenChange={(next) => !next && !pending && setOpen(false)}
         title="Delete for good?"
-        description="It is removed from your wallet with its files. This can't be undone."
+        description={
+          goal === "add"
+            ? "It is removed from your wallet and from the goal: the money is back in your balance. This can't be undone."
+            : goal === "out"
+              ? "It is removed from your wallet and the money goes back into the goal. This can't be undone."
+              : "It is removed from your wallet with its files. This can't be undone."
+        }
         footer={
           <div className="grid grid-cols-2 gap-[8px]">
             <SpButton variant="secondary" onClick={() => setOpen(false)} disabled={pending}>

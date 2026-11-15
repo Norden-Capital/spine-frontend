@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { IconClose } from "@/components/spine-ui";
 import { todayIn } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
@@ -18,6 +18,8 @@ export default async function EditWalletTxPage({ params }: PageProps<"/wallet/tr
   const [res, categories, dates] = await Promise.all([getWalletTx(id), getWalletCategories(), getDateSettings()]);
   if (!res.ok && (res.status === 404 || res.status === 400)) notFound();
   if (!res.ok) throw new Error(`Loading wallet transaction failed (${res.status})`);
+  // Goal money is changed on the Goals page only.
+  if (res.data.goalId) redirect(`/wallet/transactions/${encodeURIComponent(id)}`);
   return (
     <div className="flex flex-col gap-[16px]">
       <PageHeader

@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { IconCheckGlyph, IconEyeOff, IconGoal, IconKey, IconLock, IconWallet } from "@/components/spine-ui";
+import { IconCheckGlyph, IconEyeOff, IconFaceId, IconGoal, IconKey, IconLock, IconWallet } from "@/components/spine-ui";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import { useDates } from "@/components/prefs/prefs-provider";
 import { BottomSheet, SpButton, SpField, SpInput, SpPasswordInput } from "@/components/spine-ui";
 import { PinPad, PIN_LENGTH } from "./pin-pad";
+import { noAutoFaceIdNextTime, useWalletPasskey } from "./use-wallet-passkey";
 
 type SetupStep = "welcome" | "pin" | "ready";
 
@@ -119,8 +120,13 @@ function WalletWelcome({ onStart }: { onStart: () => void }) {
   );
 }
 
-/** Wallet locked: enter the PIN. "Forgot PIN?" resets it with the account password. */
-export function PinUnlock({ lockedUntil }: { lockedUntil: string | null }) {
+/**
+ * Wallet locked. With a passkey (Face ID) on this device: one big "Unlock
+ * with Face ID" button, the PIN one tap away. Else (or after "Use my PIN
+ * instead" / a failed Face ID): enter the PIN. "Forgot PIN?" resets it with
+ * the account password.
+ */
+export function PinUnlock({ lockedUntil, passkey = false }: { lockedUntil: string | null; passkey?: boolean }) {
   const router = useRouter();
   const dates = useDates();
   const [error, setError] = useState<string | null>(null);
@@ -129,6 +135,19 @@ export function PinUnlock({ lockedUntil }: { lockedUntil: string | null }) {
   const [reset, setReset] = useState(0);
   const [forgot, setForgot] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  // "Use my PIN instead", or Face ID did not work: show the pad.
+  const [usePin, setUsePin] = useState(false);
+  const faceId = useWalletPasskey({
+    enabled: passkey,
+    onSuccess: () => {
+      setPending(true);
+      router.refresh();
+    },
+    onError: (text) => {
+      setUsePin(true);
+      setError(text);
+    },
+  });
 
   // While blocked after 5 wrong PINs, tick so the pad opens again by itself.
   useEffect(() => {
@@ -142,6 +161,7 @@ export function PinUnlock({ lockedUntil }: { lockedUntil: string | null }) {
     setPending(true);
     setError(null);
     try {
+      await faceId.waitIdle();
       await api("/wallet/unlock", { method: "POST", body: { pin } });
       router.refresh();
     } catch (err) {
@@ -157,22 +177,77 @@ export function PinUnlock({ lockedUntil }: { lockedUntil: string | null }) {
     }
   }
 
+  function startFaceId() {
+    setError(null);
+    void faceId.start();
+  }
+
+  const busy = pending || faceId.pending;
+
+  if (faceId.available && !usePin) {
+    return (
+      <Screen title="Your wallet is locked" subtitle="Unlock it with Face ID." error={error}>
+        <SpButton
+          className="w-full max-w-[320px]"
+          icon={<IconFaceId aria-hidden />}
+          disabled={!faceId.ready || busy}
+          onClick={startFaceId}
+          data-testid="wallet-faceid"
+        >
+          Unlock with Face ID
+        </SpButton>
+        <LinkButton
+          onClick={() => {
+            setError(null);
+            setUsePin(true);
+          }}
+        >
+          Use my PIN instead
+        </LinkButton>
+      </Screen>
+    );
+  }
+
   return (
     <Screen
       title="Enter your wallet PIN"
       subtitle="Your personal wallet is locked."
       error={blocked ? `Too many wrong PINs. Try again after ${dates.dateTime(until)}.` : error}
     >
-      <PinPad onComplete={done} disabled={pending || blocked} reset={reset} error={Boolean(error) && !blocked} />
-      <button
-        type="button"
-        onClick={() => setForgot(true)}
-        className="min-h-[44px] rounded-full px-[16px] py-[8px] text-[0.9375rem] leading-snug font-medium text-(--sp-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97]"
-      >
-        Forgot PIN?
-      </button>
+      <PinPad onComplete={done} disabled={busy || blocked} reset={reset} error={Boolean(error) && !blocked} />
+      <div className="flex flex-col items-center gap-[4px]">
+        {faceId.available && (
+          <SpButton
+            variant="secondary"
+            icon={<IconFaceId aria-hidden />}
+            disabled={!faceId.ready || busy}
+            onClick={startFaceId}
+            data-testid="wallet-use-faceid"
+          >
+            Use Face ID
+          </SpButton>
+        )}
+        <LinkButton onClick={() => setForgot(true)}>Forgot PIN?</LinkButton>
+      </div>
+      {!passkey && faceId.supported && (
+        <p className="max-w-[300px] text-[0.75rem] leading-snug text-(--sp-text-muted)">
+          Tip: add Face ID in Settings › Security to open your wallet with one tap.
+        </p>
+      )}
       <ForgotPin open={forgot} onOpenChange={setForgot} />
     </Screen>
+  );
+}
+
+function LinkButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="min-h-[44px] rounded-full px-[16px] py-[8px] text-[0.9375rem] leading-snug font-medium text-(--sp-text) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-[0.97]"
+    >
+      {children}
+    </button>
   );
 }
 
@@ -310,6 +385,7 @@ export function WalletSession({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     const lock = () => {
+      noAutoFaceIdNextTime();
       void api("/wallet/lock", { method: "POST" })
         .catch(() => {})
         .finally(() => router.refresh());

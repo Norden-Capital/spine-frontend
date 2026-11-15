@@ -20,6 +20,6 @@ export default async function WalletLayout({ children }: LayoutProps<"/wallet">)
     );
   }
   if (!status.hasPin) return <PinSetup />;
-  if (!status.unlocked) return <PinUnlock lockedUntil={status.lockedUntil} />;
+  if (!status.unlocked) return <PinUnlock lockedUntil={status.lockedUntil} passkey={Boolean(status.passkey)} />;
   return <WalletSession>{children}</WalletSession>;
 }

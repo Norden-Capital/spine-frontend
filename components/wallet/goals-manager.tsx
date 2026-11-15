@@ -68,7 +68,9 @@ function goalMoney(amount: string | number, goal: Goal, sign?: "+" | "-"): strin
 
 /**
  * Savings goals: target, optional deadline, money moves. Money added to a goal
- * leaves the wallet balance; taking it out (or removing a move) gives it back.
+ * is saved as a wallet expense (category Goals), so it leaves the balance;
+ * taking it out is saved as a wallet income. Removing a move removes its
+ * transaction too.
  */
 export function GoalsManager({
   goals,
@@ -474,7 +476,7 @@ export function GoalsManager({
         title={`Remove "${remove?.name ?? ""}"?`}
         text={
           remove && Number(remove.saved) > 0
-            ? `The goal and its money moves are deleted. Its ${goalMoney(remove.saved, remove)} goes back to your balance.`
+            ? `The goal, its money moves and their wallet transactions are deleted. Its ${goalMoney(remove.saved, remove)} goes back to your balance.`
             : "The goal is deleted."
         }
         confirm="Remove"
@@ -492,8 +494,8 @@ export function GoalsManager({
         text={
           money
             ? undoTakeOut
-              ? `${goalMoney(money.item.amount, money.goal)} from ${dates.day(money.item.date)} goes back into "${money.goal.name}" and leaves your balance.`
-              : `${goalMoney(money.item.amount, money.goal)} from ${dates.day(money.item.date)} leaves "${money.goal.name}" and goes back to your balance.`
+              ? `${goalMoney(money.item.amount, money.goal)} from ${dates.day(money.item.date)} goes back into "${money.goal.name}" and leaves your balance. Its wallet income is deleted too.`
+              : `${goalMoney(money.item.amount, money.goal)} from ${dates.day(money.item.date)} leaves "${money.goal.name}" and goes back to your balance. Its wallet expense is deleted too.`
             : ""
         }
         confirm={undoTakeOut ? "Undo" : "Remove"}
@@ -696,8 +698,9 @@ function GoalForm({
 type MoveKind = "add" | "out";
 
 /**
- * Add money to a goal (it leaves the balance) or take money out (back to the
- * balance), in a bottom sheet: amount, date (not in the future), note.
+ * Add money to a goal (saved as a wallet expense in Goals: it leaves the
+ * balance) or take money out (saved as a wallet income: back to the balance),
+ * in a bottom sheet: amount, date (not in the future), note.
  */
 function MoveSheet({
   open,
@@ -904,8 +907,8 @@ function MoveForm({
         data-testid="goal-move-text"
       >
         {out
-          ? `Moves ${goalMoney(value, goal)} from this goal back to your balance.`
-          : `Moves ${goalMoney(value, goal)} from your balance to this goal.`}
+          ? `Moves ${goalMoney(value, goal)} from this goal back to your balance. It is saved as an income in your wallet.`
+          : `Moves ${goalMoney(value, goal)} from your balance to this goal. It is saved as an expense in Goals.`}
       </p>
       {overBalance && (
         <p

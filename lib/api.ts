@@ -60,6 +60,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalid_pin: "Wrong PIN. Try again.",
   invalid_password: "Your password is wrong.",
   wallet_locked: "Your wallet is locked. Enter your PIN.",
+  passkey_failed: "Face ID did not work. Use your PIN or try again.",
   budget_exists: "You already have a budget for this category.",
   recurring_not_found: "This repeat expense no longer exists.",
   occurrence_not_found: "This reminder no longer exists.",
@@ -67,6 +68,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   goal_not_found: "This goal no longer exists.",
   contribution_not_found: "This money move no longer exists.",
   not_enough_saved: "This goal doesn't hold that much money.",
+  goal_money: "This is goal money. Change it on the Goals page.",
   occurrence_not_due: "This reminder is already done or skipped.",
   // Repeat payments: skip dates
   too_late: "Too late to undo: this date has already come.",

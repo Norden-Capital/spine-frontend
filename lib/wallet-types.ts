@@ -67,7 +67,13 @@ export function rateFooter(defaultCurrency: WalletCurrency, usdRate: number): { 
     : { label: "MAD counted at", value: `1 MAD = ${formatRate(1 / usdRate)} USD` };
 }
 
-export type WalletStatus = { hasPin: boolean; unlocked: boolean; lockedUntil: string | null };
+export type WalletStatus = {
+  hasPin: boolean;
+  unlocked: boolean;
+  lockedUntil: string | null;
+  /** The person has at least one passkey (Face ID / fingerprint): the lock page offers it. */
+  passkey?: boolean;
+};
 
 export type CategoryRef = Pick<Category, "id" | "name" | "icon" | "archived" | "parentId" | "kind">;
 
@@ -88,6 +94,8 @@ export type WalletTx = {
   updatedAt: string | null;
   /** This transaction's own currency (missing = USD, older answers). */
   currency?: WalletCurrency;
+  /** Money moved into / out of this goal (made on the Goals page); null = a normal transaction. */
+  goalId?: string | null;
 };
 
 export type BudgetStatus = "OK" | "WARNING" | "EXCEEDED";
@@ -104,7 +112,7 @@ export type Budget = {
   currency?: WalletCurrency;
 };
 
-/** One money move of a goal: ADD = from the balance into the goal, TAKE_OUT = back to the balance. */
+/** One money move of a goal: ADD = from the balance into the goal (a wallet expense in Goals), TAKE_OUT = back to the balance (a wallet income). */
 export type MovementType = "ADD" | "TAKE_OUT";
 
 /** One movement (amount always positive, newest first). */
@@ -146,7 +154,7 @@ export type Recurring = {
 };
 
 export type Dashboard = {
-  /** AVAILABLE balance (in `currency`), e.g. "2749.75": income − expenses − money in goals. Can be below 0. */
+  /** AVAILABLE balance (in `currency`), e.g. "2749.75": all-time income − expenses (money added to goals is an expense in Goals). Can be below 0. */
   balance: string;
   /** All money now in goals (every goal's saved, converted into `currency`). */
   savedInGoals?: string;
