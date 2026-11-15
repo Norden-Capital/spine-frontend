@@ -65,6 +65,7 @@ export function RepeatSheet<T extends { id: string }>({
   onSkipExists,
   onEdit,
   onDelete,
+  footer,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -82,6 +83,8 @@ export function RepeatSheet<T extends { id: string }>({
   onSkipExists?: (item: T, date: string) => Promise<T>;
   onEdit?: () => void;
   onDelete?: () => void;
+  /** Shown at the bottom, for everyone (company: the History). */
+  footer?: ReactNode;
 }) {
   const ids = useId();
   const dates = useDates();
@@ -378,6 +381,8 @@ export function RepeatSheet<T extends { id: string }>({
               Only the owner can change this.
             </p>
           )}
+
+          {footer}
         </div>
       )}
     </BottomSheet>

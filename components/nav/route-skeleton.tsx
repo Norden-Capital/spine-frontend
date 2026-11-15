@@ -559,7 +559,7 @@ function skeletonFor(pathname: string, scope: SkeletonScope, owner: boolean): Re
   // Admin area: the owner only.
   if (!owner) return null;
   if (/^\/admin\/users\/[^/]+$/.test(p)) return <AdminUserSk />;
-  if ((m = p.match(/^\/admin\/(users|categories|trash)$/))) {
+  if ((m = p.match(/^\/admin\/(users|categories|trash)$/) ?? p.match(/^\/admin\/(trash)\/recurring$/))) {
     const tab = <AdminTabSk tab={m[1]} />;
     if (scope === "admin") return tab;
     return (

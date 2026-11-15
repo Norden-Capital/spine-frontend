@@ -1,6 +1,6 @@
 // Company repeat expenses: types. Server and client.
 // REMINDERS ONLY: the server never adds a transaction by itself.
-import type { TxType } from "./transactions-types";
+import type { PersonRef, TxType } from "./transactions-types";
 import type { RepeatUnit, UpcomingDate } from "./repeat-schedule";
 
 export type OccurrenceStatus = "DUE" | "DONE" | "SKIPPED";
@@ -76,3 +76,25 @@ export type Occurrence = {
 
 /** The page that opens one reminder (also the alert link). */
 export const duePath = (occurrenceId: string) => `/recurring/due/${encodeURIComponent(occurrenceId)}`;
+
+/** GET /api/admin/recurring/trash (owner): a repeat expense in the trash. */
+export type TrashedRecurring = {
+  id: string;
+  type: TxType;
+  amount: string;
+  description: string;
+  category: RecurringCategory;
+  website: string | null;
+  logoUrls: string[];
+  unit: RepeatUnit;
+  every: number;
+  startDate: string;
+  endDate: string | null;
+  paused: boolean;
+  pausedUntil: string | null;
+  remindDays: RemindDay[];
+  createdBy: PersonRef;
+  createdAt: string;
+  deletedAt: string;
+  deletedBy: PersonRef | null;
+};

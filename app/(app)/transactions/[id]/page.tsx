@@ -3,13 +3,12 @@ import { notFound, redirect, unstable_rethrow } from "next/navigation";
 import { IconCopy, IconEdit } from "@/components/spine-ui";
 import { backendGet } from "@/lib/auth";
 import { Comments, type Comment } from "@/components/transactions/comments";
-import { formatDateTime, formatDay, type DateSettings } from "@/lib/prefs";
+import { formatDateTime, formatDay } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
 import { getHistory, getTransaction } from "@/lib/transactions-server";
-import { formatMoney, monthOf, type HistoryEntry, type PersonRef } from "@/lib/transactions-types";
+import { formatMoney, monthOf, type PersonRef } from "@/lib/transactions-types";
 import { UserAvatar } from "@/components/nav/user-avatar";
 import { seedOf } from "@/lib/avatar";
-import { cn } from "@/lib/utils";
 import { TxLogo } from "@/components/expenses/tx-logo";
 import { WebsiteLink } from "@/components/transactions/website-link";
 import { DeleteTransaction } from "@/components/transactions/delete-transaction";
@@ -17,7 +16,8 @@ import { ProofGallery } from "@/components/transactions/proof-gallery";
 import { SpLinkButton } from "@/components/transactions/sp-link";
 import { ShareTransaction } from "@/components/transactions/share-transaction";
 import { getActiveCategories } from "@/lib/catalog-server";
-import { InfoList, PageHeader, SpPanel, TxHero, type TimelineEntry } from "@/components/spine-ui";
+import { InfoList, PageHeader, SpPanel, TxHero } from "@/components/spine-ui";
+import { HistoryList } from "@/components/history/history-list";
 
 export const metadata: Metadata = { title: "Transaction" };
 
@@ -125,80 +125,12 @@ export default async function TransactionPage({ params }: PageProps<"/transactio
 
       <SpPanel title="History">
         {history.ok ? (
-          <History entries={history.data} dates={dates} />
+          <HistoryList entries={history.data} dates={dates} />
         ) : (
           <p className="text-[0.75rem] text-(--sp-text-muted)">History could not be loaded.</p>
         )}
       </SpPanel>
     </div>
-  );
-}
-
-const ACTIONS: Record<string, string> = {
-  CREATED: "Created",
-  UPDATED: "Edited",
-  DELETED: "Moved to trash",
-  RESTORED: "Restored",
-};
-
-const HIDDEN_FIELDS = new Set(["tags", "tagIds"]);
-
-const FIELDS: Record<string, string> = {
-  type: "Type",
-  amount: "Amount",
-  currency: "Currency",
-  date: "Date",
-  description: "Description",
-  website: "Website",
-  category: "Category",
-  categoryId: "Category",
-  files: "Proof",
-  fileIds: "Proof",
-};
-
-/** A history value as short text: names for lists/objects, dates in the user's format. */
-function show(field: string, value: unknown, dates: DateSettings): string {
-  if (value === null || value === undefined || value === "") return "—";
-  if (Array.isArray(value)) {
-    if (field === "files" || field === "fileIds") return `${value.length} file${value.length === 1 ? "" : "s"}`;
-    return value.map((v) => show(field, v, dates)).join(", ") || "—";
-  }
-  if (typeof value === "object") {
-    const o = value as Record<string, unknown>;
-    return String(o.name ?? o.id ?? "—");
-  }
-  const text = String(value);
-  if (field === "date" && /^\d{4}-\d{2}-\d{2}$/.test(text)) return formatDay(text, dates);
-  if (field === "type") return text === "INCOME" ? "Income" : text === "EXPENSE" ? "Expense" : text;
-  if (field === "amount" && /^\d+(\.\d+)?$/.test(text)) return formatMoney(text);
-  return text;
-}
-
-function History({ entries, dates }: { entries: HistoryEntry[]; dates: DateSettings }) {
-  if (entries.length === 0) return <p className="text-[0.75rem] text-(--sp-text-muted)">No changes yet.</p>;
-  const sorted = [...entries].sort((a, b) => b.at.localeCompare(a.at));
-  return (
-    <HistoryTimeline
-      entries={sorted.map((e, i) => {
-        const by = typeof e.by === "string" ? e.by : e.by?.name;
-        return {
-          person: e.by && typeof e.by !== "string" ? e.by : null,
-          id: String(i),
-          title: `${ACTIONS[e.action] ?? e.action}${by ? ` by ${by}` : ""}`,
-          meta: formatDateTime(e.at, dates),
-          // Tags were removed from the app: hide old tag changes.
-          changes: (e.changes ?? []).filter((c) => !HIDDEN_FIELDS.has(c.field)).map(
-            (c) => {
-              const label = FIELDS[c.field] ?? c.field;
-              const from = show(c.field, c.from, dates);
-              // A new value (nothing before): "Amount: $64.10", not "Amount: — → $64.10".
-              return from === "—" ? `${label}: ${show(c.field, c.to, dates)}` : `${label}: ${from} → ${show(c.field, c.to, dates)}`;
-            }
-          ),
-          current: i === 0,
-        };
-      })}
-    />
   );
 }
 
@@ -209,47 +141,6 @@ function ByLine({ person, text }: { person: PersonRef; text: string }) {
       <UserAvatar seed={seedOf(person)} size={22} className="shrink-0" />
       <span className="min-w-0 truncate">{text}</span>
     </span>
-  );
-}
-
-/**
- * Same look as the kit Timeline (line with dots, title 12 / Medium, time
- * 10, changes 11), plus the face of who did it. The kit Timeline takes
- * only text, so it is drawn here.
- */
-function HistoryTimeline({ entries }: { entries: (TimelineEntry & { person: PersonRef | null })[] }) {
-  return (
-    <ol className="relative">
-      {entries.map((e, i) => (
-        <li key={e.id} className="relative flex gap-[12px] pb-[16px] last:pb-0">
-          <span aria-hidden className="relative flex w-[10px] shrink-0 justify-center">
-            <span
-              className={cn(
-                "relative z-1 mt-[2px] size-[10px] rounded-full",
-                e.current ? "bg-(--sp-card-front)" : "bg-(--sp-text-faint)"
-              )}
-            />
-            {i < entries.length - 1 ? (
-              <span className="absolute top-[14px] -bottom-[2px] w-[2px] rounded-full bg-(--sp-soft)" />
-            ) : null}
-          </span>
-          <div className="min-w-0 flex-1 leading-snug">
-            <p className="truncate text-[0.75rem] font-medium text-(--sp-text)" title={e.title}>{e.title}</p>
-            <p className="mt-[4px] text-[0.625rem] text-(--sp-text-faint)">{e.meta}</p>
-            {e.changes?.length ? (
-              <ul className="mt-[8px] space-y-[4px]">
-                {e.changes.map((c) => (
-                  <li key={c} className="text-[0.6875rem] leading-snug break-words text-(--sp-text-muted)">
-                    {c}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-          {e.person ? <UserAvatar seed={seedOf(e.person)} size={24} /> : null}
-        </li>
-      ))}
-    </ol>
   );
 }
 

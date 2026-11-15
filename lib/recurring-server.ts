@@ -1,7 +1,7 @@
 // Server-only: company repeat expenses (reminders) from the backend, with the session cookie.
 import { unstable_rethrow } from "next/navigation";
 import { backendGet } from "./auth";
-import type { CompanyRecurring, Occurrence } from "./recurring-types";
+import type { CompanyRecurring, Occurrence, TrashedRecurring } from "./recurring-types";
 
 export type RecurringResult<T> = { ok: true; data: T } | { ok: false; status: number };
 
@@ -27,3 +27,5 @@ export const getCompanyRecurring = () => getJson<CompanyRecurring[]>("/recurring
 export const getRecurringDue = () => getJson<Occurrence[]>("/recurring/due");
 /** One reminder, any status. 404 = occurrence_not_found. */
 export const getOccurrence = (id: string) => getJson<Occurrence>(`/recurring/occurrences/${encodeURIComponent(id)}`);
+/** Repeat expenses in the trash, last trashed first (owner only; 403 for members). */
+export const getRecurringTrash = () => getJson<TrashedRecurring[]>("/admin/recurring/trash");

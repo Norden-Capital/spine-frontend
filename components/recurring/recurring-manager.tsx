@@ -37,6 +37,7 @@ import type { RepeatUnit } from "@/lib/repeat-schedule";
 import { cn } from "@/lib/utils";
 import { FrequencyPicker } from "./frequency-picker";
 import { RepeatRow } from "./repeat-row";
+import { RepeatHistory } from "./repeat-history";
 import { RepeatSheet, type RepeatView } from "./repeat-sheet";
 import { SkipOccurrence } from "./skip-occurrence";
 
@@ -49,9 +50,9 @@ const kindOf = (c: { kind?: TxType }): TxType => c.kind ?? "EXPENSE";
 
 /**
  * Company repeat expenses (reminders only). Everyone sees the list, adds a
- * repeat expense and may add the expense from a reminder; the person who
- * added one, or the owner (`canEdit` on the item), also edits, pauses,
- * deletes and skips it.
+ * repeat expense, adds the expense from a reminder, and edits, pauses,
+ * skips and deletes any repeat (`canEdit`). Delete moves it to the trash;
+ * only the owner sees the trash (Admin > Trash > Repeats) and restores.
  */
 export function CompanyRecurringManager({
   items,
@@ -110,7 +111,7 @@ export function CompanyRecurringManager({
     setNotice(null);
     try {
       await api(`/recurring/${encodeURIComponent(remove.id)}`, { method: "DELETE" });
-      setNotice({ kind: "ok", text: `"${remove.description}" deleted. Saved expenses stay.` });
+      setNotice({ kind: "ok", text: `"${remove.description}" moved to the trash. Only the owner can restore it.` });
     } catch (err) {
       setNotice({ kind: "error", text: errorMessage(err) });
     } finally {
@@ -181,6 +182,7 @@ export function CompanyRecurringManager({
           setRemove(sheetItem);
           setRemoveOpen(true);
         }}
+        footer={sheetItem ? <RepeatHistory id={sheetItem.id} version={sheetItem} /> : null}
       />
 
       <BottomSheet
@@ -207,12 +209,12 @@ export function CompanyRecurringManager({
       <ConfirmSheet
         open={removeOpen}
         onOpenChange={setRemoveOpen}
-        title={`Delete "${remove?.description ?? ""}"?`}
-        text="Its reminders go away. Expenses already saved stay."
-        confirm="Delete"
+        title={`Move "${remove?.description ?? ""}" to trash?`}
+        text="It goes to the trash and its reminders stop. Only the owner can restore it. Expenses already saved stay."
+        confirm="Move to trash"
         destructive
         busy={busy === "remove"}
-        busyLabel="Deleting…"
+        busyLabel="Moving…"
         onConfirm={() => void confirmRemove()}
       />
     </div>
