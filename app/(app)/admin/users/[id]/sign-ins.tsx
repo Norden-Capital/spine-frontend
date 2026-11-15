@@ -5,12 +5,13 @@ import { unstable_rethrow } from "next/navigation";
 import { IconOffline } from "@/components/spine-ui";
 import { backendGet } from "@/lib/auth";
 import { addDays, WEEKS, type SignInDay } from "@/lib/sign-ins";
-import { EmptyState, SignInHeatmap, SpSkeleton, type SignInDay as Cell } from "@/components/spine-ui";
+import { EmptyState, SignInHeatmap, type SignInDay as Cell } from "@/components/spine-ui";
+import { SignInHeatmapSkeleton } from "@/components/nav/skeleton-parts";
 
 /** `path`: backend path without ?from, e.g. "/admin/users/{id}/sign-ins". */
 export function UserSignIns({ path, today }: { path: string; today: string }) {
   return (
-    <Suspense fallback={<SignInsSkeleton />}>
+    <Suspense fallback={<SignInHeatmapSkeleton />}>
       <SignIns path={path} today={today} />
     </Suspense>
   );
@@ -81,21 +82,5 @@ async function SignIns({ path, today }: { path: string; today: string }) {
       months={months}
       summary={`${times(okDays, "day")} · ${times(failed, "failed try", "failed tries")}`}
     />
-  );
-}
-
-function SignInsSkeleton() {
-  return (
-    <section
-      aria-busy
-      aria-label="Loading sign-ins"
-      className="rounded-(--sp-radius) bg-(--sp-panel) p-[14px]"
-    >
-      <div className="flex items-baseline justify-between gap-3 leading-snug">
-        <h2 className="text-[0.8125rem] font-medium text-(--sp-text)">Sign-ins</h2>
-        <SpSkeleton className="h-[8px] w-[96px]" />
-      </div>
-      <SpSkeleton className="mt-[14px] h-[150px] w-full rounded-[12px]" />
-    </section>
   );
 }

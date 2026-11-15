@@ -4,7 +4,8 @@ import { Suspense } from "react";
 import { unstable_rethrow } from "next/navigation";
 import { backendGet } from "@/lib/auth";
 import { addDays, chartStart, WEEKS, type SignInDay } from "@/lib/sign-ins";
-import { SpPanel, SpSkeleton } from "@/components/spine-ui";
+import { SpPanel } from "@/components/spine-ui";
+import { SignInActivitySkeleton, SignInHeatmapSkeleton } from "@/components/nav/skeleton-parts";
 import { SignInChart } from "./sign-in-chart";
 
 type Variant = "heatmap" | "activity";
@@ -15,7 +16,7 @@ type Variant = "heatmap" | "activity";
  */
 export function SignInsCard({ path, today, variant = "heatmap" }: { path: string; today: string; variant?: Variant }) {
   return (
-    <Suspense fallback={<SignInsSkeleton />}>
+    <Suspense fallback={variant === "activity" ? <SignInActivitySkeleton /> : <SignInHeatmapSkeleton dayLine />}>
       <SignIns path={path} today={today} variant={variant} />
     </Suspense>
   );
@@ -70,31 +71,4 @@ async function SignIns({ path, today, variant }: { path: string; today: string; 
     );
   }
   return <SignInChart days={days} today={today} start={start} variant={variant} />;
-}
-
-function SignInsSkeleton() {
-  return (
-    <section
-      aria-busy
-      aria-label="Loading sign-ins"
-      className="rounded-(--sp-radius) bg-(--sp-panel) p-[14px]"
-    >
-      <div className="flex items-center justify-between">
-        <SpSkeleton className="h-[12px] w-[64px]" />
-        <SpSkeleton className="h-[9px] w-[110px]" />
-      </div>
-      <div className="mt-[14px] flex gap-[6px]">
-        <span className="w-[1.25rem] shrink-0" />
-        <div
-          className="grid min-w-0 flex-1 grid-flow-col grid-rows-7 gap-[3px]"
-          style={{ gridTemplateColumns: `repeat(${WEEKS}, minmax(0, 1fr))` }}
-        >
-          {Array.from({ length: WEEKS * 7 }, (_, i) => (
-            <SpSkeleton key={i} className="aspect-square rounded-[3px]" />
-          ))}
-        </div>
-      </div>
-      <SpSkeleton className="mt-[16px] h-[40px] w-full rounded-[12px]" />
-    </section>
-  );
 }

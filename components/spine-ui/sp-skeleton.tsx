@@ -1,10 +1,12 @@
+import type { CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
-/** Gray loading block (text color 7%, soft pulse). */
-export function SpSkeleton({ className }: { className?: string }) {
+/** Gray loading block (text color 7%, soft pulse). `style` for sizes that follow the text size (rem). */
+export function SpSkeleton({ className, style }: { className?: string; style?: CSSProperties }) {
   return (
     <span
       aria-hidden
+      style={style}
       className={cn(
         "block animate-pulse rounded-full bg-[color-mix(in_oklab,var(--sp-text)_7%,transparent)] motion-reduce:animate-none",
         className
