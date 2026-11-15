@@ -3,7 +3,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  BottomSheet,
   DateField,
   FilterChip,
   IconDelete,
@@ -22,7 +21,7 @@ import { groupByParent } from "@/lib/catalog-types";
 import { useDates } from "@/components/prefs/prefs-provider";
 import {
   aboutDay,
-  balanceAdminPath,
+  balanceApiPath,
   balancePath,
   defaultNextCut,
   UNIT_LIMITS,
@@ -37,6 +36,7 @@ import {
 import { daysBetween } from "@/lib/repeat-schedule";
 import { formatMoney } from "@/lib/transactions-types";
 import { SpLinkButton } from "@/components/transactions/sp-link";
+import { ConfirmSheet } from "@/components/admin/confirm-sheet";
 
 const MONEY_ICON = <span className="text-[1rem] font-medium text-(--sp-text-muted)">$</span>;
 const GlobeIcon = CATEGORY_ICON_MAP.globe;
@@ -210,7 +210,7 @@ function BalanceFormBody({ balance, categories, today, onSaved }: Props & { onSa
       note: note.trim() || null,
     };
     try {
-      const saved = await api<{ balance?: { id: string } }>(edit ? balanceAdminPath(balance.id) : balanceAdminPath(), {
+      const saved = await api<{ balance?: { id: string } }>(edit ? balanceApiPath(balance.id) : balanceApiPath(), {
         method: edit ? "PUT" : "POST",
         body,
       });
@@ -467,6 +467,7 @@ function BalanceFormBody({ balance, categories, today, onSaved }: Props & { onSa
   );
 }
 
+/** Delete = move to the trash (everyone). Only the owner sees the trash and restores. */
 function DeleteBalance({ id, name, onDeleted }: { id: string; name: string; onDeleted: () => void }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -477,16 +478,15 @@ function DeleteBalance({ id, name, onDeleted }: { id: string; name: string; onDe
     setPending(true);
     setError(null);
     try {
-      await api(balanceAdminPath(id), { method: "DELETE" });
+      await api(balanceApiPath(id), { method: "DELETE" });
       onDeleted();
-      // The page stays alive (hidden): close the sheet now, so Back never shows "Deleting…".
+      // The page stays alive (hidden): close the sheet now, so Back never shows "Moving…".
       setPending(false);
       setOpen(false);
       router.replace("/balances");
       router.refresh();
     } catch (err) {
       setPending(false);
-      setOpen(false);
       setError(errorMessage(err));
     }
   }
@@ -498,35 +498,26 @@ function DeleteBalance({ id, name, onDeleted }: { id: string; name: string; onDe
         variant="danger"
         className="w-full"
         icon={<IconDelete aria-hidden />}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setError(null);
+          setOpen(true);
+        }}
         data-testid="balance-delete"
       >
         Delete balance
       </SpButton>
-      {error && (
-        <p role="alert" className="px-[4px] text-[0.8125rem] leading-snug text-(--sp-danger)">
-          {error}
-        </p>
-      )}
-      <BottomSheet
+      <ConfirmSheet
         open={open}
-        onOpenChange={(next) => !next && !pending && setOpen(false)}
-        title={`Delete ${name}?`}
-        description="The balance and its alerts go away. The expenses from its recharges stay in Transactions."
-        footer={
-          <div className="grid grid-cols-2 gap-[8px]">
-            <SpButton variant="secondary" onClick={() => setOpen(false)} disabled={pending}>
-              Cancel
-            </SpButton>
-            <SpButton variant="danger" onClick={confirm} disabled={pending} data-testid="balance-delete-confirm">
-              {pending ? "Deleting…" : "Delete"}
-            </SpButton>
-          </div>
-        }
-      >
-        {null}
-      </BottomSheet>
+        onOpenChange={setOpen}
+        title={`Move "${name}" to trash?`}
+        text="It goes to the trash and its alerts stop. Only the owner can restore it. Expenses already saved stay."
+        confirm="Move to trash"
+        destructive
+        busy={pending}
+        busyLabel="Moving…"
+        error={error}
+        onConfirm={() => void confirm()}
+      />
     </>
   );
 }
-

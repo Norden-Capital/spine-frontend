@@ -40,7 +40,7 @@ export default async function HomePage() {
   const [res, due, balances] = await Promise.all([
     getMonth(month),
     getRecurringDue(),
-    // Balances: owner and members (members read only).
+    // Balances: owner and members (everyone manages them).
     getBalances(),
   ]);
   const items = res.ok ? res.data.items : [];

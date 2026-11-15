@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { BalanceCard, EmptyState, IconError, PageHeader } from "@/components/spine-ui";
 import { requireUser } from "@/lib/auth";
-import { isOwner } from "@/lib/roles";
 import { todayIn } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
 import { getBalances } from "@/lib/balances-server";
@@ -20,18 +19,17 @@ export const metadata: Metadata = { title: "Balances" };
 // Blocks on the server on purpose (session data), so nothing flashes.
 export const instant = false;
 
-/** Company balances (accounts we top up). The owner manages, members read. */
+/** Company balances (accounts we top up). Everyone in the company manages them. */
 export default async function BalancesPage() {
-  const [user, dates, res] = await Promise.all([requireUser("/balances"), getDateSettings(), getBalances()]);
-  const owner = isOwner(user);
+  const [, dates, res] = await Promise.all([requireUser("/balances"), getDateSettings(), getBalances()]);
   const today = todayIn(dates.zone);
 
   const header = (
     <PageHeader
       back={{ href: "/", label: "Back to Company" }}
       title="Balances"
-      subtitle={owner ? "Company · accounts you top up" : "Company · view only"}
-      action={owner ? <HeaderAddLink href="/balances/new" label="Add a balance" /> : undefined}
+      subtitle="Company · accounts you top up"
+      action={<HeaderAddLink href="/balances/new" label="Add a balance" />}
     />
   );
 
@@ -59,17 +57,11 @@ export default async function BalancesPage() {
           icon={<BalancesIcon className="size-[26px]" />}
           tone="accent"
           title="No balances yet"
-          text={
-            owner
-              ? "Add an account you top up, like an API or a toll pass. Spine guesses when it runs out and warns everyone."
-              : "The owner has not added any. Accounts you top up will show here."
-          }
+          text="Add an account you top up, like an API or a toll pass. Spine guesses when it runs out and warns everyone."
           action={
-            owner ? (
-              <SpLinkButton href="/balances/new" size="lg" icon={<IconAdd aria-hidden />} data-testid="balances-add-first">
-                Add a balance
-              </SpLinkButton>
-            ) : undefined
+            <SpLinkButton href="/balances/new" size="lg" icon={<IconAdd aria-hidden />} data-testid="balances-add-first">
+              Add a balance
+            </SpLinkButton>
           }
         />
       </div>

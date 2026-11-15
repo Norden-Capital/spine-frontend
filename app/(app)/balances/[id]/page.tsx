@@ -15,7 +15,6 @@ import {
   type TimelineEntry,
 } from "@/components/spine-ui";
 import { requireUser } from "@/lib/auth";
-import { isOwner } from "@/lib/roles";
 import { formatDay, todayIn, type DateSettings } from "@/lib/prefs";
 import { getDateSettings } from "@/lib/prefs-server";
 import { getActiveCategories } from "@/lib/catalog-server";
@@ -43,10 +42,13 @@ export const metadata: Metadata = { title: "Balance" };
 // Blocks on the server on purpose (session data), so nothing flashes.
 export const instant = false;
 
-/** One balance: hero (guess, bar, empty date, Recharge), tiles, Fix, details, history. Members read only. */
+/**
+ * One balance: hero (guess, bar, empty date, Recharge), tiles, Fix, details, history.
+ * Everyone in the company changes it. In the trash (the owner only sees it): read only.
+ */
 export default async function BalancePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [user, dates, res, categories] = await Promise.all([
+  const [, dates, res, categories] = await Promise.all([
     requireUser(balancePath(id)),
     getDateSettings(),
     getBalance(id),
@@ -65,7 +67,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
           tone={missing ? "accent" : "danger"}
           icon={missing ? <IconNoResults /> : <IconError />}
           title={missing ? "Balance not found" : "Could not load"}
-          text={missing ? "This balance no longer exists. It may be deleted." : "Please try again later."}
+          text={missing ? "This balance no longer exists. It may be in the trash." : "Please try again later."}
           action={
             <SpLinkButton href="/balances" size="lg">
               Balances
@@ -77,8 +79,9 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
   }
 
   const b = res.data.balance;
-  // The backend says who may change it (the owner); the role check is the fallback.
-  const owner = b.canEdit ?? isOwner(user);
+  // Everyone may change it (the backend says so); not while it is in the trash.
+  const trashed = !!b.deletedAt;
+  const canEdit = b.canEdit !== false && !trashed;
   const fmt = { today, dateFormat: dates.dateFormat };
   const guess = formatMoney(b.guess);
   const category = categoryPath(b.category, categories);
@@ -99,7 +102,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
         title={b.name}
         subtitle={[b.website, category].filter(Boolean).join(" · ")}
         action={
-          owner ? <SpIconLink href={`${balancePath(b.id)}/edit`} label="Edit balance" icon={<IconEdit aria-hidden />} /> : undefined
+          canEdit ? <SpIconLink href={`${balancePath(b.id)}/edit`} label="Edit balance" icon={<IconEdit aria-hidden />} /> : undefined
         }
       />
 
@@ -110,7 +113,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
       >
         <div className="flex items-center justify-between gap-3">
           <BalanceLogo b={b} size={44} onCard />
-          <span className="text-[0.75rem] leading-snug font-medium">{owner ? heroStatus(b, today) : "View only"}</span>
+          <span className="text-[0.75rem] leading-snug font-medium">{trashed ? "In the trash" : heroStatus(b, today)}</span>
         </div>
         <p className="mt-[16px] text-[0.75rem] leading-snug">Guessed balance today</p>
         <p className="mt-[2px] text-[34px] leading-[1.3] font-semibold tracking-tight tabular-nums" data-testid="balance-guess">
@@ -127,7 +130,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
             <p className="text-[0.6875rem] leading-snug">Runs out</p>
             <p className="text-[0.9375rem] leading-snug font-medium">{runsOut}</p>
           </div>
-          {owner ? <RechargeButton b={b} today={today} categoryText={category} /> : null}
+          {canEdit ? <RechargeButton b={b} today={today} categoryText={category} /> : null}
         </div>
       </section>
 
@@ -144,7 +147,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
         ]}
       />
 
-      {owner ? <FixButton b={b} today={today} /> : null}
+      {canEdit ? <FixButton b={b} today={today} /> : null}
 
       <InfoList
         title="Details"
@@ -171,9 +174,9 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
         <Timeline entries={historyEntries(b, res.data.history, category, dates)} />
       </SpPanel>
 
-      {!owner && (
-        <p className="px-[4px] text-[0.6875rem] leading-snug text-(--sp-text-muted)">
-          Only the owner can recharge, edit or delete a balance.
+      {trashed && (
+        <p className="px-[4px] text-[0.6875rem] leading-snug text-(--sp-text-muted)" data-testid="balance-in-trash">
+          In the trash{b.deletedBy?.name ? ` · deleted by ${b.deletedBy.name}` : ""}. Restore it from Admin › Trash › Balances.
         </p>
       )}
     </div>
@@ -223,6 +226,22 @@ function historyEntries(b: Balance, items: BalanceHistoryItem[], category: strin
               : undefined,
         };
       }
+      case "DELETED":
+        return {
+          id,
+          current,
+          title: `Moved to trash${who}`,
+          meta: day(h.date),
+          changes: h.guessBefore != null ? [`Spine guessed ${formatMoney(h.guessBefore)}`] : undefined,
+        };
+      case "RESTORED":
+        return {
+          id,
+          current,
+          title: `Restored${who}`,
+          meta: day(h.date),
+          changes: h.guessBefore != null ? [`Spine guessed ${formatMoney(h.guessBefore)}`] : undefined,
+        };
       default:
         return {
           id,

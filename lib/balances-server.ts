@@ -1,7 +1,7 @@
 // Server-only: company balances from the backend, with the session cookie.
 import { unstable_rethrow } from "next/navigation";
 import { backendGet } from "./auth";
-import type { BalanceDetail, BalanceList } from "./balances-types";
+import type { Balance, BalanceDetail, BalanceList } from "./balances-types";
 
 export type BalanceResult<T> = { ok: true; data: T } | { ok: false; status: number };
 
@@ -23,5 +23,7 @@ async function getJson<T>(path: string): Promise<BalanceResult<T>> {
 
 /** All balances, most urgent first, with the monthly total (owner and members). */
 export const getBalances = () => getJson<BalanceList>("/balances");
-/** One balance with its history. 404 = not found. */
+/** One balance with its history. 404 = not found (or in the trash, for members). */
 export const getBalance = (id: string) => getJson<BalanceDetail>(`/balances/${encodeURIComponent(id)}`);
+/** Balances in the trash, last trashed first (owner only; 403 for members). */
+export const getBalanceTrash = () => getJson<Balance[]>("/admin/balances/trash");

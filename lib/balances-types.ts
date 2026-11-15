@@ -50,7 +50,11 @@ export type Balance = {
   /** The first date the guess is under the low limit. */
   lowFrom: string | null;
   urgency: BalanceUrgency;
+  /** True for everyone active in the company (owner and members). */
   canEdit: boolean;
+  /** Set when it is in the trash (only the owner sees those). */
+  deletedAt?: string | null;
+  deletedBy?: PersonRef | null;
 };
 
 export type BalanceList = {
@@ -59,11 +63,12 @@ export type BalanceList = {
   items: Balance[];
 };
 
-export type BalanceHistoryType = "CREATED" | "RECHARGE" | "FIX" | "CUTS";
+export type BalanceHistoryType = "CREATED" | "RECHARGE" | "FIX" | "DELETED" | "RESTORED" | "CUTS";
 
 /**
  * CREATED / RECHARGE / FIX: amount (start amount, money added, real balance typed),
  * guessBefore (RECHARGE, FIX), startAfter, by; RECHARGE also transactionId.
+ * DELETED / RESTORED (moved to / out of the trash): by, guessBefore (the guess then).
  * CUTS: count, from / to (first and last cut date), each, total.
  */
 export type BalanceHistoryItem = {
@@ -84,7 +89,7 @@ export type BalanceHistoryItem = {
 /** History newest first. */
 export type BalanceDetail = { balance: Balance; history: BalanceHistoryItem[] };
 
-/** Body of POST and PUT /api/admin/balances. */
+/** Body of POST and PUT /api/balances. */
 export type BalanceInput = {
   name: string;
   website: string | null;
@@ -102,8 +107,8 @@ export type BalanceInput = {
 
 /** The page of one balance (read: everyone). */
 export const balancePath = (id: string) => `/balances/${encodeURIComponent(id)}`;
-/** Writes (create, edit, delete, recharge, fix): the owner, under /api/admin. */
-export const balanceAdminPath = (id?: string) => (id ? `/admin/balances/${encodeURIComponent(id)}` : "/admin/balances");
+/** Writes (create, edit, delete = move to trash, recharge, fix): everyone in the company. */
+export const balanceApiPath = (id?: string) => (id ? `/balances/${encodeURIComponent(id)}` : "/balances");
 
 /* ---------- how often ---------- */
 

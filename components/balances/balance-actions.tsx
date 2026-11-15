@@ -7,7 +7,7 @@ import { AddPill, AmountField, BottomSheet, DateField, IconEdit, IconReceipt, Sp
 import { api, ApiError, errorMessage, fieldErrorText } from "@/lib/api";
 import { useDates } from "@/components/prefs/prefs-provider";
 import { ProofPicker, type ProofItem } from "@/components/transactions/proof-picker";
-import { aboutDay, balanceAdminPath, guessEmptyDate, type Balance } from "@/lib/balances-types";
+import { aboutDay, balanceApiPath, guessEmptyDate, type Balance } from "@/lib/balances-types";
 import { formatMoney } from "@/lib/transactions-types";
 import { BulkIcon } from "./balance-parts";
 
@@ -29,7 +29,7 @@ function step(raw: string, delta: 1 | -1): string {
 }
 
 /**
- * Hero "Recharge" (owner): a sheet with amount, date and a REQUIRED proof.
+ * Hero "Recharge" (everyone in the company): a sheet with amount, date and a REQUIRED proof.
  * Saves a new start point (guess + amount) and one company expense.
  */
 export function RechargeButton({ b, today, categoryText }: { b: Balance; today: string; categoryText: string }) {
@@ -63,7 +63,7 @@ export function RechargeButton({ b, today, categoryText }: { b: Balance; today: 
     setPending(true);
     setError(null);
     try {
-      await api(`${balanceAdminPath(b.id)}/recharge`, {
+      await api(`${balanceApiPath(b.id)}/recharge`, {
         method: "POST",
         body: { amount: value, date: day, fileIds: done.map((p) => p.ref!.id) },
       });
@@ -149,7 +149,7 @@ export function RechargeButton({ b, today, categoryText }: { b: Balance; today: 
   );
 }
 
-/** "Fix the real balance" (owner): type what the site shows. No expense is added. */
+/** "Fix the real balance" (everyone in the company): type what the site shows. No expense is added. */
 export function FixButton({ b, today }: { b: Balance; today: string }) {
   const router = useRouter();
   const dates = useDates();
@@ -166,7 +166,7 @@ export function FixButton({ b, today }: { b: Balance; today: string }) {
     setPending(true);
     setError(null);
     try {
-      await api(`${balanceAdminPath(b.id)}/fix`, { method: "POST", body: { amount: value } });
+      await api(`${balanceApiPath(b.id)}/fix`, { method: "POST", body: { amount: value } });
       setPending(false);
       setOpen(false);
       router.refresh();
