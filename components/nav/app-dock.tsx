@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { IconAdmin, IconExpenses, IconHome, IconSettings, IconWallet } from "@/components/spine-ui";
+import { IconAdmin, IconExpenses, IconHome, IconRestore, IconSettings, IconWallet } from "@/components/spine-ui";
 import { createContext, use, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { DOCK_SPACE_CLASS, FloatingDock, type DockItem } from "@/components/spine-ui";
 import { hasSkeleton, OwnerContext, RouteSkeleton } from "@/components/nav/route-skeleton";
@@ -172,5 +172,35 @@ export function AppDock({ owner }: { owner: boolean }) {
       ? [{ href: "/admin/users", label: "Admin", icon: <IconAdmin />, active: pathname.startsWith("/admin") }]
       : []),
   ];
-  return <FloatingDock items={items} />;
+  // The main dock is unchanged; a small refresh dock sits on its right.
+  return (
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex items-center justify-center gap-[8px] px-[8px] pb-[calc(env(safe-area-inset-bottom)+var(--sp-dock-gap))]">
+      <FloatingDock items={items} position="static" />
+      <RefreshDock />
+    </div>
+  );
+}
+
+/** One round button that reloads the page (same icon as "Try again" on the error page). */
+function RefreshDock() {
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="pointer-events-auto flex h-(--sp-dock-h) shrink-0 items-center rounded-full bg-(--sp-dock) p-[5px] shadow-(--sp-dock-shadow)">
+      <button
+        type="button"
+        aria-label="Refresh the page"
+        data-testid="dock-refresh"
+        disabled={busy}
+        onClick={() => {
+          setBusy(true);
+          window.location.reload();
+        }}
+        className="group flex size-[44px] items-center justify-center px-[3px] outline-none"
+      >
+        <span className="flex size-[38px] items-center justify-center rounded-full bg-(--sp-dock-item) text-(--sp-dock-item-text) transition group-focus-visible:ring-3 group-focus-visible:ring-(--sp-ring) group-active:scale-95 motion-reduce:transition-none [&_svg]:size-[18px]">
+          <IconRestore aria-hidden className={busy ? "animate-spin motion-reduce:animate-none" : undefined} />
+        </span>
+      </button>
+    </div>
+  );
 }
