@@ -5,6 +5,15 @@ import type { RepeatUnit, UpcomingDate } from "./repeat-schedule";
 
 export type OccurrenceStatus = "DUE" | "DONE" | "SKIPPED";
 
+/** Early alerts: days before the due date. */
+export type RemindDay = 7 | 3 | 1;
+
+/** The choices, biggest first (the server sends them in this order). */
+export const REMIND_CHOICES: RemindDay[] = [7, 3, 1];
+
+/** New repeats (and the ones made before early reminders). */
+export const DEFAULT_REMIND_DAYS: RemindDay[] = [7, 3];
+
 export type RecurringCategory = {
   id: string;
   name: string;
@@ -37,7 +46,9 @@ export type CompanyRecurring = {
   pausedUntil: string | null;
   /** The next 6 dates from my today, with their status. */
   upcoming: UpcomingDate[];
-  /** Reminders waiting (DUE). */
+  /** Early alerts to everyone: days before each date (biggest first; empty = only on the due day). */
+  remindDays: RemindDay[];
+  /** Reminders waiting (DUE), early ones too. */
   dueCount: number;
   /** I may change, pause, skip or delete it (I added it, or I am the owner). */
   canEdit: boolean;
@@ -49,7 +60,7 @@ export type Occurrence = {
   recurringId: string;
   dueDate: string;
   status: OccurrenceStatus;
-  /** DUE and the due date is before my today. */
+  /** DUE and the due date is before my today (an early reminder is not overdue). */
   overdue: boolean;
   /** The saved transaction when DONE. */
   transactionId: string | null;

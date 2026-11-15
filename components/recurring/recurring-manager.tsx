@@ -6,6 +6,8 @@ import {
   AmountField,
   BottomSheet,
   DateField,
+  FilterChip,
+  FilterChips,
   IconAdd,
   IconCalendarRepeat,
   Segmented,
@@ -23,7 +25,14 @@ import { SpLinkButton } from "@/components/transactions/sp-link";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import type { Category } from "@/lib/catalog-types";
 import { parseAmountInput, type TxType } from "@/lib/transactions-types";
-import { duePath, type CompanyRecurring, type Occurrence } from "@/lib/recurring-types";
+import {
+  DEFAULT_REMIND_DAYS,
+  REMIND_CHOICES,
+  duePath,
+  type CompanyRecurring,
+  type Occurrence,
+  type RemindDay,
+} from "@/lib/recurring-types";
 import type { RepeatUnit } from "@/lib/repeat-schedule";
 import { cn } from "@/lib/utils";
 import { FrequencyPicker } from "./frequency-picker";
@@ -269,6 +278,7 @@ function RecurringForm({
   const [every, setEvery] = useState(item?.every ?? 1);
   const [startDate, setStartDate] = useState(item?.startDate ?? today);
   const [endDate, setEndDate] = useState(item?.endDate ?? "");
+  const [remindDays, setRemindDays] = useState<RemindDay[]>(item?.remindDays ?? DEFAULT_REMIND_DAYS);
   const [touched, setTouched] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -309,6 +319,7 @@ function RecurringForm({
       every,
       startDate,
       endDate: endDate || null,
+      remindDays,
     };
     try {
       if (item) await api(`/recurring/${encodeURIComponent(item.id)}`, { method: "PUT", body });
@@ -444,6 +455,31 @@ function RecurringForm({
           error={endError}
         />
       </div>
+
+      <SpField
+        label="Remind me before"
+        hint="Everyone in the company gets these alerts, and one on the due day."
+        error={errorFor("remindDays")}
+      >
+        <FilterChips label="Remind me before" className="mx-0 px-0">
+          {REMIND_CHOICES.map((days) => {
+            const on = remindDays.includes(days);
+            return (
+              <FilterChip
+                key={days}
+                label={days === 1 ? "1 day" : `${days} days`}
+                active={on}
+                surface="panel"
+                data-testid={`remind-${days}`}
+                onClick={() =>
+                  // Biggest first, like the server sends them.
+                  setRemindDays((list) => REMIND_CHOICES.filter((d) => (d === days ? !on : list.includes(d))))
+                }
+              />
+            );
+          })}
+        </FilterChips>
+      </SpField>
 
       <div className="sticky bottom-0 -mb-[12px] bg-linear-to-t from-(--sp-sheet) from-75% to-transparent pt-[16px] pb-[12px]">
         <SpButton type="submit" className="w-full" disabled={pending} data-testid="recurring-save">

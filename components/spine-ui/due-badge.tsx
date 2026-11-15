@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
-import { IconPause, IconWarning } from "./icons";
+import type { ReactNode } from "react";
+import { IconBell, IconCalendar, IconClock, IconPause, IconWarning } from "./icons";
 
 export type DueState = "overdue" | "today" | "soon" | "week" | "later" | "paused";
 
@@ -10,6 +11,15 @@ const TEXT: Record<Exclude<DueState, "later">, string> = {
   soon: "text-(--sp-due-soon-text)",
   week: "text-(--sp-due-week-text)",
   paused: "text-(--sp-due-paused-text)",
+};
+
+// A small icon per state (same colour as the text, no background), so colour is not the only signal.
+const ICON: Record<Exclude<DueState, "later">, ReactNode> = {
+  overdue: <IconWarning aria-hidden />,
+  today: <IconBell aria-hidden />,
+  soon: <IconClock aria-hidden />,
+  week: <IconCalendar aria-hidden />,
+  paused: <IconPause aria-hidden />,
 };
 
 export type DueBadgeProps = {
@@ -23,8 +33,9 @@ export type DueBadgeProps = {
 /**
  * When a repeat payment is due, coloured by urgency: small coloured TEXT
  * (10 / Medium, no background, no pill) next to the date. Each state also
- * has a shape, so colour is not the only signal: overdue = warning icon,
- * today / soon / week = a dot, paused = pause icon, later = muted text.
+ * has a 12px icon in the text colour, so colour is not the only signal:
+ * overdue = warning, today = bell, soon = clock, week = calendar,
+ * paused = pause, later = muted text only.
  */
 export function DueBadge({ state, label, className }: DueBadgeProps) {
   if (state === "later") {
@@ -38,13 +49,7 @@ export function DueBadge({ state, label, className }: DueBadgeProps) {
         className
       )}
     >
-      {state === "overdue" ? (
-        <IconWarning />
-      ) : state === "paused" ? (
-        <IconPause />
-      ) : (
-        <span aria-hidden className="size-[6px] rounded-full bg-current" />
-      )}
+      {ICON[state]}
       {label}
     </span>
   );
