@@ -49,7 +49,8 @@ export function repeatErrorText(err: unknown): string {
  * "…" detail sheet of one repeat item: next date + urgency, skip the next
  * payment, the next 6 dates (skip / undo), pause until a day, pause / resume,
  * edit / delete. Every action answers with the full item (`onUpdated`).
- * `canManage` false = the same sheet, read only (members).
+ * `canManage` false = the same sheet, read only (company: not mine, and I am
+ * not the owner).
  */
 export function RepeatSheet<T extends { id: string }>({
   open,
@@ -69,7 +70,7 @@ export function RepeatSheet<T extends { id: string }>({
   onOpenChange: (open: boolean) => void;
   item: T | null;
   view: (item: T) => RepeatView;
-  /** API path of the items, e.g. "/wallet/recurring" or "/admin/recurring". */
+  /** API path of the items, e.g. "/wallet/recurring" or "/recurring". */
   basePath: string;
   /** My today, "YYYY-MM-DD". */
   today: string;

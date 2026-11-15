@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { IconError, IconNoResults, IconSuccess } from "@/components/spine-ui";
 import { DueBadge, EmptyState, InfoList, PageHeader, SpBadge, SpMoney } from "@/components/spine-ui";
 import { requireUser } from "@/lib/auth";
-import { isOwner } from "@/lib/roles";
 import { formatDay, todayIn } from "@/lib/prefs";
 import { dueState } from "@/lib/repeat-schedule";
 import { getDateSettings } from "@/lib/prefs-server";
@@ -21,13 +20,13 @@ export const instant = false;
 
 /**
  * One repeat-expense reminder (the alert opens it). DUE: everyone may add
- * the expense (the form opens prefilled); only the owner may skip it.
+ * the expense (the form opens prefilled); the person who added the repeat
+ * expense (or the owner) may skip it (`canEdit`).
  * DONE / SKIPPED: a small state with a link.
  */
 export default async function DueReminderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [user, dates, res] = await Promise.all([requireUser(duePath(id)), getDateSettings(), getOccurrence(id)]);
-  const canSkip = isOwner(user);
+  const [, dates, res] = await Promise.all([requireUser(duePath(id)), getDateSettings(), getOccurrence(id)]);
   const back = { href: "/recurring", label: "Back to repeat expenses" };
 
   if (!res.ok) {
@@ -106,7 +105,7 @@ export default async function DueReminderPage({ params }: { params: Promise<{ id
           >
             {income ? "Add the income" : "Add the expense"}
           </SpLinkButton>
-          {canSkip && <SkipOccurrence id={o.id} dueDate={o.dueDate} size="lg" className="w-full" />}
+          {o.canEdit && <SkipOccurrence id={o.id} dueDate={o.dueDate} size="lg" className="w-full" />}
           <p className="px-[4px] text-center text-[0.6875rem] leading-snug text-(--sp-text-muted)">
             The form opens filled in. You add the proof there.
           </p>

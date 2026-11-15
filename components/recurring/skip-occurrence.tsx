@@ -9,7 +9,7 @@ import { api, errorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 /**
- * "Skip this time" (the owner): POST /api/admin/recurring/occurrences/{id}/skip.
+ * "Skip this time" (the repeat's creator or the owner): POST /api/recurring/occurrences/{id}/skip.
  * Asks first. After it, the page reloads its data.
  */
 export function SkipOccurrence({
@@ -36,7 +36,7 @@ export function SkipOccurrence({
     setBusy(true);
     setError(null);
     try {
-      await api(`/admin/recurring/occurrences/${encodeURIComponent(id)}/skip`, { method: "POST" });
+      await api(`/recurring/occurrences/${encodeURIComponent(id)}/skip`, { method: "POST" });
       onDone?.({ kind: "ok", text: "Skipped this time. The next reminder still comes." });
     } catch (err) {
       const text = errorMessage(err);

@@ -39,6 +39,8 @@ export type CompanyRecurring = {
   upcoming: UpcomingDate[];
   /** Reminders waiting (DUE). */
   dueCount: number;
+  /** I may change, pause, skip or delete it (I added it, or I am the owner). */
+  canEdit: boolean;
 };
 
 /** One reminder (GET /api/recurring/due, /api/recurring/occurrences/{id}). */
@@ -57,6 +59,8 @@ export type Occurrence = {
   category: RecurringCategory;
   website: string | null;
   logoUrls: string[];
+  /** I may skip it (I added its repeat expense, or I am the owner). */
+  canEdit: boolean;
 };
 
 /** The page that opens one reminder (also the alert link). */

@@ -39,23 +39,22 @@ const MAX_WHOLE = 9_999_999_999;
 const kindOf = (c: { kind?: TxType }): TxType => c.kind ?? "EXPENSE";
 
 /**
- * Company repeat expenses (reminders only). Everyone sees the list and may
- * add the expense from a reminder; the owner (`canManage`) also adds, edits,
- * pauses, deletes and skips.
+ * Company repeat expenses (reminders only). Everyone sees the list, adds a
+ * repeat expense and may add the expense from a reminder; the person who
+ * added one, or the owner (`canEdit` on the item), also edits, pauses,
+ * deletes and skips it.
  */
 export function CompanyRecurringManager({
   items,
   due,
   categories,
   today,
-  canManage,
 }: {
   items: CompanyRecurring[];
   /** Reminders waiting now (GET /api/recurring/due), oldest first. */
   due: Occurrence[];
   categories: Category[];
   today: string;
-  canManage: boolean;
 }) {
   const router = useRouter();
   // The list on screen: server data, replaced item by item by the sheet's answers.
@@ -86,7 +85,7 @@ export function CompanyRecurringManager({
     if (!occurrence) {
       throw new ApiError(409, "occurrence_exists", "The reminder for this date is already there. Open it from Alerts to skip it.");
     }
-    await api(`/admin/recurring/occurrences/${encodeURIComponent(occurrence.id)}/skip`, { method: "POST" });
+    await api(`/recurring/occurrences/${encodeURIComponent(occurrence.id)}/skip`, { method: "POST" });
     return reload(item.id);
   }
 
@@ -101,7 +100,7 @@ export function CompanyRecurringManager({
     setBusy("remove");
     setNotice(null);
     try {
-      await api(`/admin/recurring/${encodeURIComponent(remove.id)}`, { method: "DELETE" });
+      await api(`/recurring/${encodeURIComponent(remove.id)}`, { method: "DELETE" });
       setNotice({ kind: "ok", text: `"${remove.description}" deleted. Saved expenses stay.` });
     } catch (err) {
       setNotice({ kind: "error", text: errorMessage(err) });
@@ -114,21 +113,15 @@ export function CompanyRecurringManager({
 
   return (
     <div className="flex flex-col gap-[16px]">
-      {canManage && (
-        <SpButton icon={<IconAdd />} className="w-full" onClick={() => setEdit({ item: null })} data-testid="recurring-add">
-          Add a repeat expense
-        </SpButton>
-      )}
+      <SpButton icon={<IconAdd />} className="w-full" onClick={() => setEdit({ item: null })} data-testid="recurring-add">
+        Add a repeat expense
+      </SpButton>
       {notice && <NoticeBox notice={notice} />}
       {list.length === 0 ? (
         <PageEmpty
           icon={<IconCalendarRepeat />}
           title="Nothing repeats yet"
-          text={
-            canManage
-              ? "Add rent or a subscription once. You get a reminder on each date."
-              : "The owner can add rent or subscriptions here."
-          }
+          text="Add rent or a subscription once. You get a reminder on each date."
         />
       ) : (
         <ul className="flex flex-col gap-[12px]" data-testid="recurring-list">
@@ -144,13 +137,13 @@ export function CompanyRecurringManager({
                   setSheetOpen(true);
                 }}
               >
-                {/* Everyone may add the expense from a reminder; only the owner skips. */}
+                {/* Everyone may add the expense from a reminder; its creator or the owner skips. */}
                 {first && (
-                  <div className={canManage ? "grid grid-cols-2 gap-[8px] pr-[8px]" : "grid grid-cols-1 pr-[8px]"}>
+                  <div className={r.canEdit ? "grid grid-cols-2 gap-[8px] pr-[8px]" : "grid grid-cols-1 pr-[8px]"}>
                     <SpLinkButton href={duePath(first.id)} data-testid="recurring-add-expense">
                       Add expense
                     </SpLinkButton>
-                    {canManage && <SkipOccurrence id={first.id} dueDate={first.dueDate} onDone={setNotice} />}
+                    {r.canEdit && <SkipOccurrence id={first.id} dueDate={first.dueDate} onDone={setNotice} />}
                   </div>
                 )}
               </RepeatRow>
@@ -164,9 +157,9 @@ export function CompanyRecurringManager({
         onOpenChange={setSheetOpen}
         item={sheetItem}
         view={(r) => companyView(r, due.find((o) => o.recurringId === r.id)?.dueDate)}
-        basePath="/admin/recurring"
+        basePath="/recurring"
         today={today}
-        canManage={canManage}
+        canManage={sheetItem?.canEdit ?? false}
         onUpdated={updated}
         reload={reload}
         onSkipExists={skipExisting}
@@ -181,42 +174,38 @@ export function CompanyRecurringManager({
         }}
       />
 
-      {canManage && (
-        <>
-          <BottomSheet
-            open={edit !== null}
-            onOpenChange={(open) => !open && setEdit(null)}
-            title={edit?.item ? "Edit repeat expense" : "Add a repeat expense"}
-            description="You get a reminder on each date. Nothing is added by itself."
-          >
-            {edit && (
-              <RecurringForm
-                key={edit.item?.id ?? "new"}
-                item={edit.item}
-                categories={categories}
-                today={today}
-                onDone={(text) => {
-                  setEdit(null);
-                  setNotice({ kind: "ok", text });
-                  router.refresh();
-                }}
-              />
-            )}
-          </BottomSheet>
-
-          <ConfirmSheet
-            open={removeOpen}
-            onOpenChange={setRemoveOpen}
-            title={`Delete "${remove?.description ?? ""}"?`}
-            text="Its reminders go away. Expenses already saved stay."
-            confirm="Delete"
-            destructive
-            busy={busy === "remove"}
-            busyLabel="Deleting…"
-            onConfirm={() => void confirmRemove()}
+      <BottomSheet
+        open={edit !== null}
+        onOpenChange={(open) => !open && setEdit(null)}
+        title={edit?.item ? "Edit repeat expense" : "Add a repeat expense"}
+        description="You get a reminder on each date. Nothing is added by itself."
+      >
+        {edit && (
+          <RecurringForm
+            key={edit.item?.id ?? "new"}
+            item={edit.item}
+            categories={categories}
+            today={today}
+            onDone={(text) => {
+              setEdit(null);
+              setNotice({ kind: "ok", text });
+              router.refresh();
+            }}
           />
-        </>
-      )}
+        )}
+      </BottomSheet>
+
+      <ConfirmSheet
+        open={removeOpen}
+        onOpenChange={setRemoveOpen}
+        title={`Delete "${remove?.description ?? ""}"?`}
+        text="Its reminders go away. Expenses already saved stay."
+        confirm="Delete"
+        destructive
+        busy={busy === "remove"}
+        busyLabel="Deleting…"
+        onConfirm={() => void confirmRemove()}
+      />
     </div>
   );
 }
@@ -322,8 +311,8 @@ function RecurringForm({
       endDate: endDate || null,
     };
     try {
-      if (item) await api(`/admin/recurring/${encodeURIComponent(item.id)}`, { method: "PUT", body });
-      else await api("/admin/recurring", { method: "POST", body });
+      if (item) await api(`/recurring/${encodeURIComponent(item.id)}`, { method: "PUT", body });
+      else await api("/recurring", { method: "POST", body });
       onDone(item ? "Saved." : "Added. You get a reminder on each date.");
     } catch (err) {
       setPending(false);
