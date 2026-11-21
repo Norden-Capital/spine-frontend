@@ -2,7 +2,7 @@
 import { unstable_rethrow } from "next/navigation";
 import { backendGet } from "./auth";
 import type { Category } from "./catalog-types";
-import type { Budget, Dashboard, Goal, Recurring, WalletStatus, WalletTx } from "./wallet-types";
+import type { Budget, BudgetHistory, Dashboard, Goal, Recurring, WalletStatus, WalletTx } from "./wallet-types";
 
 export type WalletResult<T> = { ok: true; data: T } | { ok: false; status: number; code?: string };
 
@@ -35,6 +35,9 @@ export async function getWalletStatus(): Promise<WalletStatus | null> {
 export const getDashboard = () => walletGet<Dashboard>("/dashboard");
 export const getWalletTx = (id: string) => walletGet<WalletTx>(`/transactions/${encodeURIComponent(id)}`);
 export const getBudgets = () => walletGet<Budget[]>("/budgets");
+/** One budget this month + its past months (404 = not mine / gone). */
+export const getBudgetHistory = (id: string) =>
+  walletGet<BudgetHistory>(`/budgets/${encodeURIComponent(id)}/history`);
 export const getGoals = () => walletGet<Goal[]>("/goals");
 export const getRecurring = () => walletGet<Recurring[]>("/recurring");
 /** Picker list (active, usage order). */

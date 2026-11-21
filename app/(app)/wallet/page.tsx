@@ -30,7 +30,8 @@ import {
 import { TxLogo } from "@/components/expenses/tx-logo";
 import { LinkAddPill, LinkQuickAction, QuickActionsPanel } from "@/components/home/home-links";
 import { SheetPill, SheetQuickAction, WalletHeaderActions, WalletSheets } from "@/components/home/space-actions";
-import { ProgressBar, statusText } from "@/components/wallet/progress";
+import { statusText } from "@/components/wallet/progress";
+import { TriBar } from "@/components/wallet/tri-bar";
 import { WalletDueCard } from "@/components/wallet/wallet-due-card";
 import { WalletLoadError } from "@/components/wallet/wallet-page-head";
 
@@ -185,7 +186,7 @@ function BudgetRow({ b }: { b: Budget }) {
           {walletMoney(b.spent, b.currency)} / {walletMoney(b.limit, b.currency)}
         </span>
       </div>
-      <ProgressBar percent={b.percent} status={b.status} label={`${name}: ${statusText(b.status, b.percent)}`} />
+      <TriBar percent={b.percent} thin label={`${name}: ${statusText(b.status, b.percent)}`} />
     </li>
   );
 }

@@ -77,6 +77,7 @@ import { CURRENCY_MOCKS } from "./currency-mocks";
 import { FACEID_MOCKS } from "./faceid-mocks";
 import { EARLY_REMINDER_MOCKS } from "./early-reminder-mocks";
 import { REFRESH_DOCK_MOCKS } from "./refresh-dock-mocks";
+import { BUDGET_HISTORY_MOCKS } from "./budget-history-mocks";
 
 // Full-page mocks of the redesigned pages (dev only). Fake data.
 // Each mock is the page content; the [mock] route wraps it in a themed frame.
@@ -2253,6 +2254,7 @@ const MOCKS: Record<string, () => ReactNode> = {
   ...FACEID_MOCKS,
   ...EARLY_REMINDER_MOCKS,
   ...REFRESH_DOCK_MOCKS,
+  ...BUDGET_HISTORY_MOCKS,
   home: () => <HomeMock />,
   "date-fields": () => <DateFieldsMock />,
   "date-sheet": () => <DateSheetMock />,

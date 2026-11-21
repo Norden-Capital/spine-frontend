@@ -14,6 +14,8 @@ import { PrefsProvider } from "@/components/prefs/prefs-provider";
 import { DEFAULT_PREFERENCES } from "@/lib/prefs";
 import type { Budget, Goal } from "@/lib/wallet-types";
 import { BudgetsManager } from "@/components/wallet/budgets-manager";
+import { BudgetDetail } from "@/components/wallet/budget-detail";
+import type { BudgetHistory } from "@/lib/wallet-types";
 
 type G = { name: string; saved: string; target: string; percent: number; by?: string };
 
@@ -166,9 +168,31 @@ function BudgetsLive() {
   );
 }
 
+const HISTORY = {
+  budget: BUDGETS[1],
+  months: [
+    { month: "2026-10", spent: "1620.00", limit: "1500.00", currency: "MAD", percent: 108, status: "EXCEEDED" },
+    { month: "2026-09", spent: "1230.00", limit: "1500.00", currency: "MAD", percent: 82, status: "WARNING" },
+    { month: "2026-08", spent: "1100.00", limit: "1500.00", currency: "MAD", percent: 73, status: "OK" },
+  ],
+  summary: { months: 3, average: "1316.67", underLimit: 2, biggest: { month: "2026-10", spent: "1620.00" } },
+} as unknown as BudgetHistory;
+
+/** 5. The real budget page (component), fake data. */
+function BudgetLive({ empty }: { empty?: boolean }) {
+  const history = empty ? { ...HISTORY, months: [], summary: null } : HISTORY;
+  return (
+    <PrefsProvider initialPrefs={{ ...DEFAULT_PREFERENCES, walletCurrency: "MAD" }} deviceZone="UTC">
+      <BudgetDetail history={history} categories={[]} today="2026-11-21" />
+    </PrefsProvider>
+  );
+}
+
 export const GOALS_MOCKS: Record<string, () => ReactNode> = {
   "goals-1-list": () => <GoalsList />,
   "goals-2-dragging": () => <GoalsDragging />,
   "goals-3-live": () => <GoalsLive />,
   "budgets-live": () => <BudgetsLive />,
+  "budget-live": () => <BudgetLive />,
+  "budget-live-empty": () => <BudgetLive empty />,
 };

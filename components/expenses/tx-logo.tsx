@@ -20,6 +20,15 @@ export function TxLogo({ logoUrls, icon }: Props) {
 /** Smaller than this (px) = a blank placeholder, not a real logo. */
 const MIN_WIDTH = 8;
 
+/**
+ * The Google icon backup (`google.com/s2/favicons`, last in the list) answers 16px or less
+ * with its gray globe when it has no icon: that counts as "no logo" too.
+ */
+const GOOGLE_S2 = /^https?:\/\/(www\.)?google\.com\/s2\/favicons/i;
+function tooSmall(src: string, naturalWidth: number): boolean {
+  return GOOGLE_S2.test(src) ? naturalWidth <= 16 : naturalWidth < MIN_WIDTH;
+}
+
 function LogoChain({ urls, icon }: { urls: string[]; icon: string }) {
   const [index, setIndex] = useState(0);
   const src = urls[index];
@@ -42,11 +51,11 @@ function LogoChain({ urls, icon }: { urls: string[]; icon: string }) {
       className="size-full rounded-full bg-white object-contain p-[18%] ring-1 ring-black/5 dark:ring-white/10"
       onError={next}
       onLoad={(e) => {
-        if (e.currentTarget.naturalWidth < MIN_WIDTH) next();
+        if (tooSmall(src, e.currentTarget.naturalWidth)) next();
       }}
       // An image from the server HTML can finish before React listens: check once on mount.
       ref={(img) => {
-        if (img?.complete && img.naturalWidth < MIN_WIDTH) next();
+        if (img?.complete && tooSmall(src, img.naturalWidth)) next();
       }}
     />
   );

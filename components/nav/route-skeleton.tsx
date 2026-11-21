@@ -516,33 +516,117 @@ function WalletPageHeadSk({ title, lines }: { title: number; lines: number }) {
   );
 }
 
-/** Wallet budgets: add button, cards with grip, icon, name, Edit / Remove, bar, status. */
+/** The budgets' purple month card (gray blocks on a panel, like the other cards): month + days left, label, big amount, 3-part bar, (3 counts). */
+function BudgetMonthCardSk({ counts, legend }: { counts?: boolean; legend?: boolean }) {
+  return (
+    <Panel className="flex flex-col gap-[14px] p-[18px]">
+      <div className="flex items-center justify-between">
+        <Lines fs={FS.t13} w={80} />
+        <Lines fs={FS.t13} w={70} />
+      </div>
+      <div>
+        <Lines fs="0.75rem" w={120} />
+        <Lines fs="2rem" lh={1.25} w="65%" bar={0.7} className="mt-[2px]" />
+      </div>
+      <TriBarSk />
+      {legend ? <Lines fs={FS.t11} w={190} /> : null}
+      {counts ? (
+        <div className="grid grid-cols-3 gap-[8px] border-t border-(--sp-soft) pt-[12px]">
+          {[0, 1, 2].map((i) => (
+            <div key={i}>
+              <Lines fs="0.75rem" w={64} />
+              <Lines fs="1rem" w={14} />
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </Panel>
+  );
+}
+
+/** TriBar: 3 rounded lines (4 : 1 : 1), 10 tall (6 thin). */
+function TriBarSk({ thin }: { thin?: boolean }) {
+  return (
+    <div aria-hidden className="flex gap-[5px]">
+      {[4, 1, 1].map((grow, i) => (
+        <S key={i} className={cn("rounded-full", thin ? "h-[6px]" : "h-[10px]")} style={{ flexGrow: grow, flexBasis: 0 }} />
+      ))}
+    </div>
+  );
+}
+
+/** Wallet budgets: month card, add button, cards (grip, icon, name, chevron, amount + status, bar, line). */
 function BudgetsSk() {
   return (
     <div className="flex flex-col gap-4">
       <WalletPageHeadSk title={90} lines={1} />
       <Col gap={12}>
+        <BudgetMonthCardSk counts />
         <ButtonSk />
         {[0, 1, 2].map((i) => (
           <Panel key={i} className="flex flex-col gap-[12px] pt-[10px] pr-[8px] pb-[16px] pl-[14px]">
             <div className="flex items-center gap-[10.8px]">
               <GripSk className="-ml-[8px]" />
-              <RoundSk size={33} />
+              <RoundSk size={36} />
               <div className="min-w-0 flex-1">
-                <Lines fs={FS.t15} w="55%" />
-                <Lines fs={FS.t11} lh={LH.snug} w="85%" className="mt-[2px]" />
+                <Lines fs={FS.t15} w="50%" />
+                <Lines fs={FS.t11} lh={LH.snug} w="45%" />
               </div>
-              <GhostIconSk />
-              <GhostIconSk />
+              <span className="flex size-[36px] items-center justify-center">
+                <S className="size-[18px]" />
+              </span>
+            </div>
+            <div className="flex items-end justify-between pr-[6px]">
+              <Lines fs="1.5rem" lh={1} w={130} bar={0.8} />
+              <Lines fs={FS.t13} w={110} />
             </div>
             <div className="pr-[6px]">
-              <S className="h-[8px] w-full" />
+              <TriBarSk />
             </div>
-            <Lines fs={FS.t11} lh={LH.snug} w={64} />
+            <Lines fs={FS.t11} lh={LH.snug} w="75%" className="pr-[6px]" />
           </Panel>
         ))}
       </Col>
     </div>
+  );
+}
+
+/** One wallet budget: header (Edit / Delete), sentence, purple card, summary tiles, past months. */
+function BudgetDetailSk() {
+  return (
+    <Col>
+      <div aria-hidden className="flex flex-col gap-[8px]">
+        <PageHeadSk back title={120} actions={[44, 44]} />
+        <Lines fs={FS.t13} lh={LH.snug} w={190} className="px-[4px]" />
+      </div>
+      <BudgetMonthCardSk legend />
+      <SpPanelSk title={90}>
+        <div className="grid grid-cols-3 gap-[8px]">
+          {[0, 1, 2].map((i) => (
+            <S key={i} className="h-[60px] rounded-[16px]" />
+          ))}
+        </div>
+      </SpPanelSk>
+      <SpPanelSk title={90}>
+        <div className="-my-[8px] flex flex-col">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="flex flex-col gap-[8px] py-[12px]">
+              <div className="flex items-start justify-between gap-[12px]">
+                <div>
+                  <Lines fs={FS.t15} w={90} />
+                  <Lines fs={FS.t11} w={150} />
+                </div>
+                <div className="flex flex-col items-end">
+                  <Lines fs={FS.t15} w={60} />
+                  <Lines fs={FS.t11} w={110} />
+                </div>
+              </div>
+              <TriBarSk thin />
+            </div>
+          ))}
+        </div>
+      </SpPanelSk>
+    </Col>
   );
 }
 
@@ -1113,6 +1197,7 @@ function skeletonFor(pathname: string, scope: SkeletonScope, owner: boolean): Re
 
   if (p === "/wallet") return <WalletHomeSk />;
   if (p === "/wallet/budgets") return <BudgetsSk />;
+  if (/^\/wallet\/budgets\/[^/]+$/.test(p)) return <BudgetDetailSk />;
   if (p === "/wallet/goals") return <GoalsSk />;
   if (p === "/wallet/recurring") return <WalletRecurringSk />;
   if (p === "/wallet/categories") {

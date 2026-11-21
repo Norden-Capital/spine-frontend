@@ -206,3 +206,76 @@ export function savingsOf(goals: Goal[], to?: TotalsIn): Savings {
   const dated = open.filter((g) => g.deadline).sort((a, b) => a.deadline!.localeCompare(b.deadline!));
   return { count: goals.length, saved, target, percent, next: dated[0] ?? open[0] ?? null };
 }
+
+// ---- budgets: past months -----------------------------------------------------
+
+/** One past month of a budget (GET /wallet/budgets/{id}/history). */
+export type BudgetMonth = {
+  /** "YYYY-MM". */
+  month: string;
+  /** That month's spending in scope, in the budget's currency. */
+  spent: string;
+  /** The limit that month had, and its currency. */
+  limit: string;
+  currency?: WalletCurrency;
+  percent: number;
+  status: BudgetStatus;
+};
+
+export type BudgetHistorySummary = {
+  /** How many months (the newest up to 6). */
+  months: number;
+  average: string;
+  /** Months with spent ≤ limit. */
+  underLimit: number;
+  biggest: { month: string; spent: string } | null;
+};
+
+export type BudgetHistory = {
+  /** The budget this month (same shape as one item of GET /wallet/budgets). */
+  budget: Budget;
+  /** Past months only, newest first, at most 12. */
+  months: BudgetMonth[];
+  /** null when there are no past months. */
+  summary: BudgetHistorySummary | null;
+};
+
+const MONTH_LONG = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+/** "November" for "2026-11"; with `year` ("2026") the year is added when it differs: "December 2025". */
+export function budgetMonthName(month: string, year?: string): string {
+  const [y, m] = month.split("-");
+  const name = MONTH_LONG[Number(m) - 1] ?? month;
+  return year && y !== year ? `${name} ${y}` : name;
+}
+
+/** "Jul" for "2026-07". */
+export function budgetMonthShort(month: string): string {
+  return budgetMonthName(month).slice(0, 3);
+}
+
+/**
+ * This month from my today ("YYYY-MM-DD", in my time zone): its name, the next month's
+ * name, and the days left counting today (21 Nov → 10).
+ */
+export function budgetMonthOf(today: string): { month: string; name: string; nextName: string; daysLeft: number } {
+  const [y, m, d] = today.split("-").map(Number);
+  const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const month = today.slice(0, 7);
+  return {
+    month,
+    name: budgetMonthName(month),
+    nextName: MONTH_LONG[m % 12],
+    daysLeft: Math.max(1, daysInMonth - d + 1),
+  };
+}
+
+/**
+ * Money split for big numbers: MAD → { main: "2,760.00", unit: "MAD" }, USD → { main: "$2,760.00", unit: "" }.
+ * So "2,760.00 MAD left" / "$2,760.00 left" read right.
+ */
+export function walletMoneyParts(amount: string | number, currency: string | null | undefined): { main: string; unit: string } {
+  const cur = walletCurrencyOf(currency);
+  const text = formatMoney(amount, undefined, cur);
+  return cur === "MAD" ? { main: text.replace(/ MAD$/, ""), unit: "MAD" } : { main: text, unit: "" };
+}

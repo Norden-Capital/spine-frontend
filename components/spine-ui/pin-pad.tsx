@@ -15,13 +15,14 @@ export type PinPadProps = {
   className?: string;
 };
 
-const KEY =
-  "flex size-[72px] items-center justify-center rounded-full leading-[1.5] outline-none select-none transition " +
+const KEY_BASE =
+  "flex items-center justify-center rounded-full leading-[1.5] outline-none select-none transition " +
   "focus-visible:ring-3 focus-visible:ring-(--sp-ring) active:scale-95 disabled:pointer-events-none disabled:opacity-40";
+const KEY = `${KEY_BASE} size-[72px]`;
 
 /**
  * Number keypad for the wallet PIN: 3 × 4 round keys, 72px (thumb size),
- * 16px between rows. Keys look like the top bar buttons (white on gray /
+ * 16px between rows. The delete key is bigger (80px tap area, 40px icon). Keys look like the top bar buttons (white on gray /
  * dark gray on black). Digit 26 / Medium.
  * No state inside: the parent keeps the typed PIN.
  */
@@ -64,9 +65,11 @@ export function PinPad({ onDigit, onDelete, extraKey, disabled, className }: Pin
         aria-label="Delete"
         disabled={disabled}
         onClick={onDelete}
-        className={cn(KEY, "text-(--sp-text) [&_svg]:size-[24px] [&_svg]:stroke-[1.6]")}
+        // Bigger tap area (80) and icon (40); the -4 margin keeps the 72 grid cell, so rows stay aligned.
+        className={cn(KEY_BASE, "-m-[4px] size-[80px] text-(--sp-text) [&_svg]:stroke-[1.6]")}
       >
-        <IconBackspace />
+        {/* Drawn icon: its inline 24px size beats classes, so the size goes in style. */}
+        <IconBackspace style={{ width: 40, height: 40 }} />
       </button>
     </div>
   );

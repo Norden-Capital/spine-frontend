@@ -3,12 +3,11 @@
 import { PageEmpty } from "@/components/nav/page-empty";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   BottomSheet,
   IconAdd,
-  IconButton,
-  IconDelete,
-  IconEdit,
+  IconChevronRight,
   IconSavings,
   SpButton,
   SpField,
@@ -18,11 +17,17 @@ import { api, ApiError, errorMessage, fieldErrorText } from "@/lib/api";
 import type { Category } from "@/lib/catalog-types";
 import { parseAmountInput } from "@/lib/transactions-types";
 import {
+  budgetMonthOf,
+  convertMoney,
   walletCurrencyOf,
   walletMoney,
+  walletMoneyParts,
   type Budget,
   type WalletCurrency,
 } from "@/lib/wallet-types";
+import { todayIn } from "@/lib/prefs";
+import { cn } from "@/lib/utils";
+import { usePrefs } from "@/components/prefs/prefs-provider";
 import {
   CurrencyInputIcon,
   CurrencySwitch,
@@ -30,30 +35,30 @@ import {
   useWalletDefaults,
 } from "./currency-switch";
 import { CategoryIcon } from "@/components/expenses/category-icon";
-import { ConfirmSheet } from "@/components/admin/confirm-sheet";
 import { NoticeBox } from "@/components/admin/notice";
 import { CategorySelect } from "./form-bits";
-import { ProgressBar, statusText } from "./progress";
+import { STATUS_TEXT, STATUS_WORDS, StatusIcon, TriBar } from "./tri-bar";
 import { SortableCard, SortableCardList, useCardOrder } from "./sortable-cards";
 
-/** Monthly budgets: a total, or per expense category. Bars turn amber at 80 %, red at 100 %. */
+/**
+ * Monthly budgets: the purple month card (all budgets together), then one card per
+ * budget (drag to reorder). A tap on a card opens its page (edit, delete, past months).
+ * Bars: 3 parts, On track (0–80 %) · Near limit (80–100 %) · Over (100 %+).
+ */
 export function BudgetsManager({
   budgets,
   categories,
+  today: todayProp,
 }: {
   budgets: Budget[];
   categories: Category[];
+  /** My today ("YYYY-MM-DD", my time zone). Missing = worked out here from my zone. */
+  today?: string;
 }) {
   const router = useRouter();
-  // The sheet keeps the last budget while it slides away (no title flash).
-  const [edit, setEdit] = useState<{ budget: Budget | null; open: boolean }>({
-    budget: null,
-    open: false,
-  });
-  const [remove, setRemove] = useState<Budget | null>(null);
-  const [removeOpen, setRemoveOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [removeError, setRemoveError] = useState<string | null>(null);
+  const { zone } = usePrefs();
+  const today = todayProp ?? todayIn(zone);
+  const [addOpen, setAddOpen] = useState(false);
   const [notice, setNotice] = useState<{
     kind: "ok" | "error";
     text: string;
@@ -64,31 +69,15 @@ export function BudgetsManager({
     (text) => setNotice({ kind: "error", text }),
     () => router.refresh(),
   );
-
-  async function confirmRemove() {
-    if (!remove) return;
-    setBusy(true);
-    setRemoveError(null);
-    try {
-      await api(`/wallet/budgets/${encodeURIComponent(remove.id)}`, {
-        method: "DELETE",
-      });
-      setNotice({ kind: "ok", text: "Budget removed." });
-      setRemoveOpen(false);
-    } catch (err) {
-      setRemoveError(errorMessage(err));
-    } finally {
-      setBusy(false);
-      router.refresh();
-    }
-  }
+  const month = budgetMonthOf(today);
 
   return (
     <div className="flex flex-col gap-[12px]">
+      {budgets.length > 0 && <BudgetsMonthCard budgets={budgets} month={month} />}
       <SpButton
         className="w-full"
         icon={<IconAdd aria-hidden />}
-        onClick={() => setEdit({ budget: null, open: true })}
+        onClick={() => setAddOpen(true)}
         data-testid="budget-add"
       >
         Add a budget
@@ -105,102 +94,152 @@ export function BudgetsManager({
           ids={shown.map((b) => b.id)}
           onDragEnd={(e) => void onDragEnd(e)}
         >
-          {shown.map((b) => {
-            const name = b.category ? b.category.name : "All spending";
-            const left = Number(b.limit) - Number(b.spent);
-            return (
-              <SortableCard
-                key={b.id}
-                id={b.id}
-                name={name}
-                busy={saving}
-                testId="budget-item"
-                className="flex flex-col gap-[12px] rounded-(--sp-radius) bg-(--sp-panel) pt-[10px] pr-[8px] pb-[16px] pl-[14px]"
-              >
-                {(grip) => (
-                  <>
-                    <div className="flex items-center gap-[10.8px]">
-                      {grip}
-                      <span className="flex size-[33px] shrink-0 items-center justify-center rounded-full bg-(--sp-soft) text-(--sp-text) [&_svg]:size-[15px]">
-                        <CategoryIcon name={b.category?.icon ?? "banknote"} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[0.9375rem] leading-normal font-medium text-(--sp-text)">
-                          {name}
-                        </p>
-                        <p className="mt-[2px] text-[0.6875rem] leading-snug text-(--sp-text-muted) tabular-nums">
-                          {walletMoney(b.spent, b.currency)} of{" "}
-                          {walletMoney(b.limit, b.currency)} ·{" "}
-                          {left >= 0
-                            ? `${walletMoney(left, b.currency)} left`
-                            : `${walletMoney(-left, b.currency)} over`}
-                        </p>
-                      </div>
-                      <IconButton
-                        variant="ghost"
-                        label={`Edit ${name}`}
-                        icon={<IconEdit aria-hidden />}
-                        onClick={() => setEdit({ budget: b, open: true })}
-                      />
-                      <IconButton
-                        variant="ghost"
-                        label={`Remove ${name}`}
-                        icon={<IconDelete aria-hidden />}
-                        className="text-(--sp-danger)"
-                        onClick={() => {
-                          setRemove(b);
-                          setRemoveError(null);
-                          setRemoveOpen(true);
-                        }}
-                      />
-                    </div>
-                    <div className="pr-[6px]">
-                      <ProgressBar
-                        percent={b.percent}
-                        status={b.status}
-                        label={`${name}: ${statusText(b.status, b.percent)}`}
-                      />
-                    </div>
-                    <p
-                      className={
-                        b.status === "EXCEEDED"
-                          ? "text-[0.6875rem] leading-snug font-medium text-(--sp-danger)"
-                          : b.status === "WARNING"
-                            ? "text-[0.6875rem] leading-snug font-medium text-(--sp-warning)"
-                            : "text-[0.6875rem] leading-snug text-(--sp-text-muted)"
-                      }
-                    >
-                      {statusText(b.status, b.percent)}
-                    </p>
-                  </>
-                )}
-              </SortableCard>
-            );
-          })}
+          {shown.map((b) => (
+            <BudgetCard key={b.id} b={b} busy={saving} daysLeft={month.daysLeft} />
+          ))}
         </SortableCardList>
       )}
 
       <BudgetSheet
-        open={edit.open}
-        onOpenChange={(open) => setEdit((e) => ({ ...e, open }))}
-        budget={edit.budget}
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        budget={null}
         categories={categories}
         onSaved={(text) => setNotice({ kind: "ok", text })}
       />
-
-      <ConfirmSheet
-        open={removeOpen}
-        onOpenChange={setRemoveOpen}
-        title="Remove this budget?"
-        text="Your transactions stay. Only the limit goes away."
-        confirm="Remove"
-        destructive
-        busy={busy}
-        busyLabel="Removing…"
-        error={removeError}
-        onConfirm={() => void confirmRemove()}
-      />
     </div>
+  );
+}
+
+/** "All spending" or the category name. */
+export function budgetName(b: Budget): string {
+  return b.category ? b.category.name : "All spending";
+}
+
+/** "2,000.00 MAD a month" / "$200.00 a month". */
+export function perMonthText(b: Budget): string {
+  return `${walletMoney(b.limit, b.currency)} a month`;
+}
+
+/** One budget: whole card opens its page; the grip still drags (it sits above the link). */
+function BudgetCard({ b, busy, daysLeft }: { b: Budget; busy: boolean; daysLeft: number }) {
+  const name = budgetName(b);
+  const left = Number(b.limit) - Number(b.spent);
+  const over = left < 0;
+  const amount = walletMoneyParts(Math.abs(left), b.currency);
+  const spent = walletMoneyParts(b.spent, b.currency).main;
+  const days = `${daysLeft} ${daysLeft === 1 ? "day" : "days"}`;
+  return (
+    <SortableCard
+      id={b.id}
+      name={name}
+      busy={busy}
+      testId="budget-item"
+      className="flex flex-col gap-[12px] rounded-(--sp-radius) bg-(--sp-panel) pt-[10px] pr-[8px] pb-[16px] pl-[14px]"
+    >
+      {(grip) => (
+        <>
+          <Link
+            href={`/wallet/budgets/${encodeURIComponent(b.id)}`}
+            aria-label={`${name}: ${STATUS_WORDS[b.status].toLowerCase()}, ${b.percent}% used`}
+            data-testid="budget-open"
+            className="absolute inset-0 rounded-(--sp-radius) outline-none focus-visible:ring-3 focus-visible:ring-(--sp-ring)"
+          />
+          <div className="pointer-events-none relative flex items-center gap-[10.8px]">
+            <span className="pointer-events-auto relative z-10 flex">{grip}</span>
+            <span className="flex size-[36px] shrink-0 items-center justify-center rounded-full bg-(--sp-soft) text-(--sp-text) [&_svg]:size-[17px]">
+              <CategoryIcon name={b.category?.icon ?? "banknote"} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[0.9375rem] leading-normal font-medium text-(--sp-text)">{name}</p>
+              <p className="text-[0.6875rem] leading-snug text-(--sp-text-muted) tabular-nums">{perMonthText(b)}</p>
+            </div>
+            <span className="flex size-[36px] items-center justify-center text-(--sp-text-faint) [&_svg]:size-[18px]">
+              <IconChevronRight aria-hidden />
+            </span>
+          </div>
+
+          <div aria-hidden className="pointer-events-none flex items-end justify-between gap-[8px] pr-[6px]">
+            <p className="tabular-nums">
+              <span className={cn("text-[1.5rem] leading-none font-semibold", over ? "text-(--sp-danger)" : "text-(--sp-text)")}>
+                {amount.main}
+              </span>
+              <span className={cn("ml-[6px] text-[0.8125rem]", over ? "font-medium text-(--sp-danger)" : "text-(--sp-text-muted)")}>
+                {amount.unit ? `${amount.unit} ` : ""}
+                {over ? "over" : "left"}
+              </span>
+            </p>
+            <p className={cn("flex items-center gap-[5px] text-right text-[0.8125rem] font-medium", STATUS_TEXT[b.status])}>
+              <StatusIcon status={b.status} />
+              {STATUS_WORDS[b.status]} · {b.percent}%
+            </p>
+          </div>
+          <div className="pointer-events-none pr-[6px]">
+            <TriBar percent={b.percent} label={`${name}: ${b.percent}% used`} />
+          </div>
+          <p aria-hidden className="pointer-events-none pr-[6px] text-[0.6875rem] leading-snug text-(--sp-text-muted) tabular-nums">
+            {spent} spent ·{" "}
+            {over || left === 0
+              ? `${days} to go`
+              : `about ${walletMoney(left / daysLeft, b.currency)} a day for ${days}`}
+          </p>
+        </>
+      )}
+    </SortableCard>
+  );
+}
+
+/**
+ * The purple card: this month, days left, everything spent in my budgets against the sum
+ * of their limits (in my default currency: budgets in the other currency are converted with
+ * my own rate, like the wallet totals), and how many budgets are on track / near / over.
+ */
+function BudgetsMonthCard({ budgets, month }: { budgets: Budget[]; month: ReturnType<typeof budgetMonthOf> }) {
+  const { currency, usdRate } = useWalletDefaults();
+  const inDefault = (amount: string, b: Budget) =>
+    convertMoney(Number(amount) || 0, walletCurrencyOf(b.currency), currency, usdRate);
+  const spent = budgets.reduce((sum, b) => sum + inDefault(b.spent, b), 0);
+  const limit = budgets.reduce((sum, b) => sum + inDefault(b.limit, b), 0);
+  const percent = limit > 0 ? Math.floor((spent / limit) * 100) : 0;
+  const count = (s: Budget["status"]) => budgets.filter((b) => b.status === s).length;
+  const big = walletMoneyParts(spent, currency);
+  return (
+    <section
+      data-testid="budgets-month"
+      className="flex flex-col gap-[14px] rounded-(--sp-radius) bg-(--sp-card-front) p-[18px] text-(--sp-card-front-text)"
+    >
+      <div className="flex items-center justify-between text-[0.8125rem]">
+        <span className="font-medium">{month.name}</span>
+        <span className="text-(--sp-card-front-muted)">
+          {month.daysLeft} {month.daysLeft === 1 ? "day" : "days"} left
+        </span>
+      </div>
+      <div>
+        <p className="text-[0.75rem] text-(--sp-card-front-muted)">Spent in your budgets</p>
+        <p className="mt-[2px] text-[2rem] leading-tight font-semibold tabular-nums [overflow-wrap:anywhere]">
+          {big.main}{" "}
+          <span className="text-[1rem] font-medium text-(--sp-card-front-muted)">of {walletMoney(limit, currency)}</span>
+        </p>
+      </div>
+      <TriBar percent={percent} onCard label={`All budgets: ${percent}% used`} />
+      <div className="grid grid-cols-3 gap-[8px] border-t border-white/20 pt-[12px] text-[0.75rem]">
+        {(
+          [
+            ["OK", "On track"],
+            ["WARNING", "Near limit"],
+            ["EXCEEDED", "Over"],
+          ] as const
+        ).map(([s, label]) => (
+          <div key={s} className="min-w-0">
+            <p className="flex items-center gap-[4px] text-(--sp-card-front-muted)">
+              <StatusIcon status={s} size={12} />
+              <span className="truncate">{label}</span>
+            </p>
+            <p className="text-[1rem] font-semibold tabular-nums">{count(s)}</p>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
